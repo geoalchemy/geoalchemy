@@ -208,7 +208,7 @@ if __name__ == '__main__':
         
         road_id = Column(Integer, primary_key=True)
         road_name = Column(String)
-        road_geom = GeometryColumn(Geometry(2))
+        road_geom = GeometryColumn(Geometry(2, srid=4326))
     
     # enable the DDL extension, which allows CREATE/DROP operations
     # to work correctly.  This is not needed if working with externally
@@ -223,22 +223,22 @@ if __name__ == '__main__':
     
     # Add objects.  We can use strings...
     session.add_all([
-        Road(road_name='Jeff Rd', road_geom='LINESTRING(191232 243118,191108 243242)'),
-        Road(road_name='Geordie Rd', road_geom='LINESTRING(189141 244158,189265 244817)'),
-        Road(road_name='Paul St', road_geom='LINESTRING(192783 228138,192612 229814)'),
-        Road(road_name='Graeme Ave', road_geom='LINESTRING(189412 252431,189631 259122)'),
-        Road(road_name='Phil Tce', road_geom='LINESTRING(190131 224148,190871 228134)'),
+        Road(road_name='Jeff Rd', road_geom='LINESTRING(-30 40,-32 43), 4326'),
+        Road(road_name='Geordie Rd', road_geom='LINESTRING(-31 40,-32 44), 4326'),
+        Road(road_name='Paul St', road_geom='LINESTRING(-32 44,-34 44), 4326'),
+        Road(road_name='Graeme Ave', road_geom='LINESTRING(-31 42,-32 40), 4326'),
+        Road(road_name='Phil Tce', road_geom='LINESTRING(-33 46,-32 45), 4326'),
     ])
     
     # or use an explicit WKTSpatialElement (similar to saying func.GeomFromText())
-    r = Road(road_name='Dave Cres', road_geom=WKTSpatialElement('LINESTRING(198231 263418,198213 268322)', -1))
+    r = Road(road_name='Dave Cres', road_geom=WKTSpatialElement('LINESTRING(-31 40,-32 41)', srid=4326))
     session.add(r)
     
     # pre flush, the WKTSpatialElement represents the string we sent.
-    assert str(r.road_geom) == 'LINESTRING(198231 263418,198213 268322)'
-    #assert session.scalar(r.road_geom.wkt) == 'LINESTRING(198231 263418,198213 268322)'
+    assert str(r.road_geom) == 'LINESTRING(-31 40,-32 41)'
+    assert session.scalar(r.road_geom.wkt) == 'LINESTRING(-31 40,-32 41)'
     
-    #session.commit()
+    session.commit()
 
     # after flush and/or commit, all the WKTSpatialElements become PersistentSpatialElements.
     #assert str(r.road_geom) == "01020000000200000000000000B832084100000000E813104100000000283208410000000088601041"
@@ -263,6 +263,6 @@ if __name__ == '__main__':
     # execution to call the AsText() function so we keep this explicit.
     #assert session.scalar(r1.road_geom.wkt) == 'LINESTRING(189412 252431,189631 259122)'
     
-    #session.rollback()
+    session.rollback()
     
-    #metadata.drop_all()
+    metadata.drop_all()

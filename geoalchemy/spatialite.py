@@ -205,11 +205,11 @@ if __name__ == '__main__':
 
     class Road(Base):
         __tablename__ = 'roads'
-        
+    
         road_id = Column(Integer, primary_key=True)
         road_name = Column(String)
-        road_geom = GeometryColumn(Geometry(2, srid=4326))
-    
+        road_geom = GeometryColumn(LineString(2, srid=4326))
+
     # enable the DDL extension, which allows CREATE/DROP operations
     # to work correctly.  This is not needed if working with externally
     # defined tables.    
@@ -223,11 +223,11 @@ if __name__ == '__main__':
     
     # Add objects.  We can use strings...
     session.add_all([
-        Road(road_name='Jeff Rd', road_geom='LINESTRING(-30 40,-32 43), 4326'),
-        Road(road_name='Geordie Rd', road_geom='LINESTRING(-31 40,-32 44), 4326'),
-        Road(road_name='Paul St', road_geom='LINESTRING(-32 44,-34 44), 4326'),
-        Road(road_name='Graeme Ave', road_geom='LINESTRING(-31 42,-32 40), 4326'),
-        Road(road_name='Phil Tce', road_geom='LINESTRING(-33 46,-32 45), 4326'),
+        Road(road_name='Jeff Rd', road_geom='LINESTRING(-30 40,-32 43)'),
+        Road(road_name='Geordie Rd', road_geom='LINESTRING(-31 40,-32 44)'),
+        Road(road_name='Paul St', road_geom='LINESTRING(-32 44,-34 44)'),
+        Road(road_name='Graeme Ave', road_geom='LINESTRING(-31 42,-32 40)'),
+        Road(road_name='Phil Tce', road_geom='LINESTRING(-33 46,-32 45)'),
     ])
     
     # or use an explicit WKTSpatialElement (similar to saying func.GeomFromText())
@@ -236,14 +236,14 @@ if __name__ == '__main__':
     
     # pre flush, the WKTSpatialElement represents the string we sent.
     assert str(r.road_geom) == 'LINESTRING(-31 40,-32 41)'
-    assert session.scalar(r.road_geom.wkt) == 'LINESTRING(-31 40,-32 41)'
     
     session.commit()
 
     # after flush and/or commit, all the WKTSpatialElements become PersistentSpatialElements.
     #assert str(r.road_geom) == "01020000000200000000000000B832084100000000E813104100000000283208410000000088601041"
     
-    #r1 = session.query(Road).filter(Road.road_name=='Graeme Ave').one()
+    r1 = session.query(Road).filter(Road.road_name=='Graeme Ave').one()
+    assert session.scalar(r1.road_geom.wkt) == 'LINESTRING(-31 42, -32 40)'
     
     # illustrate the overridden __eq__() operator.
     

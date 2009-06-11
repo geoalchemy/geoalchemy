@@ -34,6 +34,9 @@ class SpatialElement(object):
     def boundary(self):
         return func.ST_Boundary(literal(self, Geometry))
 
+    def buffer(self, length=0.0, num_segs=8):
+        return func.ST_Buffer(literal(self, Geometry), length, num_segs)
+
     def __str__(self):
         return self.desc
 

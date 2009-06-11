@@ -30,6 +30,10 @@ class SpatialElement(object):
     def centroid(self):
         return func.ST_Centroid(literal(self, Geometry))
 
+    @property
+    def boundary(self):
+        return func.ST_Boundary(literal(self, Geometry))
+
     def __str__(self):
         return self.desc
 

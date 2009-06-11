@@ -94,3 +94,7 @@ class TestGeometry(TestCase):
         l = session.query(Lake).filter(Lake.lake_name=='My Lake').one()
         assert session.scalar(r.road_geom.centroid) == '0101000000000000008C2207410000000004390F41'
         assert session.scalar(l.lake_geom.centroid) == '010100000000000000000000400000000000000040'
+
+    def test_boundary(self):
+        r = session.query(Road).filter(Road.road_name=='Graeme Ave').one()
+        assert session.scalar(r.road_geom.boundary) == '010400000002000000010100000000000000201F07410000000078D00E41010100000000000000F82507410000000090A10F41'

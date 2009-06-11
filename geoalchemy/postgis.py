@@ -19,8 +19,44 @@ class SpatialElement(object):
         return func.ST_AsBinary(literal(self, Geometry))
 
     @property
+    def svg(self):
+        return func.ST_AsSVG(literal(self, Geometry))
+
+    @property
+    def gml(self):
+        return func.ST_AsGML(literal(self, Geometry))
+
+    @property
+    def kml(self):
+        return func.ST_AsKML(literal(self, Geometry))
+
+    @property
+    def geojson(self):
+        return func.ST_AsGeoJson(literal(self, Geometry))
+
+    @property
     def dimension(self):
         return func.ST_Dimension(literal(self, Geometry))
+
+    @property
+    def geometry_type(self):
+        return func.ST_GeometryType(literal(self, Geometry))
+
+    @property
+    def is_empty(self):
+        return func.ST_IsEmpty(literal(self, Geometry))
+
+    @property
+    def is_simple(self):
+        return func.ST_IsSimple(literal(self, Geometry))
+
+    @property
+    def is_closed(self):
+        return func.ST_IsClosed(literal(self, Geometry))
+
+    @property
+    def is_ring(self):
+        return func.ST_IsRing(literal(self, Geometry))
 
     @property
     def length(self):
@@ -48,6 +84,14 @@ class SpatialElement(object):
     @property
     def envelope(self):
         return func.ST_Envelope(literal(self, Geometry))
+
+    @property
+    def start_point(self):
+        return func.ST_StartPoint(literal(self, Geometry))
+
+    @property
+    def end_point(self):
+        return func.ST_EndPoint(literal(self, Geometry))
 
     def __str__(self):
         return self.desc

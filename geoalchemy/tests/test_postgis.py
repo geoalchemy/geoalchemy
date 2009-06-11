@@ -67,11 +67,45 @@ class TestGeometry(TestCase):
     def test_wkb(self):
         assert b2a_hex(session.scalar(self.r.road_geom.wkb)).upper() == '01020000000200000000000000B832084100000000E813104100000000283208410000000088601041'
 
+    def test_svg(self):
+        assert session.scalar(self.r.road_geom.svg) == 'M 198231 -263418 198213 -268322'
+
+    def test_gml(self):
+        assert session.scalar(self.r.road_geom.gml) == '<gml:LineString><gml:coordinates>198231,263418 198213,268322</gml:coordinates></gml:LineString>'
+
     def test_dimension(self):
         r = session.query(Road).filter(Road.road_name=='Graeme Ave').one()
         l = session.query(Lake).filter(Lake.lake_name=='My Lake').one()
         assert session.scalar(r.road_geom.dimension) == 1
         assert session.scalar(l.lake_geom.dimension) == 2
+
+    def test_geometry_type(self):
+        r = session.query(Road).filter(Road.road_name=='Graeme Ave').one()
+        l = session.query(Lake).filter(Lake.lake_name=='My Lake').one()
+        assert session.scalar(r.road_geom.geometry_type) == 'ST_LineString'
+        assert session.scalar(l.lake_geom.geometry_type) == 'ST_Polygon'
+
+    def test_is_empty(self):
+        r = session.query(Road).filter(Road.road_name=='Graeme Ave').one()
+        l = session.query(Lake).filter(Lake.lake_name=='My Lake').one()
+        assert session.scalar(r.road_geom.is_empty) == 0
+        assert session.scalar(l.lake_geom.is_empty) == 0
+
+    def test_is_simple(self):
+        r = session.query(Road).filter(Road.road_name=='Graeme Ave').one()
+        l = session.query(Lake).filter(Lake.lake_name=='My Lake').one()
+        assert session.scalar(r.road_geom.is_simple) == 1
+        assert session.scalar(l.lake_geom.is_simple) == 1
+
+    def test_is_closed(self):
+        r = session.query(Road).filter(Road.road_name=='Graeme Ave').one()
+        l = session.query(Lake).filter(Lake.lake_name=='My Lake').one()
+        assert session.scalar(r.road_geom.is_closed) == 0
+        assert session.scalar(l.lake_geom.is_closed) == 1
+
+    def test_is_ring(self):
+        r = session.query(Road).filter(Road.road_name=='Graeme Ave').one()
+        assert session.scalar(r.road_geom.is_ring) == 0
 
     def test_persistent(self):
         session.commit()
@@ -115,3 +149,12 @@ class TestGeometry(TestCase):
 
     def test_envelope(self):
         r = session.query(Road).filter(Road.road_name=='Graeme Ave').one()
+        assert session.scalar(r.road_geom.envelope) == '0103000000010000000500000000000000201F07410000000078D00E4100000000201F07410000000090A10F4100000000F82507410000000090A10F4100000000F82507410000000078D00E4100000000201F07410000000078D00E41'
+
+    def test_start_point(self):
+        r = session.query(Road).filter(Road.road_name=='Graeme Ave').one()
+        assert session.scalar(r.road_geom.start_point) == '010100000000000000201F07410000000078D00E41'
+
+    def test_end_point(self):
+        r = session.query(Road).filter(Road.road_name=='Graeme Ave').one()
+        assert session.scalar(r.road_geom.end_point) == '010100000000000000F82507410000000090A10F41'

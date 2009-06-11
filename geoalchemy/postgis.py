@@ -37,6 +37,10 @@ class SpatialElement(object):
     def buffer(self, length=0.0, num_segs=8):
         return func.ST_Buffer(literal(self, Geometry), length, num_segs)
 
+    @property
+    def convex_hull(self):
+        return func.ST_ConvexHull(literal(self, Geometry))
+
     def __str__(self):
         return self.desc
 

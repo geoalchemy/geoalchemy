@@ -18,6 +18,18 @@ class SpatialElement(object):
     def wkb(self):
         return func.ST_AsBinary(literal(self, Geometry))
 
+    @property
+    def length(self):
+        return func.ST_Length(literal(self, Geometry))
+
+    @property
+    def area(self):
+        return func.ST_Area(literal(self, Geometry))
+
+    @property
+    def centroid(self):
+        return func.ST_Centroid(literal(self, Geometry))
+
     def __str__(self):
         return self.desc
 

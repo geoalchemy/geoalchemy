@@ -19,10 +19,18 @@ class Road(Base):
     road_name = Column(String)
     road_geom = GeometryColumn(Geometry(2))
 
+class Lake(Base):
+    __tablename__ = 'lakes'
+
+    lake_id = Column(Integer, primary_key=True)
+    lake_name = Column(String)
+    lake_geom = GeometryColumn(Geometry(2))
+
 # enable the DDL extension, which allows CREATE/DROP operations
 # to work correctly.  This is not needed if working with externally
 # defined tables.    
 GeometryDDL(Road.__table__)
+GeometryDDL(Lake.__table__)
 
 class TestGeometry(TestCase):
 
@@ -38,6 +46,7 @@ class TestGeometry(TestCase):
             Road(road_name='Paul St', road_geom='SRID=-1;LINESTRING(192783 228138,192612 229814)'),
             Road(road_name='Graeme Ave', road_geom='SRID=-1;LINESTRING(189412 252431,189631 259122)'),
             Road(road_name='Phil Tce', road_geom='SRID=-1;LINESTRING(190131 224148,190871 228134)'),
+            Lake(lake_name='My Lake', lake_geom='SRID=-1;POLYGON((0 0,4 0,4 4,0 4,0 0))'),
         ])
 
         # or use an explicit WKTSpatialElement (similar to saying func.GeomFromText())
@@ -69,6 +78,19 @@ class TestGeometry(TestCase):
         assert [(r.road_name, session.scalar(r.road_geom.wkt)) for r in session.query(Road).filter(Road.road_geom.intersects(r1.road_geom)).all()] == [('Graeme Ave', 'LINESTRING(189412 252431,189631 259122)')]
 
     def test_wkt(self):
-        r1 = session.query(Road).filter(Road.road_name=='Graeme Ave').one()
-        assert session.scalar(r1.road_geom.wkt) == 'LINESTRING(189412 252431,189631 259122)'
+        r = session.query(Road).filter(Road.road_name=='Graeme Ave').one()
+        assert session.scalar(r.road_geom.wkt) == 'LINESTRING(189412 252431,189631 259122)'
 
+    def test_length(self):
+        r = session.query(Road).filter(Road.road_name=='Graeme Ave').one()
+        assert session.scalar(r.road_geom.length) == 6694.5830340656803
+
+    def test_area(self):
+        l = session.query(Lake).filter(Lake.lake_name=='My Lake').one()
+        assert session.scalar(l.lake_geom.area) == 16
+
+    def test_centroid(self):
+        r = session.query(Road).filter(Road.road_name=='Graeme Ave').one()
+        l = session.query(Lake).filter(Lake.lake_name=='My Lake').one()
+        assert session.scalar(r.road_geom.centroid) == '0101000000000000008C2207410000000004390F41'
+        assert session.scalar(l.lake_geom.centroid) == '010100000000000000000000400000000000000040'

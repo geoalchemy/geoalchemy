@@ -132,7 +132,7 @@ class GeometryDDL(object):
 
 # ORM integration
 
-def _to_postgis(value):
+def _to_spatialite(value):
     """Interpret a value as a GIS-compatible construct."""
     
     if hasattr(value, '__clause_element__'):
@@ -154,7 +154,7 @@ class SpatialAttribute(AttributeExtension):
     """
     
     def set(self, state, value, oldvalue, initiator):
-        return _to_postgis(value)
+        return _to_spatialite(value)
             
 class SpatialComparator(ColumnProperty.ColumnComparator):
     """Intercepts standard Column operators on mapped class attributes
@@ -164,11 +164,11 @@ class SpatialComparator(ColumnProperty.ColumnComparator):
     
     # override the __eq__() operator
     def __eq__(self, other):
-        return self.__clause_element__().op('~=')(_to_postgis(other))
+        return self.__clause_element__().op('~=')(_to_spatialite(other))
 
     # add a custom operator
     def intersects(self, other):
-        return self.__clause_element__().op('&&')(_to_postgis(other))
+        return self.__clause_element__().op('&&')(_to_spatialite(other))
         
     # any number of Spatial operators can be overridden/added here
     # using the techniques above.

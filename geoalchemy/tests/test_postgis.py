@@ -1,4 +1,5 @@
 from unittest import TestCase
+from binascii import b2a_hex
 from sqlalchemy import (create_engine, MetaData, Column, Integer, String,
         func, literal, select)
 from sqlalchemy.orm import sessionmaker, column_property
@@ -60,10 +61,19 @@ class TestGeometry(TestCase):
     def test_geom(self):
         assert str(self.r.road_geom) == 'SRID=-1;LINESTRING(198231 263418,198213 268322)'
 
-    def test_wkt_element(self):
+    def test_wkt(self):
         assert session.scalar(self.r.road_geom.wkt) == 'LINESTRING(198231 263418,198213 268322)'
 
-    def test_persistent_element(self):
+    def test_wkb(self):
+        assert b2a_hex(session.scalar(self.r.road_geom.wkb)).upper() == '01020000000200000000000000B832084100000000E813104100000000283208410000000088601041'
+
+    def test_dimension(self):
+        r = session.query(Road).filter(Road.road_name=='Graeme Ave').one()
+        l = session.query(Lake).filter(Lake.lake_name=='My Lake').one()
+        assert session.scalar(r.road_geom.dimension) == 1
+        assert session.scalar(l.lake_geom.dimension) == 2
+
+    def test_persistent(self):
         session.commit()
         assert str(self.r.road_geom) == "01020000000200000000000000B832084100000000E813104100000000283208410000000088601041"
 
@@ -76,10 +86,6 @@ class TestGeometry(TestCase):
     def test_intersects(self):
         r1 = session.query(Road).filter(Road.road_name=='Graeme Ave').one()
         assert [(r.road_name, session.scalar(r.road_geom.wkt)) for r in session.query(Road).filter(Road.road_geom.intersects(r1.road_geom)).all()] == [('Graeme Ave', 'LINESTRING(189412 252431,189631 259122)')]
-
-    def test_wkt(self):
-        r = session.query(Road).filter(Road.road_name=='Graeme Ave').one()
-        assert session.scalar(r.road_geom.wkt) == 'LINESTRING(189412 252431,189631 259122)'
 
     def test_length(self):
         r = session.query(Road).filter(Road.road_name=='Graeme Ave').one()
@@ -106,3 +112,6 @@ class TestGeometry(TestCase):
     def test_convex_hull(self):
         r = session.query(Road).filter(Road.road_name=='Graeme Ave').one()
         assert session.scalar(r.road_geom.convex_hull) == '01020000000200000000000000201F07410000000078D00E4100000000F82507410000000090A10F41'
+
+    def test_envelope(self):
+        r = session.query(Road).filter(Road.road_name=='Graeme Ave').one()

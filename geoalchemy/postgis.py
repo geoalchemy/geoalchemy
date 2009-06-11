@@ -19,6 +19,10 @@ class SpatialElement(object):
         return func.ST_AsBinary(literal(self, Geometry))
 
     @property
+    def dimension(self):
+        return func.ST_Dimension(literal(self, Geometry))
+
+    @property
     def length(self):
         return func.ST_Length(literal(self, Geometry))
 
@@ -40,6 +44,10 @@ class SpatialElement(object):
     @property
     def convex_hull(self):
         return func.ST_ConvexHull(literal(self, Geometry))
+
+    @property
+    def envelope(self):
+        return func.ST_Envelope(literal(self, Geometry))
 
     def __str__(self):
         return self.desc

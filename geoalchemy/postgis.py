@@ -10,6 +10,8 @@ from sqlalchemy.sql import expression
 class SpatialElement(object):
     """Represents a geometry value."""
 
+    # OGC Geometry Functions
+
     @property
     def wkt(self):
         return func.ST_AsText(literal(self, Geometry))
@@ -92,6 +94,17 @@ class SpatialElement(object):
     @property
     def end_point(self):
         return func.ST_EndPoint(literal(self, Geometry))
+
+    # OGC Geometry Relations
+
+    def equals(self, geom):
+        return func.ST_Equals(literal(self, Geometry),
+			literal(_to_postgis(geom), Geometry))
+
+    def distance(self, geom):
+        return func.ST_Distance(literal(self, Geometry),
+			literal(_to_postgis(geom), Geometry))
+
 
     def __str__(self):
         return self.desc

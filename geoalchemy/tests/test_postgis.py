@@ -43,7 +43,7 @@ class TestGeometry(TestCase):
         # Add objects.  We can use strings...
         session.add_all([
             Road(road_name='Jeff Rd', road_geom='SRID=-1;LINESTRING(191232 243118,191108 243242)'),
-            Road(road_name='Geordie Rd', road_geom='SRID=-1;LINESTRING(189141 244158,189265 244817)'),
+            Road(road_name='Geordie Rd', road_geom='SRID=-1;LINESTRING(191232 243118,191108 243242)'),
             Road(road_name='Paul St', road_geom='SRID=-1;LINESTRING(192783 228138,192612 229814)'),
             Road(road_name='Graeme Ave', road_geom='SRID=-1;LINESTRING(189412 252431,189631 259122)'),
             Road(road_name='Phil Tce', road_geom='SRID=-1;LINESTRING(190131 224148,190871 228134)'),
@@ -53,13 +53,13 @@ class TestGeometry(TestCase):
         # or use an explicit WKTSpatialElement (similar to saying func.GeomFromText())
         self.r = Road(road_name='Dave Cres', road_geom=WKTSpatialElement('SRID=-1;LINESTRING(198231 263418,198213 268322)', -1))
         session.add(self.r)
+        session.commit()
 
     def tearDown(self):
         session.rollback()
         metadata.drop_all()
 
-    def test_geom(self):
-        assert str(self.r.road_geom) == 'SRID=-1;LINESTRING(198231 263418,198213 268322)'
+    # Test Geometry Functions
 
     def test_wkt(self):
         assert session.scalar(self.r.road_geom.wkt) == 'LINESTRING(198231 263418,198213 268322)'
@@ -108,7 +108,6 @@ class TestGeometry(TestCase):
         assert session.scalar(r.road_geom.is_ring) == 0
 
     def test_persistent(self):
-        session.commit()
         assert str(self.r.road_geom) == "01020000000200000000000000B832084100000000E813104100000000283208410000000088601041"
 
     def test_eq(self):
@@ -158,3 +157,19 @@ class TestGeometry(TestCase):
     def test_end_point(self):
         r = session.query(Road).filter(Road.road_name=='Graeme Ave').one()
         assert session.scalar(r.road_geom.end_point) == '010100000000000000F82507410000000090A10F41'
+
+    # Test Geometry Relationships
+
+    def test_equals(self):
+        r1 = session.query(Road).filter(Road.road_name=='Jeff Rd').one()
+        r2 = session.query(Road).filter(Road.road_name=='Geordie Rd').one()
+        r3 = session.query(Road).filter(Road.road_name=='Paul St').one()
+        assert session.scalar(r1.road_geom.equals(r2.road_geom))
+        assert not session.scalar(r1.road_geom.equals(r3.road_geom))
+
+    def test_distance(self):
+        r1 = session.query(Road).filter(Road.road_name=='Jeff Rd').one()
+        r2 = session.query(Road).filter(Road.road_name=='Graeme Ave').one()
+        r3 = session.query(Road).filter(Road.road_name=='Geordie Rd').one()
+        assert session.scalar(r1.road_geom.distance( r2.road_geom)) == 9344.20339033778
+        assert session.scalar(r1.road_geom.distance(r3.road_geom)) == 0.0

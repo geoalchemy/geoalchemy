@@ -105,6 +105,45 @@ class SpatialElement(object):
         return func.ST_Distance(literal(self, Geometry),
 			literal(_to_postgis(geom), Geometry))
 
+    def within_distance(self, geom, distance=0.0):
+        return func.ST_DWithin(literal(self, Geometry),
+			literal(_to_postgis(geom), Geometry), distance)
+
+    def disjoint(self, geom):
+        return func.ST_Disjoint(literal(self, Geometry),
+			literal(_to_postgis(geom), Geometry))
+
+    def intersects(self, geom):
+        return func.ST_Intersects(literal(self, Geometry),
+			literal(_to_postgis(geom), Geometry))
+
+    def touches(self, geom):
+        return func.ST_Touches(literal(self, Geometry),
+			literal(_to_postgis(geom), Geometry))
+
+    def crosses(self, geom):
+        return func.ST_Crosses(literal(self, Geometry),
+			literal(_to_postgis(geom), Geometry))
+
+    def within(self, geom):
+        return func.ST_Within(literal(self, Geometry),
+			literal(_to_postgis(geom), Geometry))
+
+    def overlaps(self, geom):
+        return func.ST_Overlaps(literal(self, Geometry),
+			literal(_to_postgis(geom), Geometry))
+
+    def contains(self, geom):
+        return func.ST_Contains(literal(self, Geometry),
+			literal(_to_postgis(geom), Geometry))
+
+    def covers(self, geom):
+        return func.ST_Covers(literal(self, Geometry),
+			literal(_to_postgis(geom), Geometry))
+
+    def covered_by(self, geom):
+        return func.ST_CoveredBy(literal(self, Geometry),
+			literal(_to_postgis(geom), Geometry))
 
     def __str__(self):
         return self.desc

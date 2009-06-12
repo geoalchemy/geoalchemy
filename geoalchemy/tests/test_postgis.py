@@ -1,7 +1,7 @@
 from unittest import TestCase
 from binascii import b2a_hex
 from sqlalchemy import (create_engine, MetaData, Column, Integer, String,
-        func, literal, select)
+        Numeric, func, literal, select)
 from sqlalchemy.orm import sessionmaker, column_property
 from sqlalchemy.ext.declarative import declarative_base
 
@@ -27,11 +27,19 @@ class Lake(Base):
     lake_name = Column(String)
     lake_geom = GeometryColumn(Geometry(2))
 
+class Spot(Base):
+    __tablename__ = 'spots'
+
+    spot_id = Column(Integer, primary_key=True)
+    spot_height = Column(Numeric)
+    spot_location = GeometryColumn(Geometry(2))
+
 # enable the DDL extension, which allows CREATE/DROP operations
 # to work correctly.  This is not needed if working with externally
 # defined tables.    
 GeometryDDL(Road.__table__)
 GeometryDDL(Lake.__table__)
+GeometryDDL(Spot.__table__)
 
 class TestGeometry(TestCase):
 
@@ -48,6 +56,13 @@ class TestGeometry(TestCase):
             Road(road_name='Graeme Ave', road_geom='SRID=-1;LINESTRING(189412 252431,189631 259122)'),
             Road(road_name='Phil Tce', road_geom='SRID=-1;LINESTRING(190131 224148,190871 228134)'),
             Lake(lake_name='My Lake', lake_geom='SRID=-1;POLYGON((0 0,4 0,4 4,0 4,0 0))'),
+            Lake(lake_name='Lake White', lake_geom='SRID=-1;POLYGON((18800 276600,189243 243747,190131 242324,192332 264553,190233 286654, 18800 276600))'),
+            Lake(lake_name='Lake Blue', lake_geom='SRID=-1;POLYGON((192334 276600,193225 245576,1892234 242324,192332 264553,194233 256654, 192334 276600))'),
+            Lake(lake_name='Lake Deep', lake_geom='SRID=-1;POLYGON((155937 276899, 157909 263969, 181796 268352, 155937 276899))'),
+            Spot(spot_height=433.44, spot_location='SRID=-1;POINT(186677 248865)'),
+            Spot(spot_height=308.04, spot_location='SRID=-1;POINT(192345 238865)'),
+            Spot(spot_height=329.23, spot_location='SRID=-1;POINT(189224 227537)'),
+            Spot(spot_height=407.22, spot_location='SRID=-1;POINT(194736 289654)'),
         ])
 
         # or use an explicit WKTSpatialElement (similar to saying func.GeomFromText())
@@ -171,5 +186,78 @@ class TestGeometry(TestCase):
         r1 = session.query(Road).filter(Road.road_name=='Jeff Rd').one()
         r2 = session.query(Road).filter(Road.road_name=='Graeme Ave').one()
         r3 = session.query(Road).filter(Road.road_name=='Geordie Rd').one()
-        assert session.scalar(r1.road_geom.distance( r2.road_geom)) == 9344.20339033778
+        assert session.scalar(r1.road_geom.distance(r2.road_geom)) == 9344.20339033778
         assert session.scalar(r1.road_geom.distance(r3.road_geom)) == 0.0
+
+    def test_within_distance(self):
+        r1 = session.query(Road).filter(Road.road_name=='Jeff Rd').one()
+        r2 = session.query(Road).filter(Road.road_name=='Graeme Ave').one()
+        r3 = session.query(Road).filter(Road.road_name=='Geordie Rd').one()
+        assert not session.scalar(r1.road_geom.within_distance(r2.road_geom, 100.0))
+        assert session.scalar(r1.road_geom.within_distance(r3.road_geom, 100.0))
+
+    def test_disjoint(self):
+        r1 = session.query(Road).filter(Road.road_name=='Jeff Rd').one()
+        r2 = session.query(Road).filter(Road.road_name=='Graeme Ave').one()
+        r3 = session.query(Road).filter(Road.road_name=='Geordie Rd').one()
+        assert session.scalar(r1.road_geom.disjoint(r2.road_geom))
+        assert not session.scalar(r1.road_geom.disjoint(r3.road_geom))
+
+    def test_intersects(self):
+        r1 = session.query(Road).filter(Road.road_name=='Jeff Rd').one()
+        r2 = session.query(Road).filter(Road.road_name=='Graeme Ave').one()
+        r3 = session.query(Road).filter(Road.road_name=='Geordie Rd').one()
+        assert not session.scalar(r1.road_geom.intersects(r2.road_geom))
+        assert session.scalar(r1.road_geom.intersects(r3.road_geom))
+
+    def test_touches(self):
+        l1 = session.query(Lake).filter(Lake.lake_name=='Lake White').one()
+        l2 = session.query(Lake).filter(Lake.lake_name=='Lake Blue').one()
+        l3 = session.query(Lake).filter(Lake.lake_name=='My Lake').one()
+        assert session.scalar(l1.lake_geom.touches(l2.lake_geom))
+        assert not session.scalar(l1.lake_geom.touches(l3.lake_geom))
+
+    def test_crosses(self):
+        r1 = session.query(Road).filter(Road.road_name=='Jeff Rd').one()
+        r2 = session.query(Road).filter(Road.road_name=='Graeme Ave').one()
+        r3 = session.query(Road).filter(Road.road_name=='Geordie Rd').one()
+        assert not session.scalar(r1.road_geom.crosses(r2.road_geom))
+        # TODO Find a suitable geometry for this test
+        assert not session.scalar(r2.road_geom.crosses(r3.road_geom))
+
+    def test_within(self):
+        l = session.query(Lake).filter(Lake.lake_name=='Lake White').one()
+        p1 = session.query(Spot).filter(Spot.spot_height==433.44).one()
+        p2 = session.query(Spot).filter(Spot.spot_height==407.22).one()
+        assert session.scalar(p1.spot_location.within(l.lake_geom))
+        assert not session.scalar(p2.spot_location.within(l.lake_geom))
+
+    def test_overlaps(self):
+        l1 = session.query(Lake).filter(Lake.lake_name=='Lake White').one()
+        l2 = session.query(Lake).filter(Lake.lake_name=='Lake Blue').one()
+        l3 = session.query(Lake).filter(Lake.lake_name=='Lake Deep').one()
+        assert not session.scalar(l1.lake_geom.overlaps(l2.lake_geom))
+        # TODO Find a suitable geometry for this test
+        assert not session.scalar(l1.lake_geom.overlaps(l3.lake_geom))
+
+    def test_contains(self):
+        l = session.query(Lake).filter(Lake.lake_name=='Lake White').one()
+        p1 = session.query(Spot).filter(Spot.spot_height==433.44).one()
+        p2 = session.query(Spot).filter(Spot.spot_height==407.22).one()
+        assert session.scalar(l.lake_geom.contains(p1.spot_location))
+        assert not session.scalar(l.lake_geom.contains(p2.spot_location))
+
+    def test_covers(self):
+        l = session.query(Lake).filter(Lake.lake_name=='Lake White').one()
+        p1 = session.query(Spot).filter(Spot.spot_height==433.44).one()
+        p2 = session.query(Spot).filter(Spot.spot_height==407.22).one()
+        assert session.scalar(l.lake_geom.covers(p1.spot_location))
+        assert not session.scalar(l.lake_geom.covers(p2.spot_location))
+
+    def test_covered_by(self):
+        l = session.query(Lake).filter(Lake.lake_name=='Lake White').one()
+        p1 = session.query(Spot).filter(Spot.spot_height==433.44).one()
+        p2 = session.query(Spot).filter(Spot.spot_height==407.22).one()
+        assert session.scalar(p1.spot_location.covered_by(l.lake_geom))
+        assert not session.scalar(p2.spot_location.covered_by(l.lake_geom))
+

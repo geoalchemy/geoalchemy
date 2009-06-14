@@ -1,7 +1,9 @@
+from sqlalchemy import Column, select, func, literal
+from sqlalchemy.sql import expression
+from sqlalchemy.orm import column_property
 from sqlalchemy.orm.interfaces import AttributeExtension
 from sqlalchemy.orm.properties import ColumnProperty
 from sqlalchemy.types import TypeEngine
-from sqlalchemy.sql import expression
 
 # Python datatypes
 
@@ -15,6 +17,25 @@ class SpatialElement(object):
     @property
     def wkb(self):
         return func.AsBinary(literal(self, Geometry))
+
+    @property
+    def svg(self):
+        return func.AsSVG(literal(self, Geometry))
+
+    def fgf(self, precision=1):
+        return func.AsFGF(literal(self, Geometry), precision)
+
+    @property
+    def dimension(self):
+        return func.Dimension(literal(self, Geometry))
+
+    @property
+    def srid(self):
+        return func.SRID(literal(self, Geometry))
+
+    @property
+    def geometry_type(self):
+        return func.GeometryType(literal(self, Geometry))
 
     def __str__(self):
         return self.desc
@@ -36,7 +57,7 @@ class WKTSpatialElement(SpatialElement, expression.Function):
     
     """
     
-    def __init__(self, desc, srid=-1):
+    def __init__(self, desc, srid=4326):
         assert isinstance(desc, basestring)
         self.desc = desc
         expression.Function.__init__(self, "GeomFromText", desc, srid)
@@ -53,7 +74,7 @@ class Geometry(TypeEngine):
     
     name = 'GEOMETRY'
     
-    def __init__(self, dimension=None, srid=-1):
+    def __init__(self, dimension=None, srid=4326):
         self.dimension = dimension
         self.srid = srid
     
@@ -85,6 +106,9 @@ class Curve(Geometry):
 class LineString(Curve):
     name = 'LINESTRING'
 
+class Polygon(Geometry):
+    name = 'POLYGON'
+    
 # ... etc.
 
 
@@ -161,18 +185,7 @@ class SpatialComparator(ColumnProperty.ColumnComparator):
     and overrides their behavior.
     
     """
-    
-    # override the __eq__() operator
-    def __eq__(self, other):
-        return self.__clause_element__().op('~=')(_to_spatialite(other))
-
-    # add a custom operator
-    def intersects(self, other):
-        return self.__clause_element__().op('&&')(_to_spatialite(other))
-        
-    # any number of Spatial operators can be overridden/added here
-    # using the techniques above.
-        
+    pass
 
 def GeometryColumn(*args, **kw):
     """Define a declarative column property with GIS behavior.
@@ -189,80 +202,3 @@ def GeometryColumn(*args, **kw):
                 comparator_factory=SpatialComparator
             )
 
-# illustrate usage
-if __name__ == '__main__':
-    from sqlalchemy import (create_engine, MetaData, Column, Integer, String,
-        func, literal, select)
-    from sqlalchemy.orm import sessionmaker, column_property
-    from sqlalchemy.ext.declarative import declarative_base
-    from pysqlite2 import dbapi2 as sqlite
-
-    engine = create_engine('sqlite:////tmp/devdata.db', module=sqlite, echo=True)
-    connection = engine.raw_connection().connection
-    connection.enable_load_extension(True)
-    metadata = MetaData(engine)
-    Base = declarative_base(metadata=metadata)
-
-    class Road(Base):
-        __tablename__ = 'roads'
-    
-        road_id = Column(Integer, primary_key=True)
-        road_name = Column(String)
-        road_geom = GeometryColumn(LineString(2, srid=4326))
-
-    # enable the DDL extension, which allows CREATE/DROP operations
-    # to work correctly.  This is not needed if working with externally
-    # defined tables.    
-    GeometryDDL(Road.__table__)
-
-    metadata.drop_all()
-
-    session = sessionmaker(bind=engine)()
-    session.execute("select load_extension('/usr/local/lib/libspatialite.so')")
-    metadata.create_all()
-    
-    # Add objects.  We can use strings...
-    session.add_all([
-        Road(road_name='Jeff Rd', road_geom='LINESTRING(-30 40,-32 43)'),
-        Road(road_name='Geordie Rd', road_geom='LINESTRING(-31 40,-32 44)'),
-        Road(road_name='Paul St', road_geom='LINESTRING(-32 44,-34 44)'),
-        Road(road_name='Graeme Ave', road_geom='LINESTRING(-31 42,-32 40)'),
-        Road(road_name='Phil Tce', road_geom='LINESTRING(-33 46,-32 45)'),
-    ])
-    
-    # or use an explicit WKTSpatialElement (similar to saying func.GeomFromText())
-    r = Road(road_name='Dave Cres', road_geom=WKTSpatialElement('LINESTRING(-31 40,-32 41)', srid=4326))
-    session.add(r)
-    
-    # pre flush, the WKTSpatialElement represents the string we sent.
-    assert str(r.road_geom) == 'LINESTRING(-31 40,-32 41)'
-    
-    session.commit()
-
-    # after flush and/or commit, all the WKTSpatialElements become PersistentSpatialElements.
-    #assert str(r.road_geom) == "01020000000200000000000000B832084100000000E813104100000000283208410000000088601041"
-    
-    r1 = session.query(Road).filter(Road.road_name=='Graeme Ave').one()
-    assert session.scalar(r1.road_geom.wkt) == 'LINESTRING(-31 42, -32 40)'
-    
-    # illustrate the overridden __eq__() operator.
-    
-    # strings come in as WKTSpatialElements
-    #r2 = session.query(Road).filter(Road.road_geom == 'LINESTRING(189412 252431,189631 259122)').one()
-    
-    # PersistentSpatialElements work directly
-    #r3 = session.query(Road).filter(Road.road_geom == r1.road_geom).one()
-    
-    #assert r1 is r2 is r3
-
-    # illustrate the "intersects" operator
-    #print "Result of 'intersects' operator: "
-    #print [(r.road_name, session.scalar(r.road_geom.wkt)) for r in session.query(Road).filter(Road.road_geom.intersects(r1.road_geom)).all()]
-
-    # illustrate usage of the "wkt" accessor. this requires a DB
-    # execution to call the AsText() function so we keep this explicit.
-    #assert session.scalar(r1.road_geom.wkt) == 'LINESTRING(189412 252431,189631 259122)'
-    
-    session.rollback()
-    
-    metadata.drop_all()

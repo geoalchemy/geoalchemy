@@ -165,7 +165,7 @@ class WKTSpatialElement(SpatialElement, expression.Function):
     
     """
     
-    def __init__(self, desc, srid=-1):
+    def __init__(self, desc, srid=4326):
         assert isinstance(desc, basestring)
         self.desc = desc
         expression.Function.__init__(self, "ST_GeomFromText", desc, srid)
@@ -182,7 +182,7 @@ class Geometry(TypeEngine):
     
     name = 'GEOMETRY'
     
-    def __init__(self, dimension=None, srid=-1):
+    def __init__(self, dimension=None, srid=4326):
         self.dimension = dimension
         self.srid = srid
     
@@ -213,6 +213,9 @@ class Curve(Geometry):
     
 class LineString(Curve):
     name = 'LINESTRING'
+
+class Polygon(Geometry):
+    name = 'POLYGON'
 
 # ... etc.
 

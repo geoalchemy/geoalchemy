@@ -3,11 +3,13 @@ from binascii import b2a_hex
 from sqlalchemy import (create_engine, MetaData, Column, Integer, String,
         Numeric, func, literal, select)
 from sqlalchemy.orm import sessionmaker, column_property
+from sqlalchemy.exc import NotSupportedError
 from sqlalchemy.ext.declarative import declarative_base
 
 from pysqlite2 import dbapi2 as sqlite
 from geoalchemy.spatialite import (Geometry, GeometryColumn, Point, Polygon,
 		LineString, GeometryDDL, WKTSpatialElement)
+from nose.tools import ok_, eq_, raises
 
 
 engine = create_engine('sqlite://', module=sqlite, echo=True)
@@ -123,4 +125,107 @@ class TestGeometry(TestCase):
         assert session.scalar(l.lake_geom.geometry_type) == 'POLYGON'
         assert session.scalar(r.road_geom.geometry_type) == 'LINESTRING'
         assert session.scalar(s.spot_location.geometry_type) == 'POINT'
+
+    def test_is_empty(self):
+        assert not session.scalar(self.r.road_geom.is_empty)
+
+    def test_is_simple(self):
+        assert session.scalar(self.r.road_geom.is_simple)
+
+    def test_is_valid(self):
+        assert session.scalar(self.r.road_geom.is_valid)
+
+    def test_boundary(self):
+        assert b2a_hex(session.scalar(self.r.road_geom.boundary)) == '0001e6100000d7db0998302b56c053a5af5b6880454078a18c171a1c56c0876f04983f8d45407c04000000020000006901000000d7db0998302b56c0876f04983f8d4540690100000078a18c171a1c56c053a5af5b68804540fe'
+
+    def test_envelope(self):
+        assert b2a_hex(session.scalar(self.r.road_geom.envelope)) == '0001ffffffffd7db0998302b56c036c921ded877454078a18c171a1c56c0876f04983f8d45407c030000000100000005000000d7db0998302b56c036c921ded877454078a18c171a1c56c036c921ded877454078a18c171a1c56c0876f04983f8d4540d7db0998302b56c0876f04983f8d4540d7db0998302b56c036c921ded8774540fe'
+
+    def test_x(self):
+        l = session.query(Lake).get(1)
+        r = session.query(Road).get(1)
+        s = session.query(Spot).get(1)
+        assert not session.scalar(l.lake_geom.x)
+        assert not session.scalar(r.road_geom.x)
+        eq_(session.scalar(s.spot_location.x), -88.594586159235703)
+
+    def test_y(self):
+        l = session.query(Lake).get(1)
+        r = session.query(Road).get(1)
+        s = session.query(Spot).get(1)
+        assert not session.scalar(l.lake_geom.y)
+        assert not session.scalar(r.road_geom.y)
+        eq_(session.scalar(s.spot_location.y), 42.948009598726102)
+
+    def test_start_point(self):
+        l = session.query(Lake).get(1)
+        r = session.query(Road).get(1)
+        s = session.query(Spot).get(1)
+        assert not session.scalar(l.lake_geom.start_point)
+        eq_(b2a_hex(session.scalar(r.road_geom.start_point)), '0001ffffffff850811e27d3a56c0997b2f540f414540850811e27d3a56c0997b2f540f4145407c01000000850811e27d3a56c0997b2f540f414540fe')
+        assert not session.scalar(s.spot_location.start_point)
+
+    def test_end_point(self):
+        l = session.query(Lake).get(1)
+        r = session.query(Road).get(1)
+        s = session.query(Spot).get(1)
+        assert not session.scalar(l.lake_geom.end_point)
+        eq_(b2a_hex(session.scalar(r.road_geom.end_point)), '0001ffffffffccceb1c5641756c02c42dfe9f4914540ccceb1c5641756c02c42dfe9f49145407c01000000ccceb1c5641756c02c42dfe9f4914540fe')
+        assert not session.scalar(s.spot_location.end_point)
+
+    def test_length(self):
+        l = session.query(Lake).get(1)
+        r = session.query(Road).get(1)
+        s = session.query(Spot).get(1)
+        eq_(session.scalar(l.lake_geom.length), 0.30157858985653774)
+        eq_(session.scalar(r.road_geom.length), 0.8551694164147895)
+        assert not session.scalar(s.spot_location.length)
+
+    def test_is_closed(self):
+        l = session.query(Lake).get(1)
+        r = session.query(Road).get(1)
+        s = session.query(Spot).get(1)
+        assert not session.scalar(l.lake_geom.is_closed)
+        ok_(not session.scalar(r.road_geom.is_closed))
+        assert not session.scalar(s.spot_location.is_closed)
+
+    def test_is_ring(self):
+        l = session.query(Lake).get(1)
+        r = session.query(Road).get(1)
+        s = session.query(Spot).get(1)
+        ok_(session.scalar(l.lake_geom.is_ring))
+        ok_(not session.scalar(r.road_geom.is_ring))
+        ok_(session.scalar(s.spot_location.is_ring))
+
+    def test_num_points(self):
+        l = session.query(Lake).get(1)
+        r = session.query(Road).get(1)
+        s = session.query(Spot).get(1)
+        ok_(not session.scalar(l.lake_geom.num_points))
+        eq_(session.scalar(r.road_geom.num_points), 5)
+        assert not session.scalar(s.spot_location.num_points)
+
+    def test_point_n(self):
+        l = session.query(Lake).get(1)
+        r = session.query(Road).get(1)
+        s = session.query(Spot).get(1)
+        ok_(not session.scalar(l.lake_geom.point_n()))
+        eq_(b2a_hex(session.scalar(r.road_geom.point_n(5))), '0001ffffffffccceb1c5641756c02c42dfe9f4914540ccceb1c5641756c02c42dfe9f49145407c01000000ccceb1c5641756c02c42dfe9f4914540fe')
+        ok_(not session.scalar(s.spot_location.point_n()))
+
+    def test_centroid(self):
+        l = session.query(Lake).get(1)
+        r = session.query(Road).get(1)
+        s = session.query(Spot).get(1)
+        eq_(b2a_hex(session.scalar(l.lake_geom.centroid)), '0001ffffffff81ec9573803056c04bc4995bce98454081ec9573803056c04bc4995bce9845407c0100000081ec9573803056c04bc4995bce984540fe')
+        eq_(b2a_hex(session.scalar(r.road_geom.centroid)), '0001ffffffff1cecabbd0b2a56c022b0f465cd6b45401cecabbd0b2a56c022b0f465cd6b45407c010000001cecabbd0b2a56c022b0f465cd6b4540fe')
+        ok_(b2a_hex(session.scalar(s.spot_location.centroid)), '0001ffffffff95241bb30d2656c04e69e7605879454095241bb30d2656c04e69e760587945407c0100000095241bb30d2656c04e69e76058794540fe')
+
+    def test_area(self):
+        l = session.query(Lake).get(1)
+        r = session.query(Road).get(1)
+        s = session.query(Spot).get(1)
+        eq_(session.scalar(l.lake_geom.area), 0.0056748625704927669)
+        eq_(session.scalar(r.road_geom.area), 0.0)
+        eq_(session.scalar(s.spot_location.area), 0.0)
 

@@ -18,7 +18,7 @@ setup(name='geoalchemy',
       include_package_data=True,
       zip_safe=False,
       install_requires=[
-          # -*- Extra requirements: -*-
+          'SQLAlchemy>=0.5',
       ],
       entry_points="""
       # -*- Entry points: -*-

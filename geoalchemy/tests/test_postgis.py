@@ -5,7 +5,7 @@ from sqlalchemy import (create_engine, MetaData, Column, Integer, String,
 from sqlalchemy.orm import sessionmaker, column_property
 from sqlalchemy.ext.declarative import declarative_base
 
-from geoalchemy.postgis import (Geometry, GeometryColumn, GeometryDDL,
+from geoalchemy.geometry import (Geometry, GeometryColumn, GeometryDDL,
 	WKTSpatialElement)
 
 engine = create_engine('postgres://gis:gis@localhost/gis', echo=True)

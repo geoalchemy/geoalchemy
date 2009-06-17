@@ -7,7 +7,7 @@ from sqlalchemy.exc import NotSupportedError
 from sqlalchemy.ext.declarative import declarative_base
 
 from pysqlite2 import dbapi2 as sqlite
-from geoalchemy.spatialite import (Geometry, GeometryColumn, Point, Polygon,
+from geoalchemy.geometry import (Geometry, GeometryColumn, Point, Polygon,
 		LineString, GeometryDDL, WKTSpatialElement)
 from nose.tools import ok_, eq_, raises
 

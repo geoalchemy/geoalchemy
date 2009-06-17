@@ -82,6 +82,12 @@ class SpatialComparator(ColumnProperty.ColumnComparator):
     """Intercepts standard Column operators on mapped class attributes
         and overrides their behavior.
     """
-    pass
 
+    # override the __eq__() operator
+    def __eq__(self, other):
+        return self.__clause_element__().op('~=')(_to_dbms(other))
+
+    # add a custom operator
+    def intersects(self, other):
+        return self.__clause_element__().op('&&')(_to_dbms(other)) 
 

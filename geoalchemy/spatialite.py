@@ -4,7 +4,7 @@ from sqlalchemy.orm import column_property
 from sqlalchemy.orm.interfaces import AttributeExtension
 from sqlalchemy.orm.properties import ColumnProperty
 from sqlalchemy.exc import NotSupportedError
-from geoalchemy.base import SpatialElement, Geometry, SpatialComparator, _to_dbms
+from geoalchemy.base import SpatialElement, Geometry, _to_dbms
 
 # Python datatypes
 
@@ -112,17 +112,4 @@ class SQLitePersistentSpatialElement(SQLiteSpatialElement):
     
     def __init__(self, desc):
         self.desc = desc
-
-class SQLiteSpatialComparator(SpatialComparator):
-    """Intercepts standard Column operators on mapped class attributes
-        and overrides their behavior.
-    """
-
-     # override the __eq__() operator
-    def __eq__(self, other):
-        return self.__clause_element__().op('~=')(_to_dbms(other))
-
-    # add a custom operator
-    def intersects(self, other):
-        return self.__clause_element__().op('&&')(_to_dbms(other)) 
 

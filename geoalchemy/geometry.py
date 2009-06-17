@@ -5,9 +5,9 @@ from sqlalchemy.types import TypeEngine
 from sqlalchemy.sql import expression
 from sqlalchemy.databases.postgres import PGDialect
 from sqlalchemy.databases.sqlite import SQLiteDialect
-from geoalchemy.postgis import PGPersistentSpatialElement, PGSpatialComparator
-from geoalchemy.spatialite import SQLitePersistentSpatialElement, SQLiteSpatialComparator
-from geoalchemy.base import SpatialElement, WKTSpatialElement, _to_dbms
+from geoalchemy.postgis import PGPersistentSpatialElement
+from geoalchemy.spatialite import SQLitePersistentSpatialElement
+from geoalchemy.base import SpatialElement, WKTSpatialElement, SpatialComparator, _to_dbms
 
 # SQL datatypes.
 
@@ -127,7 +127,6 @@ def GeometryColumn(*args, **kw):
     return column_property(
                 Column(*args, **kw), 
                 extension=SpatialAttribute(), 
-                comparator_factory=PGSpatialComparator
+                comparator_factory=SpatialComparator
             )
 
-Geom = Geometry

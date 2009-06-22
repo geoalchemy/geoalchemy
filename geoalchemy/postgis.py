@@ -41,6 +41,10 @@ class PGSpatialElement(SpatialElement):
         return func.ST_Dimension(literal(self, Geometry))
 
     @property
+    def srid(self):
+        return func.ST_SRID(literal(self, Geometry))
+
+    @property
     def geometry_type(self):
         return func.ST_GeometryType(literal(self, Geometry))
 
@@ -94,6 +98,14 @@ class PGSpatialElement(SpatialElement):
     @property
     def end_point(self):
         return func.ST_EndPoint(literal(self, Geometry))
+
+    @property
+    def x(self):
+        return func.ST_X(literal(self, Geometry))
+
+    @property
+    def y(self):
+        return func.ST_Y(literal(self, Geometry))
 
     # OGC Geometry Relations
 

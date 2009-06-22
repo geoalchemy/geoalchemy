@@ -32,6 +32,19 @@ class WKTSpatialElement(SpatialElement, expression.Function):
         self.desc = desc
         expression.Function.__init__(self, "GeomFromText", desc, srid)
 
+class WKBSpatialElement(SpatialElement, expression.Function):
+    """Represents a Geometry value as expressed in wkb format.
+    
+    Extends expression.Function so that the value is interpreted as 
+    GeomFromWKB(value) in a SQL expression context.
+    
+    """
+    
+    def __init__(self, desc, srid=4326):
+        assert isinstance(desc, basestring)
+        self.desc = desc
+        expression.Function.__init__(self, "GeomFromWKB", desc, srid)
+
 
 class Geometry(TypeEngine):
     """Base Geometry column type.

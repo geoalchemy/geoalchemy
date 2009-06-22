@@ -8,6 +8,8 @@ from sqlalchemy.ext.declarative import declarative_base
 from geoalchemy.geometry import (Geometry, GeometryColumn, GeometryDDL,
 	WKTSpatialElement)
 
+from nose.tools import eq_
+
 engine = create_engine('postgres://gis:gis@localhost/gis', echo=True)
 metadata = MetaData(engine)
 session = sessionmaker(bind=engine)()
@@ -143,6 +145,14 @@ class TestGeometry(TestCase):
     def test_area(self):
         l = session.query(Lake).filter(Lake.lake_name=='Lake Blue').one()
         assert session.scalar(l.lake_geom.area) == 0.10475991566721
+
+    def test_x(self):
+        s = session.query(Spot).filter(Spot.spot_height==420.40).one()
+        eq_(session.scalar(s.spot_location.x), -88.5945861592357)
+
+    def test_y(self):
+        s = session.query(Spot).filter(Spot.spot_height==420.40).one()
+        eq_(session.scalar(s.spot_location.y), 42.9480095987261)
 
     def test_centroid(self):
         r = session.query(Road).filter(Road.road_name=='Graeme Ave').one()

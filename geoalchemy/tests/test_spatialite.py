@@ -93,85 +93,85 @@ class TestGeometry(TestCase):
     # Test Geometry Functions
 
     def test_wkt(self):
-        assert session.scalar(self.r.road_geom.wkt) == 'LINESTRING(-88.674841 43.103503, -88.646417 42.998169, -88.607962 42.968073, -88.516003 42.936306, -88.439093 43.003185)'
+        eq_(session.scalar(self.r.road_geom.wkt), 'LINESTRING(-88.674841 43.103503, -88.646417 42.998169, -88.607962 42.968073, -88.516003 42.936306, -88.439093 43.003185)')
 
     def test_wkb(self):
-        assert b2a_hex(session.scalar(self.r.road_geom.wkb)).upper() == '010200000005000000D7DB0998302B56C0876F04983F8D45404250F5E65E2956C068CE11FFC37F4540C8ED42D9E82656C0EFC45ED3E97B45407366F132062156C036C921DED877454078A18C171A1C56C053A5AF5B68804540'
+        eq_(b2a_hex(session.scalar(self.r.road_geom.wkb)).upper(), '010200000005000000D7DB0998302B56C0876F04983F8D45404250F5E65E2956C068CE11FFC37F4540C8ED42D9E82656C0EFC45ED3E97B45407366F132062156C036C921DED877454078A18C171A1C56C053A5AF5B68804540')
 
     def test_persistent(self):
-        assert b2a_hex(session.scalar(self.r.road_geom.wkb)).upper() == '010200000005000000D7DB0998302B56C0876F04983F8D45404250F5E65E2956C068CE11FFC37F4540C8ED42D9E82656C0EFC45ED3E97B45407366F132062156C036C921DED877454078A18C171A1C56C053A5AF5B68804540'
+        eq_(b2a_hex(session.scalar(self.r.road_geom.wkb)).upper(), '010200000005000000D7DB0998302B56C0876F04983F8D45404250F5E65E2956C068CE11FFC37F4540C8ED42D9E82656C0EFC45ED3E97B45407366F132062156C036C921DED877454078A18C171A1C56C053A5AF5B68804540')
 
     def test_svg(self):
-        assert session.scalar(self.r.road_geom.svg) == 'M -88.674841 -43.103503 -88.646417 -42.998169 -88.607962 -42.968073 -88.516003 -42.936306 -88.439093 -43.003185 '
+        eq_(session.scalar(self.r.road_geom.svg), 'M -88.674841 -43.103503 -88.646417 -42.998169 -88.607962 -42.968073 -88.516003 -42.936306 -88.439093 -43.003185 ')
 
     def test_fgf(self):
-        assert b2a_hex(session.scalar(self.r.road_geom.fgf())) == '020000000100000005000000d7db0998302b56c0876f04983f8d454000000000000000004250f5e65e2956c068ce11ffc37f45400000000000000000c8ed42d9e82656c0efc45ed3e97b454000000000000000007366f132062156c036c921ded8774540000000000000000078a18c171a1c56c053a5af5b688045400000000000000000'
+        eq_(b2a_hex(session.scalar(self.r.road_geom.fgf())), '020000000100000005000000d7db0998302b56c0876f04983f8d454000000000000000004250f5e65e2956c068ce11ffc37f45400000000000000000c8ed42d9e82656c0efc45ed3e97b454000000000000000007366f132062156c036c921ded8774540000000000000000078a18c171a1c56c053a5af5b688045400000000000000000')
 
     def test_dimension(self):
         l = session.query(Lake).get(1)
         r = session.query(Road).get(1)
         s = session.query(Spot).get(1)
-        assert session.scalar(l.lake_geom.dimension) == 2
-        assert session.scalar(r.road_geom.dimension) == 1
-        assert session.scalar(s.spot_location.dimension) == 0
+        eq_(session.scalar(l.lake_geom.dimension), 2)
+        eq_(session.scalar(r.road_geom.dimension), 1)
+        eq_(session.scalar(s.spot_location.dimension), 0)
 
     def test_srid(self):
-        assert session.scalar(self.r.road_geom.srid) == 4326
+        eq_(session.scalar(self.r.road_geom.srid), 4326)
 
     def test_geometry_type(self):
         l = session.query(Lake).get(1)
         r = session.query(Road).get(1)
         s = session.query(Spot).get(1)
-        assert session.scalar(l.lake_geom.geometry_type) == 'POLYGON'
-        assert session.scalar(r.road_geom.geometry_type) == 'LINESTRING'
-        assert session.scalar(s.spot_location.geometry_type) == 'POINT'
+        eq_(session.scalar(l.lake_geom.geometry_type), 'POLYGON')
+        eq_(session.scalar(r.road_geom.geometry_type), 'LINESTRING')
+        eq_(session.scalar(s.spot_location.geometry_type), 'POINT')
 
     def test_is_empty(self):
-        assert not session.scalar(self.r.road_geom.is_empty)
+        ok_(not session.scalar(self.r.road_geom.is_empty))
 
     def test_is_simple(self):
-        assert session.scalar(self.r.road_geom.is_simple)
+        ok_(session.scalar(self.r.road_geom.is_simple))
 
     def test_is_valid(self):
         assert session.scalar(self.r.road_geom.is_valid)
 
     def test_boundary(self):
-        assert b2a_hex(session.scalar(self.r.road_geom.boundary)) == '0001e6100000d7db0998302b56c053a5af5b6880454078a18c171a1c56c0876f04983f8d45407c04000000020000006901000000d7db0998302b56c0876f04983f8d4540690100000078a18c171a1c56c053a5af5b68804540fe'
+        eq_(b2a_hex(session.scalar(self.r.road_geom.boundary)), '0001e6100000d7db0998302b56c053a5af5b6880454078a18c171a1c56c0876f04983f8d45407c04000000020000006901000000d7db0998302b56c0876f04983f8d4540690100000078a18c171a1c56c053a5af5b68804540fe')
 
     def test_envelope(self):
-        assert b2a_hex(session.scalar(self.r.road_geom.envelope)) == '0001ffffffffd7db0998302b56c036c921ded877454078a18c171a1c56c0876f04983f8d45407c030000000100000005000000d7db0998302b56c036c921ded877454078a18c171a1c56c036c921ded877454078a18c171a1c56c0876f04983f8d4540d7db0998302b56c0876f04983f8d4540d7db0998302b56c036c921ded8774540fe'
+        eq_(b2a_hex(session.scalar(self.r.road_geom.envelope)), '0001ffffffffd7db0998302b56c036c921ded877454078a18c171a1c56c0876f04983f8d45407c030000000100000005000000d7db0998302b56c036c921ded877454078a18c171a1c56c036c921ded877454078a18c171a1c56c0876f04983f8d4540d7db0998302b56c0876f04983f8d4540d7db0998302b56c036c921ded8774540fe')
 
     def test_x(self):
         l = session.query(Lake).get(1)
         r = session.query(Road).get(1)
         s = session.query(Spot).get(1)
-        assert not session.scalar(l.lake_geom.x)
-        assert not session.scalar(r.road_geom.x)
+        ok_( not session.scalar(l.lake_geom.x))
+        ok_( not session.scalar(r.road_geom.x))
         eq_(session.scalar(s.spot_location.x), -88.594586159235703)
 
     def test_y(self):
         l = session.query(Lake).get(1)
         r = session.query(Road).get(1)
         s = session.query(Spot).get(1)
-        assert not session.scalar(l.lake_geom.y)
-        assert not session.scalar(r.road_geom.y)
+        ok_(not session.scalar(l.lake_geom.y))
+        ok_(not session.scalar(r.road_geom.y))
         eq_(session.scalar(s.spot_location.y), 42.948009598726102)
 
     def test_start_point(self):
         l = session.query(Lake).get(1)
         r = session.query(Road).get(1)
         s = session.query(Spot).get(1)
-        assert not session.scalar(l.lake_geom.start_point)
+        ok_(not session.scalar(l.lake_geom.start_point))
         eq_(b2a_hex(session.scalar(r.road_geom.start_point)), '0001ffffffff850811e27d3a56c0997b2f540f414540850811e27d3a56c0997b2f540f4145407c01000000850811e27d3a56c0997b2f540f414540fe')
-        assert not session.scalar(s.spot_location.start_point)
+        ok_(not session.scalar(s.spot_location.start_point))
 
     def test_end_point(self):
         l = session.query(Lake).get(1)
         r = session.query(Road).get(1)
         s = session.query(Spot).get(1)
-        assert not session.scalar(l.lake_geom.end_point)
+        ok_(not session.scalar(l.lake_geom.end_point))
         eq_(b2a_hex(session.scalar(r.road_geom.end_point)), '0001ffffffffccceb1c5641756c02c42dfe9f4914540ccceb1c5641756c02c42dfe9f49145407c01000000ccceb1c5641756c02c42dfe9f4914540fe')
-        assert not session.scalar(s.spot_location.end_point)
+        ok_(not session.scalar(s.spot_location.end_point))
 
     def test_length(self):
         l = session.query(Lake).get(1)
@@ -179,15 +179,15 @@ class TestGeometry(TestCase):
         s = session.query(Spot).get(1)
         eq_(session.scalar(l.lake_geom.length), 0.30157858985653774)
         eq_(session.scalar(r.road_geom.length), 0.8551694164147895)
-        assert not session.scalar(s.spot_location.length)
+        ok_(not session.scalar(s.spot_location.length))
 
     def test_is_closed(self):
         l = session.query(Lake).get(1)
         r = session.query(Road).get(1)
         s = session.query(Spot).get(1)
-        assert not session.scalar(l.lake_geom.is_closed)
+        ok_(not session.scalar(l.lake_geom.is_closed))
         ok_(not session.scalar(r.road_geom.is_closed))
-        assert not session.scalar(s.spot_location.is_closed)
+        ok_(not session.scalar(s.spot_location.is_closed))
 
     def test_is_ring(self):
         l = session.query(Lake).get(1)
@@ -203,7 +203,7 @@ class TestGeometry(TestCase):
         s = session.query(Spot).get(1)
         ok_(not session.scalar(l.lake_geom.num_points))
         eq_(session.scalar(r.road_geom.num_points), 5)
-        assert not session.scalar(s.spot_location.num_points)
+        ok_(not session.scalar(s.spot_location.num_points))
 
     def test_point_n(self):
         l = session.query(Lake).get(1)

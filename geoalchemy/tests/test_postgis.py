@@ -7,8 +7,7 @@ from sqlalchemy.ext.declarative import declarative_base
 
 from geoalchemy.geometry import (Geometry, GeometryColumn, GeometryDDL,
 	WKTSpatialElement)
-
-from nose.tools import eq_
+from nose.tools import eq_, ok_
 
 engine = create_engine('postgres://gis:gis@localhost/gis', echo=True)
 metadata = MetaData(engine)
@@ -83,19 +82,19 @@ class TestGeometry(TestCase):
         assert session.scalar(self.r.road_geom.wkt) == 'LINESTRING(-88.6748409363057 43.1035032292994,-88.6464173694267 42.9981688343949,-88.607961955414 42.9680732929936,-88.5160033566879 42.9363057770701,-88.4390925286624 43.0031847579618)'
 
     def test_wkb(self):
-        assert b2a_hex(session.scalar(self.r.road_geom.wkb)).upper() == '010200000005000000D7DB0998302B56C0876F04983F8D45404250F5E65E2956C068CE11FFC37F4540C8ED42D9E82656C0EFC45ED3E97B45407366F132062156C036C921DED877454078A18C171A1C56C053A5AF5B68804540'
+        eq_(b2a_hex(session.scalar(self.r.road_geom.wkb)).upper(), '010200000005000000D7DB0998302B56C0876F04983F8D45404250F5E65E2956C068CE11FFC37F4540C8ED42D9E82656C0EFC45ED3E97B45407366F132062156C036C921DED877454078A18C171A1C56C053A5AF5B68804540')
 
     def test_svg(self):
-        assert session.scalar(self.r.road_geom.svg) == 'M -88.674840936305699 -43.103503229299399 -88.6464173694267 -42.998168834394903 -88.607961955413998 -42.968073292993601 -88.516003356687904 -42.936305777070103 -88.4390925286624 -43.003184757961797'
+        eq_(session.scalar(self.r.road_geom.svg), 'M -88.674840936305699 -43.103503229299399 -88.6464173694267 -42.998168834394903 -88.607961955413998 -42.968073292993601 -88.516003356687904 -42.936305777070103 -88.4390925286624 -43.003184757961797')
 
     def test_gml(self):
-        assert session.scalar(self.r.road_geom.gml) == '<gml:LineString srsName="EPSG:4326"><gml:coordinates>-88.6748409363057,43.1035032292994 -88.6464173694267,42.9981688343949 -88.607961955414,42.9680732929936 -88.5160033566879,42.9363057770701 -88.4390925286624,43.0031847579618</gml:coordinates></gml:LineString>'
+        eq_(session.scalar(self.r.road_geom.gml), '<gml:LineString srsName="EPSG:4326"><gml:coordinates>-88.6748409363057,43.1035032292994 -88.6464173694267,42.9981688343949 -88.607961955414,42.9680732929936 -88.5160033566879,42.9363057770701 -88.4390925286624,43.0031847579618</gml:coordinates></gml:LineString>')
 
     def test_dimension(self):
         r = session.query(Road).filter(Road.road_name=='Graeme Ave').one()
         l = session.query(Lake).filter(Lake.lake_name=='My Lake').one()
-        assert session.scalar(r.road_geom.dimension) == 1
-        assert session.scalar(l.lake_geom.dimension) == 2
+        eq_(session.scalar(r.road_geom.dimension), 1)
+        eq_(session.scalar(l.lake_geom.dimension), 2)
 
     def test_geometry_type(self):
         r = session.query(Road).filter(Road.road_name=='Graeme Ave').one()
@@ -132,19 +131,19 @@ class TestGeometry(TestCase):
         r1 = session.query(Road).filter(Road.road_name=='Graeme Ave').one()
         r2 = session.query(Road).filter(Road.road_geom == 'LINESTRING(-88.5477708726115 42.6988853949045,-88.6096339299363 42.9697452675159,-88.6029460318471 43.0884554585987,-88.5912422101911 43.187101955414)').one()
         r3 = session.query(Road).filter(Road.road_geom == r1.road_geom).one()
-        assert r1 is r2 is r3
+        ok_(r1 is r2 is r3)
 
     def test_intersects(self):
         r1 = session.query(Road).filter(Road.road_name=='Graeme Ave').one()
-        assert [(r.road_name, session.scalar(r.road_geom.wkt)) for r in session.query(Road).filter(Road.road_geom.intersects(r1.road_geom)).all()] == [('Graeme Ave', 'LINESTRING(-88.5477708726115 42.6988853949045,-88.6096339299363 42.9697452675159,-88.6029460318471 43.0884554585987,-88.5912422101911 43.187101955414)')]
+        ok_([(r.road_name, session.scalar(r.road_geom.wkt)) for r in session.query(Road).filter(Road.road_geom.intersects(r1.road_geom)).all()] == [('Graeme Ave', 'LINESTRING(-88.5477708726115 42.6988853949045,-88.6096339299363 42.9697452675159,-88.6029460318471 43.0884554585987,-88.5912422101911 43.187101955414)')])
 
     def test_length(self):
         r = session.query(Road).filter(Road.road_name=='Graeme Ave').one()
-        assert session.scalar(r.road_geom.length) == 0.496071476676014
+        eq_(session.scalar(r.road_geom.length), 0.496071476676014)
 
     def test_area(self):
         l = session.query(Lake).filter(Lake.lake_name=='Lake Blue').one()
-        assert session.scalar(l.lake_geom.area) == 0.10475991566721
+        eq_(session.scalar(l.lake_geom.area), 0.10475991566721)
 
     def test_x(self):
         s = session.query(Spot).filter(Spot.spot_height==420.40).one()
@@ -157,32 +156,32 @@ class TestGeometry(TestCase):
     def test_centroid(self):
         r = session.query(Road).filter(Road.road_name=='Graeme Ave').one()
         l = session.query(Lake).filter(Lake.lake_name=='Lake Blue').one()
-        assert session.scalar(r.road_geom.centroid) == '0101000020E6100000AF1BBA22B22556C0476A43EB8B784540'
-        assert session.scalar(l.lake_geom.centroid) == '0101000020E610000057FA7719F93A56C0751FE87F73824540'
+        eq_(session.scalar(r.road_geom.centroid), '0101000020E6100000AF1BBA22B22556C0476A43EB8B784540')
+        eq_(session.scalar(l.lake_geom.centroid), '0101000020E610000057FA7719F93A56C0751FE87F73824540')
 
     def test_boundary(self):
         r = session.query(Road).filter(Road.road_name=='Graeme Ave').one()
-        assert session.scalar(r.road_geom.boundary) == '0104000020E610000002000000010100000056E48FAD0E2356C029629D13755945400101000000463291E9D62556C0A9C2F5F4F2974540'
+        eq_(session.scalar(r.road_geom.boundary), '0104000020E610000002000000010100000056E48FAD0E2356C029629D13755945400101000000463291E9D62556C0A9C2F5F4F2974540')
 
     def test_buffer(self):
         r = session.query(Road).filter(Road.road_name=='Graeme Ave').one()
-        assert session.scalar(r.road_geom.buffer(length=10.0, num_segs=8)) == '0103000020E61000000100000026000000C8C5532DF39658C0C5FF3AED1E5F44403E9604D900A658C005FBFD3A20C44540A1B1F04593A558C08C2E402052D345405941958F21A258C0313C8506212246404D7132CE61A158C016145079C12E464058A282B6758658C075D18E9ED52347402D796C0D265458C0D694C711B309484072F437C8610C58C0DC3F2E6D84D74840E35C1FF0EAB157C0CC3D37DE60854940CD355F803B4857C08294AAF5990C4A406FAAA13263D356C0851BC962FD674A40FE4F3E8ADF5756C06576DB1208944A408F0964A76FDA55C0B64038BE088F4A40E1AAC494E55F55C0CEA2D88E30594A40304928DBF6EC54C07850AC3C91F44940AEF3742D0E8654C0034743B208654940B574F0F41F2F54C0E61712021BB048405AC9366983EB53C0BAC99122BCDC4740D885A7B2D1BD53C0FEB216870BF3464068589E5ACCA753C01CFE4F3604FC454077E6A37247A853C08DD49353BDCB45407E38C4CA4FA353C066435C778A7D45403C322F9E15AC53C02B50932E3B83444094343AEA1ACD53C0DA41DD70279143408183E5D31A0554C0E7B146C89CB042403AB1646FEE5154C0BC468D3B3CEA4140C8D60BECA1B054C03AFBDC69A545414035D4F89F911D55C090D1E18A2BC940409A08B9D58D9455C077A4053597794040B773B0FB031156C07A0A064EF759404054ED14A02B8E56C0F4FDDBF4826B40407DF4EF7E350757C0A402F28C8DAD4040763C3BD37A7757C07EA048608D1D41400CF29719ABDA57C0F0FB469734B74140CD177082F62C58C00B4795909B744240A2ACED71336B58C0E5416FF87A4E43402FC3DB9CFD9258C0B1AAEF63733C4440C8C5532DF39658C0C5FF3AED1E5F4440'
+        (session.scalar(r.road_geom.buffer(length=10.0, num_segs=8)), '0103000020E61000000100000026000000C8C5532DF39658C0C5FF3AED1E5F44403E9604D900A658C005FBFD3A20C44540A1B1F04593A558C08C2E402052D345405941958F21A258C0313C8506212246404D7132CE61A158C016145079C12E464058A282B6758658C075D18E9ED52347402D796C0D265458C0D694C711B309484072F437C8610C58C0DC3F2E6D84D74840E35C1FF0EAB157C0CC3D37DE60854940CD355F803B4857C08294AAF5990C4A406FAAA13263D356C0851BC962FD674A40FE4F3E8ADF5756C06576DB1208944A408F0964A76FDA55C0B64038BE088F4A40E1AAC494E55F55C0CEA2D88E30594A40304928DBF6EC54C07850AC3C91F44940AEF3742D0E8654C0034743B208654940B574F0F41F2F54C0E61712021BB048405AC9366983EB53C0BAC99122BCDC4740D885A7B2D1BD53C0FEB216870BF3464068589E5ACCA753C01CFE4F3604FC454077E6A37247A853C08DD49353BDCB45407E38C4CA4FA353C066435C778A7D45403C322F9E15AC53C02B50932E3B83444094343AEA1ACD53C0DA41DD70279143408183E5D31A0554C0E7B146C89CB042403AB1646FEE5154C0BC468D3B3CEA4140C8D60BECA1B054C03AFBDC69A545414035D4F89F911D55C090D1E18A2BC940409A08B9D58D9455C077A4053597794040B773B0FB031156C07A0A064EF759404054ED14A02B8E56C0F4FDDBF4826B40407DF4EF7E350757C0A402F28C8DAD4040763C3BD37A7757C07EA048608D1D41400CF29719ABDA57C0F0FB469734B74140CD177082F62C58C00B4795909B744240A2ACED71336B58C0E5416FF87A4E43402FC3DB9CFD9258C0B1AAEF63733C4440C8C5532DF39658C0C5FF3AED1E5F4440')
 
     def test_convex_hull(self):
         r = session.query(Road).filter(Road.road_name=='Graeme Ave').one()
-        assert session.scalar(r.road_geom.convex_hull) == '0103000020E6100000010000000500000056E48FAD0E2356C029629D1375594540EFE6073E042756C03DB7E89C207C45405202F4AA962656C0C4EA2A82528B4540463291E9D62556C0A9C2F5F4F297454056E48FAD0E2356C029629D1375594540'
+        eq_(session.scalar(r.road_geom.convex_hull), '0103000020E6100000010000000500000056E48FAD0E2356C029629D1375594540EFE6073E042756C03DB7E89C207C45405202F4AA962656C0C4EA2A82528B4540463291E9D62556C0A9C2F5F4F297454056E48FAD0E2356C029629D1375594540')
 
     def test_envelope(self):
         r = session.query(Road).filter(Road.road_name=='Graeme Ave').one()
-        assert session.scalar(r.road_geom.envelope) == '0103000020E6100000010000000500000000000040042756C0000000007559454000000040042756C000000000F3974540000000A00E2356C000000000F3974540000000A00E2356C0000000007559454000000040042756C00000000075594540'
+        eq_(session.scalar(r.road_geom.envelope), '0103000020E6100000010000000500000000000040042756C0000000007559454000000040042756C000000000F3974540000000A00E2356C000000000F3974540000000A00E2356C0000000007559454000000040042756C00000000075594540')
 
     def test_start_point(self):
         r = session.query(Road).filter(Road.road_name=='Graeme Ave').one()
-        assert session.scalar(r.road_geom.start_point) == '0101000020E610000056E48FAD0E2356C029629D1375594540'
+        eq_(session.scalar(r.road_geom.start_point), '0101000020E610000056E48FAD0E2356C029629D1375594540')
 
     def test_end_point(self):
         r = session.query(Road).filter(Road.road_name=='Graeme Ave').one()
-        assert session.scalar(r.road_geom.end_point) == '0101000020E6100000463291E9D62556C0A9C2F5F4F2974540'
+        eq_(session.scalar(r.road_geom.end_point), '0101000020E6100000463291E9D62556C0A9C2F5F4F2974540')
 
     # Test Geometry Relationships
 
@@ -190,83 +189,83 @@ class TestGeometry(TestCase):
         r1 = session.query(Road).filter(Road.road_name=='Jeff Rd').one()
         r2 = session.query(Road).filter(Road.road_name=='Peter Rd').one()
         r3 = session.query(Road).filter(Road.road_name=='Paul St').one()
-        assert session.scalar(r1.road_geom.equals(r2.road_geom))
-        assert not session.scalar(r1.road_geom.equals(r3.road_geom))
+        ok_(session.scalar(r1.road_geom.equals(r2.road_geom)))
+        ok_(not session.scalar(r1.road_geom.equals(r3.road_geom)))
 
     def test_distance(self):
         r1 = session.query(Road).filter(Road.road_name=='Jeff Rd').one()
         r2 = session.query(Road).filter(Road.road_name=='Geordie Rd').one()
         r3 = session.query(Road).filter(Road.road_name=='Peter Rd').one()
-        assert session.scalar(r1.road_geom.distance(r2.road_geom)) == 0.336997238682841
-        assert session.scalar(r1.road_geom.distance(r3.road_geom)) == 0.0
+        eq_(session.scalar(r1.road_geom.distance(r2.road_geom)), 0.336997238682841)
+        eq_(session.scalar(r1.road_geom.distance(r3.road_geom)), 0.0)
 
     def test_within_distance(self):
         r1 = session.query(Road).filter(Road.road_name=='Jeff Rd').one()
         r2 = session.query(Road).filter(Road.road_name=='Graeme Ave').one()
         r3 = session.query(Road).filter(Road.road_name=='Geordie Rd').one()
-        assert session.scalar(r1.road_geom.within_distance(r2.road_geom, 0.20))
-        assert not session.scalar(r1.road_geom.within_distance(r3.road_geom, 0.20))
+        ok_(session.scalar(r1.road_geom.within_distance(r2.road_geom, 0.20)))
+        ok_(not session.scalar(r1.road_geom.within_distance(r3.road_geom, 0.20)))
 
     def test_disjoint(self):
         r1 = session.query(Road).filter(Road.road_name=='Jeff Rd').one()
         r2 = session.query(Road).filter(Road.road_name=='Graeme Ave').one()
         r3 = session.query(Road).filter(Road.road_name=='Geordie Rd').one()
-        assert not session.scalar(r1.road_geom.disjoint(r2.road_geom))
-        assert session.scalar(r1.road_geom.disjoint(r3.road_geom))
+        ok_(not session.scalar(r1.road_geom.disjoint(r2.road_geom)))
+        ok_(session.scalar(r1.road_geom.disjoint(r3.road_geom)))
 
     def test_intersects(self):
         r1 = session.query(Road).filter(Road.road_name=='Jeff Rd').one()
         r2 = session.query(Road).filter(Road.road_name=='Graeme Ave').one()
         r3 = session.query(Road).filter(Road.road_name=='Geordie Rd').one()
-        assert session.scalar(r1.road_geom.intersects(r2.road_geom))
-        assert not session.scalar(r1.road_geom.intersects(r3.road_geom))
+        ok_(session.scalar(r1.road_geom.intersects(r2.road_geom)))
+        ok_(not session.scalar(r1.road_geom.intersects(r3.road_geom)))
 
     def test_touches(self):
         l1 = session.query(Lake).filter(Lake.lake_name=='Lake White').one()
         l2 = session.query(Lake).filter(Lake.lake_name=='Lake Blue').one()
         r = session.query(Road).filter(Road.road_name=='Geordie Rd').one()
-        assert not session.scalar(l1.lake_geom.touches(r.road_geom))
-        assert session.scalar(l2.lake_geom.touches(r.road_geom))
+        ok_(not session.scalar(l1.lake_geom.touches(r.road_geom)))
+        ok_(session.scalar(l2.lake_geom.touches(r.road_geom)))
 
     def test_crosses(self):
         r1 = session.query(Road).filter(Road.road_name=='Jeff Rd').one()
         r2 = session.query(Road).filter(Road.road_name=='Paul St').one()
         l = session.query(Lake).filter(Lake.lake_name=='Lake White').one()
-        assert not session.scalar(r1.road_geom.crosses(l.lake_geom))
-        assert session.scalar(r2.road_geom.crosses(l.lake_geom))
+        ok_(not session.scalar(r1.road_geom.crosses(l.lake_geom)))
+        ok_(session.scalar(r2.road_geom.crosses(l.lake_geom)))
 
     def test_within(self):
         l = session.query(Lake).filter(Lake.lake_name=='Lake Blue').one()
         p1 = session.query(Spot).filter(Spot.spot_height==102.34).one()
         p2 = session.query(Spot).filter(Spot.spot_height==388.62).one()
-        assert session.scalar(p1.spot_location.within(l.lake_geom))
-        assert not session.scalar(p2.spot_location.within(l.lake_geom))
+        ok_(session.scalar(p1.spot_location.within(l.lake_geom)))
+        ok_(not session.scalar(p2.spot_location.within(l.lake_geom)))
 
     def test_overlaps(self):
         l1 = session.query(Lake).filter(Lake.lake_name=='Lake White').one()
         l2 = session.query(Lake).filter(Lake.lake_name=='Lake Blue').one()
         l3 = session.query(Lake).filter(Lake.lake_name=='My Lake').one()
-        assert not session.scalar(l1.lake_geom.overlaps(l3.lake_geom))
-        assert session.scalar(l2.lake_geom.overlaps(l3.lake_geom))
+        ok_(not session.scalar(l1.lake_geom.overlaps(l3.lake_geom)))
+        ok_(session.scalar(l2.lake_geom.overlaps(l3.lake_geom)))
 
     def test_contains(self):
         l = session.query(Lake).filter(Lake.lake_name=='Lake Blue').one()
         p1 = session.query(Spot).filter(Spot.spot_height==102.34).one()
         p2 = session.query(Spot).filter(Spot.spot_height==388.62).one()
-        assert session.scalar(l.lake_geom.contains(p1.spot_location))
-        assert not session.scalar(l.lake_geom.contains(p2.spot_location))
+        ok_(session.scalar(l.lake_geom.contains(p1.spot_location)))
+        ok_(not session.scalar(l.lake_geom.contains(p2.spot_location)))
 
     def test_covers(self):
         l = session.query(Lake).filter(Lake.lake_name=='Lake Blue').one()
         p1 = session.query(Spot).filter(Spot.spot_height==102.34).one()
         p2 = session.query(Spot).filter(Spot.spot_height==388.62).one()
-        assert session.scalar(l.lake_geom.covers(p1.spot_location))
-        assert not session.scalar(l.lake_geom.covers(p2.spot_location))
+        ok_(session.scalar(l.lake_geom.covers(p1.spot_location)))
+        ok_(not session.scalar(l.lake_geom.covers(p2.spot_location)))
 
     def test_covered_by(self):
         l = session.query(Lake).filter(Lake.lake_name=='Lake Blue').one()
         p1 = session.query(Spot).filter(Spot.spot_height==102.34).one()
         p2 = session.query(Spot).filter(Spot.spot_height==388.62).one()
-        assert session.scalar(p1.spot_location.covered_by(l.lake_geom))
-        assert not session.scalar(p2.spot_location.covered_by(l.lake_geom))
+        ok_(session.scalar(p1.spot_location.covered_by(l.lake_geom)))
+        ok_(not session.scalar(p2.spot_location.covered_by(l.lake_geom)))
 

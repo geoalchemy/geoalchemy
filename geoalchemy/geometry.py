@@ -7,7 +7,7 @@ from sqlalchemy.databases.postgres import PGDialect
 from sqlalchemy.databases.sqlite import SQLiteDialect
 from geoalchemy.postgis import PGPersistentSpatialElement
 from geoalchemy.spatialite import SQLitePersistentSpatialElement
-from geoalchemy.base import SpatialElement, WKTSpatialElement, SpatialComparator, GeometryBase, _to_dbms
+from geoalchemy.base import SpatialElement, WKTSpatialElement, SpatialComparator, GeometryBase, _to_gis
 
 # SQL datatypes.
 
@@ -106,7 +106,7 @@ class SpatialAttribute(AttributeExtension):
     """
     
     def set(self, state, value, oldvalue, initiator):
-        return _to_dbms(value)
+        return _to_gis(value)
             
 def GeometryColumn(*args, **kw):
     """Define a declarative column property with GIS behavior.

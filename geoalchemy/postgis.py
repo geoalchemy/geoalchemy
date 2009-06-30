@@ -3,7 +3,7 @@ from sqlalchemy.orm import column_property
 from sqlalchemy.orm.interfaces import AttributeExtension
 from sqlalchemy.orm.properties import ColumnProperty
 from sqlalchemy.sql import expression
-from geoalchemy.base import SpatialElement, _to_dbms, GeometryBase as Geometry
+from geoalchemy.base import SpatialElement, _to_gis, GeometryBase as Geometry
 
 # Python datatypes
 
@@ -111,51 +111,51 @@ class PGSpatialElement(SpatialElement):
 
     def equals(self, geom):
         return func.ST_Equals(literal(self, Geometry),
-			literal(_to_dbms(geom), Geometry))
+			literal(_to_gis(geom), Geometry))
 
     def distance(self, geom):
         return func.ST_Distance(literal(self, Geometry),
-			literal(_to_dbms(geom), Geometry))
+			literal(_to_gis(geom), Geometry))
 
     def within_distance(self, geom, distance=0.0):
         return func.ST_DWithin(literal(self, Geometry),
-			literal(_to_dbms(geom), Geometry), distance)
+			literal(_to_gis(geom), Geometry), distance)
 
     def disjoint(self, geom):
         return func.ST_Disjoint(literal(self, Geometry),
-			literal(_to_dbms(geom), Geometry))
+			literal(_to_gis(geom), Geometry))
 
     def intersects(self, geom):
         return func.ST_Intersects(literal(self, Geometry),
-			literal(_to_dbms(geom), Geometry))
+			literal(_to_gis(geom), Geometry))
 
     def touches(self, geom):
         return func.ST_Touches(literal(self, Geometry),
-			literal(_to_dbms(geom), Geometry))
+			literal(_to_gis(geom), Geometry))
 
     def crosses(self, geom):
         return func.ST_Crosses(literal(self, Geometry),
-			literal(_to_dbms(geom), Geometry))
+			literal(_to_gis(geom), Geometry))
 
     def within(self, geom):
         return func.ST_Within(literal(self, Geometry),
-			literal(_to_dbms(geom), Geometry))
+			literal(_to_gis(geom), Geometry))
 
     def overlaps(self, geom):
         return func.ST_Overlaps(literal(self, Geometry),
-			literal(_to_dbms(geom), Geometry))
+			literal(_to_gis(geom), Geometry))
 
     def contains(self, geom):
         return func.ST_Contains(literal(self, Geometry),
-			literal(_to_dbms(geom), Geometry))
+			literal(_to_gis(geom), Geometry))
 
     def covers(self, geom):
         return func.ST_Covers(literal(self, Geometry),
-			literal(_to_dbms(geom), Geometry))
+			literal(_to_gis(geom), Geometry))
 
     def covered_by(self, geom):
         return func.ST_CoveredBy(literal(self, Geometry),
-			literal(_to_dbms(geom), Geometry))
+			literal(_to_gis(geom), Geometry))
 
 
 class PGPersistentSpatialElement(PGSpatialElement):

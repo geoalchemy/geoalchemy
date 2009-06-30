@@ -77,7 +77,7 @@ class GeometryBase(TypeEngine):
 
 # ORM integration
 
-def _to_dbms(value):
+def _to_gis(value):
     """Interpret a value as a GIS-compatible construct."""
 
     if hasattr(value, '__clause_element__'):
@@ -98,9 +98,9 @@ class SpatialComparator(ColumnProperty.ColumnComparator):
 
     # override the __eq__() operator
     def __eq__(self, other):
-        return self.__clause_element__().op('~=')(_to_dbms(other))
+        return self.__clause_element__().op('~=')(_to_gis(other))
 
     # add a custom operator
     def intersects(self, other):
-        return self.__clause_element__().op('&&')(_to_dbms(other)) 
+        return self.__clause_element__().op('&&')(_to_gis(other)) 
 

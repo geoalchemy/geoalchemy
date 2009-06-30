@@ -46,7 +46,7 @@ class WKBSpatialElement(SpatialElement, expression.Function):
         expression.Function.__init__(self, "GeomFromWKB", desc, srid)
 
 
-class Geometry(TypeEngine):
+class GeometryBase(TypeEngine):
     """Base Geometry column type.
     
     Converts bind/result values to/from a PersistentSpatialElement.

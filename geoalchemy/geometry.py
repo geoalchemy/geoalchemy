@@ -7,31 +7,17 @@ from sqlalchemy.databases.postgres import PGDialect
 from sqlalchemy.databases.sqlite import SQLiteDialect
 from geoalchemy.postgis import PGPersistentSpatialElement
 from geoalchemy.spatialite import SQLitePersistentSpatialElement
-from geoalchemy.base import SpatialElement, WKTSpatialElement, SpatialComparator, _to_dbms
+from geoalchemy.base import SpatialElement, WKTSpatialElement, SpatialComparator, GeometryBase, _to_dbms
 
 # SQL datatypes.
 
-class Geometry(TypeEngine):
+class Geometry(GeometryBase):
     """Base Geometry column type.
     
     Converts bind/result values to/from a PersistentSpatialElement.
     
     """
     
-    name = 'GEOMETRY'
-    
-    def __init__(self, dimension=None, srid=4326):
-        self.dimension = dimension
-        self.srid = srid
-    
-    def bind_processor(self, dialect):
-        def process(value):
-            if value is not None:
-                return value.desc
-            else:
-                return value
-        return process
-        
     def result_processor(self, dialect):
         def process(value):
             if value is not None:
@@ -60,7 +46,14 @@ class LineString(Curve):
 class Polygon(Geometry):
     name = 'POLYGON'
 
-# ... etc.
+class MultiPoint(Geometry):
+    name = 'MULTIPOINT'
+
+class MultiLineString(Geometry):
+    name = 'MULTILINESTRING'
+
+class MultiPolygon(Geometry):
+    name = 'MULTIPOLYGON'
 
 
 # DDL integration

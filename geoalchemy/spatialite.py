@@ -4,7 +4,7 @@ from sqlalchemy.orm import column_property
 from sqlalchemy.orm.interfaces import AttributeExtension
 from sqlalchemy.orm.properties import ColumnProperty
 from sqlalchemy.exc import NotSupportedError
-from geoalchemy.base import SpatialElement, Geometry, _to_dbms
+from geoalchemy.base import SpatialElement, _to_dbms, GeometryBase as Geometry
 
 # Python datatypes
 

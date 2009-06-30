@@ -133,9 +133,9 @@ class PGSpatialElement(SpatialElement):
         return func.ST_Touches(literal(self, Geometry),
 			literal(_to_gis(geom), Geometry))
 
-    def crosses(self, geom):
-        return func.ST_Crosses(literal(self, Geometry),
-			literal(_to_gis(geom), Geometry))
+    #def crosses(self, geom):
+    #    return func.ST_Crosses(literal(self, Geometry),
+    #			literal(_to_gis(geom), Geometry))
 
     def within(self, geom):
         return func.ST_Within(literal(self, Geometry),

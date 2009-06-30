@@ -135,7 +135,11 @@ class TestGeometry(TestCase):
 
     def test_intersects(self):
         r1 = session.query(Road).filter(Road.road_name=='Graeme Ave').one()
-        ok_([(r.road_name, session.scalar(r.road_geom.wkt)) for r in session.query(Road).filter(Road.road_geom.intersects(r1.road_geom)).all()] == [('Graeme Ave', 'LINESTRING(-88.5477708726115 42.6988853949045,-88.6096339299363 42.9697452675159,-88.6029460318471 43.0884554585987,-88.5912422101911 43.187101955414)')])
+        eq_([(r.road_name, session.scalar(r.road_geom.wkt)) for r in session.query(Road).filter(Road.road_geom.intersects(r1.road_geom)).all()], [('Graeme Ave', 'LINESTRING(-88.5477708726115 42.6988853949045,-88.6096339299363 42.9697452675159,-88.6029460318471 43.0884554585987,-88.5912422101911 43.187101955414)')])
+
+    def test_crosses(self):
+        r1 = session.query(Road).filter(Road.road_name=='Graeme Ave').one()
+        eq_([(r.road_name, session.scalar(r.road_geom.wkt)) for r in session.query(Road).filter(Road.road_geom.crosses(r1.road_geom)).all()], [('Jeff Rd', 'LINESTRING(-88.9139332929936 42.5082802993631,-88.8203027197452 42.5985669235669,-88.7383759681529 42.7239650127389,-88.6113059044586 42.9680732929936,-88.3655256496815 43.1402866687898)'), ('Peter Rd', 'LINESTRING(-88.9139332929936 42.5082802993631,-88.8203027197452 42.5985669235669,-88.7383759681529 42.7239650127389,-88.6113059044586 42.9680732929936,-88.3655256496815 43.1402866687898)'), ('Dave Cres', 'LINESTRING(-88.6748409363057 43.1035032292994,-88.6464173694267 42.9981688343949,-88.607961955414 42.9680732929936,-88.5160033566879 42.9363057770701,-88.4390925286624 43.0031847579618)')])
 
     def test_length(self):
         r = session.query(Road).filter(Road.road_name=='Graeme Ave').one()
@@ -227,12 +231,12 @@ class TestGeometry(TestCase):
         ok_(not session.scalar(l1.lake_geom.touches(r.road_geom)))
         ok_(session.scalar(l2.lake_geom.touches(r.road_geom)))
 
-    def test_crosses(self):
-        r1 = session.query(Road).filter(Road.road_name=='Jeff Rd').one()
-        r2 = session.query(Road).filter(Road.road_name=='Paul St').one()
-        l = session.query(Lake).filter(Lake.lake_name=='Lake White').one()
-        ok_(not session.scalar(r1.road_geom.crosses(l.lake_geom)))
-        ok_(session.scalar(r2.road_geom.crosses(l.lake_geom)))
+    #def test_crosses(self):
+    #    r1 = session.query(Road).filter(Road.road_name=='Jeff Rd').one()
+    #    r2 = session.query(Road).filter(Road.road_name=='Paul St').one()
+    #    l = session.query(Lake).filter(Lake.lake_name=='Lake White').one()
+    #    ok_(not session.scalar(r1.road_geom.crosses(l.lake_geom)))
+    #    ok_(session.scalar(r2.road_geom.crosses(l.lake_geom)))
 
     def test_within(self):
         l = session.query(Lake).filter(Lake.lake_name=='Lake Blue').one()

@@ -86,7 +86,8 @@ class GeometryDDL(object):
             
             if event == 'before-drop':
                 for c in gis_cols:
-                    #bind.execute(select([func.DropGeometryColumn('public', table.name, c.name)], autocommit=True))
+                    if bind.dialect.__class__.__name__ == 'PGDialect':
+                        bind.execute(select([func.DropGeometryColumn('public', table.name, c.name)], autocommit=True))
                     break
                 
         elif event == 'after-create':

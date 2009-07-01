@@ -107,6 +107,57 @@ class SQLiteSpatialElement(SpatialElement):
     def __repr__(self):
         return "<%s at 0x%x; %r>" % (self.__class__.__name__, id(self), self.desc)
 
+    # OGC Geometry Relations
+
+    def equals(self, geom):
+        return func.Equals(literal(self, Geometry),
+			literal(_to_gis(geom), Geometry))
+
+    def distance(self, geom):
+        return func.Distance(literal(self, Geometry),
+			literal(_to_gis(geom), Geometry))
+
+    def within_distance(self, geom, distance=0.0):
+        return func.DWithin(literal(self, Geometry),
+			literal(_to_gis(geom), Geometry), distance)
+
+    def disjoint(self, geom):
+        return func.Disjoint(literal(self, Geometry),
+			literal(_to_gis(geom), Geometry))
+
+    def intersects(self, geom):
+        return func.Intersects(literal(self, Geometry),
+			literal(_to_gis(geom), Geometry))
+
+    def touches(self, geom):
+        return func.Touches(literal(self, Geometry),
+			literal(_to_gis(geom), Geometry))
+
+    def crosses(self, geom):
+        return func.Crosses(literal(self, Geometry),
+    			literal(_to_gis(geom), Geometry))
+
+    def within(self, geom):
+        return func.Within(literal(self, Geometry),
+			literal(_to_gis(geom), Geometry))
+
+    def overlaps(self, geom):
+        return func.Overlaps(literal(self, Geometry),
+			literal(_to_gis(geom), Geometry))
+
+    def contains(self, geom):
+        return func.Contains(literal(self, Geometry),
+			literal(_to_gis(geom), Geometry))
+
+    def covers(self, geom):
+        return func.Covers(literal(self, Geometry),
+			literal(_to_gis(geom), Geometry))
+
+    def covered_by(self, geom):
+        return func.CoveredBy(literal(self, Geometry),
+			literal(_to_gis(geom), Geometry))
+
+
 class SQLitePersistentSpatialElement(SQLiteSpatialElement):
     """Represents a Geometry value as loaded from the database."""
     

@@ -6,13 +6,13 @@ class SFSComparator(SpatialComparator):
         and overrides their behavior.
     """
 
+    def equals(self, other):
+        return func.Equals(self.__clause_element__(),
+			literal(_to_gis(other), GeometryBase))
+
     def distance(self, other):
         return func.Distance(self.__clause_element__(),
 			literal(_to_gis(other), GeometryBase))
-
-    def within_distance(self, other, distance=0.0):
-        return func.DWithin(self.__clause_element__(),
-			literal(_to_gis(other), GeometryBase), distance)
 
     def disjoint(self, other):
         return func.Disjoint(self.__clause_element__(),
@@ -40,14 +40,6 @@ class SFSComparator(SpatialComparator):
 
     def contains(self, other):
         return func.Contains(self.__clause_element__(),
-			literal(_to_gis(other), GeometryBase))
-
-    def covers(self, other):
-        return func.Covers(self.__clause_element__(),
-			literal(_to_gis(other), GeometryBase))
-
-    def covered_by(self, other):
-        return func.CoveredBy(self.__clause_element__(),
 			literal(_to_gis(other), GeometryBase))
 
 

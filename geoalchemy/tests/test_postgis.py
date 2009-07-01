@@ -133,14 +133,6 @@ class TestGeometry(TestCase):
         r3 = session.query(Road).filter(Road.road_geom == r1.road_geom).one()
         ok_(r1 is r2 is r3)
 
-    def test_intersects(self):
-        r1 = session.query(Road).filter(Road.road_name=='Graeme Ave').one()
-        eq_([(r.road_name, session.scalar(r.road_geom.wkt)) for r in session.query(Road).filter(Road.road_geom.intersects(r1.road_geom)).all()], [('Graeme Ave', 'LINESTRING(-88.5477708726115 42.6988853949045,-88.6096339299363 42.9697452675159,-88.6029460318471 43.0884554585987,-88.5912422101911 43.187101955414)')])
-
-    def test_crosses(self):
-        r1 = session.query(Road).filter(Road.road_name=='Graeme Ave').one()
-        eq_([(r.road_name, session.scalar(r.road_geom.wkt)) for r in session.query(Road).filter(Road.road_geom.crosses(r1.road_geom)).all()], [('Jeff Rd', 'LINESTRING(-88.9139332929936 42.5082802993631,-88.8203027197452 42.5985669235669,-88.7383759681529 42.7239650127389,-88.6113059044586 42.9680732929936,-88.3655256496815 43.1402866687898)'), ('Peter Rd', 'LINESTRING(-88.9139332929936 42.5082802993631,-88.8203027197452 42.5985669235669,-88.7383759681529 42.7239650127389,-88.6113059044586 42.9680732929936,-88.3655256496815 43.1402866687898)'), ('Dave Cres', 'LINESTRING(-88.6748409363057 43.1035032292994,-88.6464173694267 42.9981688343949,-88.607961955414 42.9680732929936,-88.5160033566879 42.9363057770701,-88.4390925286624 43.0031847579618)')])
-
     def test_length(self):
         r = session.query(Road).filter(Road.road_name=='Graeme Ave').one()
         eq_(session.scalar(r.road_geom.length), 0.496071476676014)
@@ -193,8 +185,10 @@ class TestGeometry(TestCase):
         r1 = session.query(Road).filter(Road.road_name=='Jeff Rd').one()
         r2 = session.query(Road).filter(Road.road_name=='Peter Rd').one()
         r3 = session.query(Road).filter(Road.road_name=='Paul St').one()
-        ok_(session.scalar(r1.road_geom.equals(r2.road_geom)))
-        ok_(not session.scalar(r1.road_geom.equals(r3.road_geom)))
+        equal_roads = session.query(Road).filter(Road.road_geom.equals(r1.road_geom)).all()
+        ok_(r1 in equal_roads)
+        ok_(r2 in equal_roads)
+        ok_(r3 not in equal_roads)
 
     def test_distance(self):
         r1 = session.query(Road).filter(Road.road_name=='Jeff Rd').one()
@@ -207,69 +201,96 @@ class TestGeometry(TestCase):
         r1 = session.query(Road).filter(Road.road_name=='Jeff Rd').one()
         r2 = session.query(Road).filter(Road.road_name=='Graeme Ave').one()
         r3 = session.query(Road).filter(Road.road_name=='Geordie Rd').one()
-        ok_(session.scalar(r1.road_geom.within_distance(r2.road_geom, 0.20)))
-        ok_(not session.scalar(r1.road_geom.within_distance(r3.road_geom, 0.20)))
+        roads_within_distance = session.query(Road).filter(
+            Road.road_geom.within_distance(r1.road_geom, 0.20)).all()
+        ok_(r2 in roads_within_distance)
+        ok_(r3 not in roads_within_distance)
 
     def test_disjoint(self):
         r1 = session.query(Road).filter(Road.road_name=='Jeff Rd').one()
         r2 = session.query(Road).filter(Road.road_name=='Graeme Ave').one()
         r3 = session.query(Road).filter(Road.road_name=='Geordie Rd').one()
-        ok_(not session.scalar(r1.road_geom.disjoint(r2.road_geom)))
-        ok_(session.scalar(r1.road_geom.disjoint(r3.road_geom)))
+        disjoint_roads = session.query(Road).filter(Road.road_geom.disjoint(r1.road_geom)).all()
+        ok_(r2 not in disjoint_roads)
+        ok_(r3 in disjoint_roads)
 
     def test_intersects(self):
         r1 = session.query(Road).filter(Road.road_name=='Jeff Rd').one()
         r2 = session.query(Road).filter(Road.road_name=='Graeme Ave').one()
         r3 = session.query(Road).filter(Road.road_name=='Geordie Rd').one()
-        ok_(session.scalar(r1.road_geom.intersects(r2.road_geom)))
-        ok_(not session.scalar(r1.road_geom.intersects(r3.road_geom)))
+        intersecting_roads = session.query(Road).filter(Road.road_geom.intersects(r1.road_geom)).all()
+        ok_(r2 in intersecting_roads)
+        ok_(r3 not in intersecting_roads)
 
     def test_touches(self):
         l1 = session.query(Lake).filter(Lake.lake_name=='Lake White').one()
         l2 = session.query(Lake).filter(Lake.lake_name=='Lake Blue').one()
         r = session.query(Road).filter(Road.road_name=='Geordie Rd').one()
+        touching_lakes = session.query(Lake).filter(Lake.lake_geom.touches(r.road_geom)).all()
         ok_(not session.scalar(l1.lake_geom.touches(r.road_geom)))
         ok_(session.scalar(l2.lake_geom.touches(r.road_geom)))
+        ok_(l1 not in touching_lakes)
+        ok_(l2 in touching_lakes)
 
-    #def test_crosses(self):
-    #    r1 = session.query(Road).filter(Road.road_name=='Jeff Rd').one()
-    #    r2 = session.query(Road).filter(Road.road_name=='Paul St').one()
-    #    l = session.query(Lake).filter(Lake.lake_name=='Lake White').one()
-    #    ok_(not session.scalar(r1.road_geom.crosses(l.lake_geom)))
-    #    ok_(session.scalar(r2.road_geom.crosses(l.lake_geom)))
+    def test_crosses(self):
+        r1 = session.query(Road).filter(Road.road_name=='Jeff Rd').one()
+        r2 = session.query(Road).filter(Road.road_name=='Paul St').one()
+        l = session.query(Lake).filter(Lake.lake_name=='Lake White').one()
+        crossing_roads = session.query(Road).filter(Road.road_geom.crosses(l.lake_geom)).all()
+        ok_(not session.scalar(r1.road_geom.crosses(l.lake_geom)))
+        ok_(session.scalar(r2.road_geom.crosses(l.lake_geom)))
+        ok_(r1 not in crossing_roads)
+        ok_(r2 in crossing_roads)
 
     def test_within(self):
         l = session.query(Lake).filter(Lake.lake_name=='Lake Blue').one()
         p1 = session.query(Spot).filter(Spot.spot_height==102.34).one()
         p2 = session.query(Spot).filter(Spot.spot_height==388.62).one()
+        spots_within = session.query(Spot).filter(Spot.spot_location.within(l.lake_geom)).all()
         ok_(session.scalar(p1.spot_location.within(l.lake_geom)))
         ok_(not session.scalar(p2.spot_location.within(l.lake_geom)))
+        ok_(p1 in spots_within)
+        ok_(p2 not in spots_within)
 
     def test_overlaps(self):
         l1 = session.query(Lake).filter(Lake.lake_name=='Lake White').one()
         l2 = session.query(Lake).filter(Lake.lake_name=='Lake Blue').one()
         l3 = session.query(Lake).filter(Lake.lake_name=='My Lake').one()
+        overlapping_lakes = session.query(Lake).filter(Lake.lake_geom.overlaps(l3.lake_geom)).all()
         ok_(not session.scalar(l1.lake_geom.overlaps(l3.lake_geom)))
         ok_(session.scalar(l2.lake_geom.overlaps(l3.lake_geom)))
+        ok_(l1 not in overlapping_lakes)
+        ok_(l2 in overlapping_lakes)
 
     def test_contains(self):
         l = session.query(Lake).filter(Lake.lake_name=='Lake Blue').one()
+        l1 = session.query(Lake).filter(Lake.lake_name=='Lake White').one()
         p1 = session.query(Spot).filter(Spot.spot_height==102.34).one()
         p2 = session.query(Spot).filter(Spot.spot_height==388.62).one()
+        #containing_lakes = session.query(Lake).filter(Lake.lake_geom.contains(p1.spot_location)).all()
         ok_(session.scalar(l.lake_geom.contains(p1.spot_location)))
         ok_(not session.scalar(l.lake_geom.contains(p2.spot_location)))
+        #ok_(l in containing_lakes)
+        #ok_(l1 not in containing_lakes)
 
     def test_covers(self):
         l = session.query(Lake).filter(Lake.lake_name=='Lake Blue').one()
+        l1 = session.query(Lake).filter(Lake.lake_name=='Lake White').one()
         p1 = session.query(Spot).filter(Spot.spot_height==102.34).one()
         p2 = session.query(Spot).filter(Spot.spot_height==388.62).one()
+        covering_lakes = session.query(Lake).filter(Lake.lake_geom.covers(p1.spot_location)).all()
         ok_(session.scalar(l.lake_geom.covers(p1.spot_location)))
         ok_(not session.scalar(l.lake_geom.covers(p2.spot_location)))
+        ok_(l in covering_lakes)
+        ok_(l1 not in covering_lakes)
 
     def test_covered_by(self):
         l = session.query(Lake).filter(Lake.lake_name=='Lake Blue').one()
         p1 = session.query(Spot).filter(Spot.spot_height==102.34).one()
         p2 = session.query(Spot).filter(Spot.spot_height==388.62).one()
+        covered_spots = session.query(Spot).filter(Spot.spot_location.covered_by(l.lake_geom)).all()
         ok_(session.scalar(p1.spot_location.covered_by(l.lake_geom)))
         ok_(not session.scalar(p2.spot_location.covered_by(l.lake_geom)))
+        ok_(p1 in covered_spots)
+        ok_(p2 not in covered_spots)
 

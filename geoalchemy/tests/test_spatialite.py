@@ -27,7 +27,7 @@ class Road(Base):
 
     road_id = Column(Integer, primary_key=True)
     road_name = Column(String)
-    road_geom = GeometryColumn(LineString(2, srid=4326))
+    road_geom = GeometryColumn(LineString(2, srid=4326), sfs=True)
 
 class Lake(Base):
     __tablename__ = 'lakes'
@@ -228,4 +228,10 @@ class TestGeometry(TestCase):
         eq_(session.scalar(l.lake_geom.area), 0.0056748625704927669)
         eq_(session.scalar(r.road_geom.area), 0.0)
         eq_(session.scalar(s.spot_location.area), 0.0)
+
+    # Test Geometry Relations
+
+    def test_crosses(self):
+        r1 = session.query(Road).filter(Road.road_name=='Graeme Ave').one()
+        eq_([(r.road_name, session.scalar(r.road_geom.wkt)) for r in session.query(Road).filter(Road.road_geom.crosses(r1.road_geom)).all()], [(u'Jeff Rd', u'LINESTRING(-88.913933 42.50828, -88.820303 42.598567, -88.738376 42.723965, -88.611306 42.968073, -88.365526 43.140287)'), (u'Peter Rd', u'LINESTRING(-88.913933 42.50828, -88.820303 42.598567, -88.738376 42.723965, -88.611306 42.968073, -88.365526 43.140287)'), (u'Dave Cres', u'LINESTRING(-88.674841 43.103503, -88.646417 42.998169, -88.607962 42.968073, -88.516003 42.936306, -88.439093 43.003185)')])
 

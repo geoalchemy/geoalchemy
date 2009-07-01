@@ -7,7 +7,8 @@ from sqlalchemy.databases.postgres import PGDialect
 from sqlalchemy.databases.sqlite import SQLiteDialect
 from geoalchemy.postgis import PGPersistentSpatialElement
 from geoalchemy.spatialite import SQLitePersistentSpatialElement
-from geoalchemy.base import SpatialElement, WKTSpatialElement, SpatialComparator, GeometryBase, _to_gis
+from geoalchemy.base import SpatialElement, WKTSpatialElement, GeometryBase, _to_gis
+from geoalchemy.comparator import SFSComparator, SQLMMComparator
 
 # SQL datatypes.
 
@@ -118,9 +119,17 @@ def GeometryColumn(*args, **kw):
     the Column for inclusion in the mapped table.
     
     """
-    return column_property(
+    sfs = False
+    if kw.has_key("sfs"): sfs = kw.pop("sfs")
+    if sfs:
+        return column_property(
                 Column(*args, **kw), 
                 extension=SpatialAttribute(), 
-                comparator_factory=SpatialComparator
-            )
+                comparator_factory=SFSComparator
+        )
+    return column_property(
+        Column(*args, **kw), 
+        extension=SpatialAttribute(), 
+        comparator_factory=SQLMMComparator
+    )
 

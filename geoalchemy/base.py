@@ -1,4 +1,3 @@
-from sqlalchemy import func, literal
 from sqlalchemy.orm.properties import ColumnProperty
 from sqlalchemy.sql import expression
 from sqlalchemy.types import TypeEngine
@@ -104,8 +103,4 @@ class SpatialComparator(ColumnProperty.ColumnComparator):
     # add a custom operator
     def intersects(self, other):
         return self.__clause_element__().op('&&')(_to_gis(other)) 
-
-    def crosses(self, other):
-        return func.ST_Crosses(self.__clause_element__(),
-                    literal(other, GeometryBase))
 

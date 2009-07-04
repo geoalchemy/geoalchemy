@@ -145,7 +145,7 @@ class PGSpatialElement(SpatialElement):
         return func.ST_Overlaps(literal(self, Geometry),
 			literal(_to_gis(geom), Geometry))
 
-    def contains(self, geom):
+    def gcontains(self, geom):
         return func.ST_Contains(literal(self, Geometry),
 			literal(_to_gis(geom), Geometry))
 

@@ -2,7 +2,7 @@ from sqlalchemy.orm.properties import ColumnProperty
 from sqlalchemy.sql import expression
 from sqlalchemy.types import TypeEngine
 
-# Base classes for python datatypes
+# Base classes for geoalchemy
 
 class SpatialElement(object):
     """Represents a geometry value."""
@@ -14,13 +14,14 @@ class SpatialElement(object):
         return "<%s at 0x%x; %r>" % (self.__class__.__name__, id(self), self.desc)
 
 class PersistentSpatialElement(SpatialElement):
-    """Represents a Geometry value as loaded from the database."""
+    """Represents a Geometry value loaded from the database."""
     
     def __init__(self, desc):
         self.desc = desc
 
 class WKTSpatialElement(SpatialElement, expression.Function):
-    """Represents a Geometry value as expressed within application code; i.e. in wkt format.
+    """Represents a Geometry value expressed within application code; i.e. in
+    the OGC Well Known Text (WKT) format.
     
     Extends expression.Function so that the value is interpreted as 
     GeomFromText(value) in a SQL expression context.
@@ -33,7 +34,8 @@ class WKTSpatialElement(SpatialElement, expression.Function):
         expression.Function.__init__(self, "GeomFromText", desc, srid)
 
 class WKBSpatialElement(SpatialElement, expression.Function):
-    """Represents a Geometry value as expressed in wkb format.
+    """Represents a Geometry value as expressed in the OGC Well
+    Known Binary (WKB) format.
     
     Extends expression.Function so that the value is interpreted as 
     GeomFromWKB(value) in a SQL expression context.
@@ -47,10 +49,10 @@ class WKBSpatialElement(SpatialElement, expression.Function):
 
 
 class GeometryBase(TypeEngine):
-    """Base Geometry column type.
+    """Base Geometry column type for all spatial databases.
     
-    Converts bind/result values to/from a PersistentSpatialElement.
-    
+    Converts bind/result values to/from a generic Persistent value.
+    This is used as a base class and overridden into dialect specific Persistent values.
     """
     
     name = 'GEOMETRY'

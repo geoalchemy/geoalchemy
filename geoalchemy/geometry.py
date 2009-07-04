@@ -5,17 +5,18 @@ from sqlalchemy.types import TypeEngine
 from sqlalchemy.sql import expression
 from sqlalchemy.databases.postgres import PGDialect
 from sqlalchemy.databases.sqlite import SQLiteDialect
+from sqlalchemy.databases.mysql import MySQLDialect
 from geoalchemy.postgis import PGPersistentSpatialElement
 from geoalchemy.spatialite import SQLitePersistentSpatialElement
+from geoalchemy.mysql import MySQLPersistentSpatialElement
 from geoalchemy.base import SpatialElement, WKTSpatialElement, GeometryBase, _to_gis
 from geoalchemy.comparator import SFSComparator, SQLMMComparator
 
-# SQL datatypes.
-
 class Geometry(GeometryBase):
-    """Base Geometry column type.
+    """Geometry column type. This is the base class for all other
+    geometry types like Point, LineString, Polygon, etc.
     
-    Converts bind/result values to/from a PersistentSpatialElement.
+    Converts bind/result values to/from a dialect specific persistent geometry value.
     
     """
     
@@ -26,6 +27,8 @@ class Geometry(GeometryBase):
                     return PGPersistentSpatialElement(value)
                 if isinstance(dialect, SQLiteDialect):
                     return SQLitePersistentSpatialElement(value)
+                if isinstance(dialect, MySQLDialect):
+                    return MySQLPersistentSpatialElement(value)
                 else:
                     raise NotImplementedError
             else:
@@ -61,7 +64,8 @@ class MultiPolygon(Geometry):
 
 class GeometryDDL(object):
     """A DDL extension which integrates SQLAlchemy table create/drop 
-    methods with PostGis' AddGeometryColumn/DropGeometryColumn functions.
+    methods with AddGeometryColumn/DropGeometryColumn functions of
+    spatial databases.
     
     Usage::
     
@@ -96,7 +100,11 @@ class GeometryDDL(object):
             
             for c in table.c:
                 if isinstance(c.type, Geometry):
-                    bind.execute(select([func.AddGeometryColumn(table.name, c.name, c.type.srid, c.type.name, c.type.dimension)], autocommit=True))
+                    if bind.dialect.__class__.__name__ == 'MySQLDialect':
+                        bind.execute("ALTER TABLE %s ADD %s %s" % (
+                                table.name, c.name, c.type.name))
+                    else:
+                      bind.execute(select([func.AddGeometryColumn(table.name, c.name, c.type.srid, c.type.name, c.type.dimension)], autocommit=True))
         elif event == 'after-drop':
             table._columns = self._stack.pop()
 

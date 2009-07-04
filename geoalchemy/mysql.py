@@ -8,7 +8,7 @@ from geoalchemy.base import SpatialElement, _to_gis, GeometryBase as Geometry
 
 # Python datatypes
 
-class SQLiteSpatialElement(SpatialElement):
+class MySQLSpatialElement(SpatialElement):
     """Represents a geometry value."""
 
     @property
@@ -21,10 +21,10 @@ class SQLiteSpatialElement(SpatialElement):
 
     @property
     def svg(self):
-        return func.AsSVG(literal(self, Geometry))
+        raise NotImplementedError("At the moment MySQL does not support this operation.")
 
     def fgf(self, precision=1):
-        return func.AsFGF(literal(self, Geometry), precision)
+        raise NotImplementedError("At the moment MySQL does not support this operation.")
 
     @property
     def dimension(self):
@@ -44,15 +44,15 @@ class SQLiteSpatialElement(SpatialElement):
 
     @property
     def is_simple(self):
-        return func.IsSimple(literal(self, Geometry))
+        raise NotImplementedError("Current versions of MySQL do not support this operation yet.")
 
     @property
     def is_valid(self):
-        return func.IsValid(literal(self, Geometry))
+        raise NotImplementedError("At the moment MySQL does not support this operation.")
 
     @property
     def boundary(self):
-        return func.Boundary(literal(self, Geometry))
+        raise NotImplementedError("At the moment MySQL does not support this operation.")
 
     @property
     def x(self):
@@ -84,7 +84,7 @@ class SQLiteSpatialElement(SpatialElement):
 
     @property
     def is_ring(self):
-        return func.IsRing(literal(self, Geometry))
+        raise NotImplementedError("At the moment MySQL does not support this operation.")
 
     @property
     def num_points(self):
@@ -95,7 +95,7 @@ class SQLiteSpatialElement(SpatialElement):
 
     @property
     def centroid(self):
-        return func.Centroid(literal(self, Geometry))
+        raise NotImplementedError("At the moment MySQL does not support this operation.")
 
     @property
     def area(self):
@@ -114,8 +114,7 @@ class SQLiteSpatialElement(SpatialElement):
 			literal(_to_gis(geom), Geometry))
 
     def distance(self, geom):
-        return func.Distance(literal(self, Geometry),
-			literal(_to_gis(geom), Geometry))
+        raise NotImplementedError("At the moment MySQL does not support the Distance function.")
 
     def within_distance(self, geom, distance=0.0):
         return func.DWithin(literal(self, Geometry),
@@ -130,12 +129,10 @@ class SQLiteSpatialElement(SpatialElement):
 			literal(_to_gis(geom), Geometry))
 
     def touches(self, geom):
-        return func.Touches(literal(self, Geometry),
-			literal(_to_gis(geom), Geometry))
+        raise NotImplementedError("At the moment MySQL only supports MBR relations.")
 
     def crosses(self, geom):
-        return func.Crosses(literal(self, Geometry),
-    			literal(_to_gis(geom), Geometry))
+        raise NotImplementedError("At the moment MySQL only supports MBR relations.")
 
     def within(self, geom):
         return func.Within(literal(self, Geometry),
@@ -159,6 +156,9 @@ class SQLiteSpatialElement(SpatialElement):
 
     # OGC Geometry Relations based on Minimum Bounding Rectangle (MBR)
 
+    def mbr_distance(self, geom):
+        raise NotImplementedError("At the moment MySQL does not support the Distance function.")
+
     def mbr_within_distance(self, geom, distance=0.0):
         return func.MBRDWithin(literal(self, Geometry),
 			literal(_to_gis(geom), Geometry), distance)
@@ -172,12 +172,7 @@ class SQLiteSpatialElement(SpatialElement):
 			literal(_to_gis(geom), Geometry))
 
     def mbr_touches(self, geom):
-        return func.MBRTouches(literal(self, Geometry),
-			literal(_to_gis(geom), Geometry))
-
-    def mbr_crosses(self, geom):
-        return func.MBRCrosses(literal(self, Geometry),
-    			literal(_to_gis(geom), Geometry))
+        raise NotImplementedError("At the moment MySQL only supports MBR relations.")
 
     def mbr_within(self, geom):
         return func.MBRWithin(literal(self, Geometry),
@@ -200,8 +195,7 @@ class SQLiteSpatialElement(SpatialElement):
 			literal(_to_gis(geom), Geometry))
 
 
-
-class SQLitePersistentSpatialElement(SQLiteSpatialElement):
+class MySQLPersistentSpatialElement(MySQLSpatialElement):
     """Represents a Geometry value as loaded from the database."""
     
     def __init__(self, desc):

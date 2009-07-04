@@ -6,6 +6,8 @@ class SFSComparator(SpatialComparator):
         and overrides their behavior.
     """
 
+    # Geometry relations using actual spatial element
+
     def equals(self, other):
         return func.Equals(self.__clause_element__(),
 			literal(_to_gis(other), GeometryBase))
@@ -38,8 +40,42 @@ class SFSComparator(SpatialComparator):
         return func.Overlaps(self.__clause_element__(),
 			literal(_to_gis(other), GeometryBase))
 
-    def contains(self, other):
+    def gcontains(self, other):
         return func.Contains(self.__clause_element__(),
+			literal(_to_gis(other), GeometryBase))
+
+    # Geometry relations using Minimum Bounding Rectangle (MBR)
+
+    def mbr_equals(self, other):
+        return func.MBREquals(self.__clause_element__(),
+			literal(_to_gis(other), GeometryBase))
+
+    def mbr_distance(self, other):
+        return func.MBRDistance(self.__clause_element__(),
+			literal(_to_gis(other), GeometryBase))
+
+    def mbr_disjoint(self, other):
+        return func.MBRDisjoint(self.__clause_element__(),
+			literal(_to_gis(other), GeometryBase))
+
+    def mbr_intersects(self, other):
+        return func.MBRIntersects(self.__clause_element__(),
+			literal(_to_gis(other), GeometryBase))
+
+    def mbr_touches(self, other):
+        return func.MBRTouches(self.__clause_element__(),
+			literal(_to_gis(other), GeometryBase))
+
+    def mbr_within(self, other):
+        return func.MBRWithin(self.__clause_element__(),
+			literal(_to_gis(other), GeometryBase))
+
+    def mbr_overlaps(self, other):
+        return func.MBROverlaps(self.__clause_element__(),
+			literal(_to_gis(other), GeometryBase))
+
+    def mbr_contains(self, other):
+        return func.MBRContains(self.__clause_element__(),
 			literal(_to_gis(other), GeometryBase))
 
 
@@ -84,7 +120,7 @@ class SQLMMComparator(SpatialComparator):
         return func.ST_Overlaps(self.__clause_element__(),
 			literal(_to_gis(other), GeometryBase))
 
-    def contains(self, other):
+    def gcontains(self, other):
         return func.ST_Contains(self.__clause_element__(),
 			literal(_to_gis(other), GeometryBase))
 

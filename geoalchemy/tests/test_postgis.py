@@ -267,11 +267,11 @@ class TestGeometry(TestCase):
         l1 = session.query(Lake).filter(Lake.lake_name=='Lake White').one()
         p1 = session.query(Spot).filter(Spot.spot_height==102.34).one()
         p2 = session.query(Spot).filter(Spot.spot_height==388.62).one()
-        #containing_lakes = session.query(Lake).filter(Lake.lake_geom.contains(p1.spot_location)).all()
-        ok_(session.scalar(l.lake_geom.contains(p1.spot_location)))
-        ok_(not session.scalar(l.lake_geom.contains(p2.spot_location)))
-        #ok_(l in containing_lakes)
-        #ok_(l1 not in containing_lakes)
+        containing_lakes = session.query(Lake).filter(Lake.lake_geom.gcontains(p1.spot_location)).all()
+        ok_(session.scalar(l.lake_geom.gcontains(p1.spot_location)))
+        ok_(not session.scalar(l.lake_geom.gcontains(p2.spot_location)))
+        ok_(l in containing_lakes)
+        ok_(l1 not in containing_lakes)
 
     def test_covers(self):
         l = session.query(Lake).filter(Lake.lake_name=='Lake Blue').one()

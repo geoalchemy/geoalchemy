@@ -93,6 +93,10 @@ class GeometryDDL(object):
                 for c in gis_cols:
                     if bind.dialect.__class__.__name__ == 'PGDialect':
                         bind.execute(select([func.DropGeometryColumn('public', table.name, c.name)], autocommit=True))
+                    elif bind.dialect.__class__.__name__ == 'SQLiteDialect':
+                        bind.execute(select([func.DiscardGeometryColumn(table.name, c.name)], autocommit=True))
+                    else:
+                        pass
                     break
                 
         elif event == 'after-create':
@@ -100,11 +104,15 @@ class GeometryDDL(object):
             
             for c in table.c:
                 if isinstance(c.type, Geometry):
-                    if bind.dialect.__class__.__name__ == 'MySQLDialect':
+                    if bind.dialect.__class__.__name__ == 'PGDialect':
+                      bind.execute(select([func.AddGeometryColumn(table.name, c.name, c.type.srid, c.type.name, c.type.dimension)], autocommit=True))
+                    elif bind.dialect.__class__.__name__ == 'SQLiteDialect':
+                      bind.execute(select([func.AddGeometryColumn(table.name, c.name, c.type.srid, c.type.name, c.type.dimension)], autocommit=True))
+                    elif bind.dialect.__class__.__name__ == 'MySQLDialect':
                         bind.execute("ALTER TABLE %s ADD %s %s" % (
                                 table.name, c.name, c.type.name))
                     else:
-                      bind.execute(select([func.AddGeometryColumn(table.name, c.name, c.type.srid, c.type.name, c.type.dimension)], autocommit=True))
+                      pass
         elif event == 'after-drop':
             table._columns = self._stack.pop()
 

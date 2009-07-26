@@ -6,8 +6,6 @@ from sqlalchemy.orm.properties import ColumnProperty
 from sqlalchemy.exc import NotSupportedError
 from geoalchemy.base import SpatialElement, _to_gis, GeometryBase as Geometry
 
-# Python datatypes
-
 class MySQLSpatialElement(SpatialElement):
     """Represents a geometry value."""
 
@@ -154,7 +152,7 @@ class MySQLSpatialElement(SpatialElement):
         return func.CoveredBy(literal(self, Geometry),
 			literal(_to_gis(geom), Geometry))
 
-    # OGC Geometry Relations based on Minimum Bounding Rectangle (MBR)
+    # OGC Geometry Relations based on Minimum Bounding Rectangle
 
     def mbr_distance(self, geom):
         raise NotImplementedError("At the moment MySQL does not support the Distance function.")

@@ -52,7 +52,8 @@ class GeometryBase(TypeEngine):
     """Base Geometry column type for all spatial databases.
     
     Converts bind/result values to/from a generic Persistent value.
-    This is used as a base class and overridden into dialect specific Persistent values.
+    This is used as a base class and overridden into dialect specific
+    Persistent values.
     """
     
     name = 'GEOMETRY'

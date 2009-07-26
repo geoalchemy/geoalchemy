@@ -5,8 +5,6 @@ from sqlalchemy.orm.properties import ColumnProperty
 from sqlalchemy.sql import expression
 from geoalchemy.base import SpatialElement, _to_gis, GeometryBase as Geometry
 
-# Python datatypes
-
 class PGSpatialElement(SpatialElement):
     """Represents a geometry value."""
 

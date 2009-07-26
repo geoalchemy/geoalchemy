@@ -16,7 +16,8 @@ class Geometry(GeometryBase):
     """Geometry column type. This is the base class for all other
     geometry types like Point, LineString, Polygon, etc.
     
-    Converts bind/result values to/from a dialect specific persistent geometry value.
+    Converts bind/result values to/from a dialect specific persistent
+    geometry value.
     
     """
     
@@ -59,8 +60,6 @@ class MultiLineString(Geometry):
 class MultiPolygon(Geometry):
     name = 'MULTIPOLYGON'
 
-
-# DDL integration
 
 class GeometryDDL(object):
     """A DDL extension which integrates SQLAlchemy table create/drop 

@@ -2,11 +2,11 @@ from sqlalchemy import func, literal
 from geoalchemy.base import GeometryBase, SpatialComparator, _to_gis
 
 class SFSComparator(SpatialComparator):
-    """Intercepts standard Column operators on mapped class attributes
-        and overrides their behavior.
+    """Spatial Comparators for implementing Geometry Relationships
+    for OGC SFS geometries.
     """
 
-    # Geometry relations using actual spatial element
+    # Geometry relations using the spatial element geometry
 
     def equals(self, other):
         return func.Equals(self.__clause_element__(),
@@ -80,8 +80,8 @@ class SFSComparator(SpatialComparator):
 
 
 class SQLMMComparator(SpatialComparator):
-    """Intercepts standard Column operators on mapped class attributes
-        and overrides their behavior.
+    """Spatial Comparators for implementing Geometry Relationships
+    for OGC SQL/MM geometries.
     """
 
     def equals(self, other):

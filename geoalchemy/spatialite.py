@@ -6,8 +6,6 @@ from sqlalchemy.orm.properties import ColumnProperty
 from sqlalchemy.exc import NotSupportedError
 from geoalchemy.base import SpatialElement, _to_gis, GeometryBase as Geometry
 
-# Python datatypes
-
 class SQLiteSpatialElement(SpatialElement):
     """Represents a geometry value."""
 
@@ -157,7 +155,7 @@ class SQLiteSpatialElement(SpatialElement):
         return func.CoveredBy(literal(self, Geometry),
 			literal(_to_gis(geom), Geometry))
 
-    # OGC Geometry Relations based on Minimum Bounding Rectangle (MBR)
+    # OGC Geometry Relations based on Minimum Bounding Rectangle
 
     def mbr_within_distance(self, geom, distance=0.0):
         return func.MBRDWithin(literal(self, Geometry),

@@ -107,11 +107,21 @@ class GeometryDDL(object):
             for c in table.c:
                 if isinstance(c.type, Geometry):
                     if bind.dialect.__class__.__name__ == 'PGDialect':
-                      bind.execute(select([func.AddGeometryColumn(table.name, c.name, c.type.srid, c.type.name, c.type.dimension)], autocommit=True))
+                        bind.execute(select([func.AddGeometryColumn(table.name, c.name, c.type.srid, c.type.name, c.type.dimension)], autocommit=True))
+                        if c.type.spatial_index:
+                            bind.execute("CREATE INDEX idx_%s_%s ON %s USING GIST (%s GIST_GEOMETRY_OPS)" % (table.name, c.name, table.name, c.name))
                     elif bind.dialect.__class__.__name__ == 'SQLiteDialect':
-                      bind.execute(select([func.AddGeometryColumn(table.name, c.name, c.type.srid, c.type.name, c.type.dimension)], autocommit=True))
+                        bind.execute(select([func.AddGeometryColumn(table.name, c.name, c.type.srid, c.type.name, c.type.dimension)], autocommit=True))
+                        if c.type.spatial_index:
+                            bind.execute("CREATE INDEX idx_%s_%s ON %s(%s)" % (table.name, c.name, table.name, c.name))
+                            bind.execute("VACUUM %s" % table.name)
                     elif bind.dialect.__class__.__name__ == 'MySQLDialect':
-                        bind.execute("ALTER TABLE %s ADD %s %s" % (
+                        if c.type.spatial_index:
+                            bind.execute("ALTER TABLE %s ADD %s %s NOT NULL" % (
+                                table.name, c.name, c.type.name))
+                            bind.execute("CREATE SPATIAL INDEX idx_%s_%s ON %s(%s)" % (table.name, c.name, table.name, c.name))
+                        else:
+                            bind.execute("ALTER TABLE %s ADD %s %s" % (
                                 table.name, c.name, c.type.name))
                     else:
                       pass

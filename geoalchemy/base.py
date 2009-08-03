@@ -63,9 +63,11 @@ class GeometryBase(TypeEngine):
     
     name = 'GEOMETRY'
     
-    def __init__(self, dimension=None, srid=4326):
+    def __init__(self, dimension=None, srid=4326, spatial_index=True, **kwargs):
         self.dimension = dimension
         self.srid = srid
+        self.spatial_index = spatial_index
+        super(GeometryBase, self).__init__(**kwargs)
     
     def bind_processor(self, dialect):
         def process(value):

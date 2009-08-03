@@ -1,3 +1,4 @@
+from sqlalchemy import func, literal
 from sqlalchemy.orm.properties import ColumnProperty
 from sqlalchemy.sql import expression
 from sqlalchemy.types import TypeEngine
@@ -18,6 +19,10 @@ class PersistentSpatialElement(SpatialElement):
     
     def __init__(self, desc):
         self.desc = desc
+
+    @property
+    def geometry_type(self):
+        return func.GeometryType(literal(self, GeometryBase))
 
 class WKTSpatialElement(SpatialElement, expression.Function):
     """Represents a Geometry value expressed within application code; i.e. in

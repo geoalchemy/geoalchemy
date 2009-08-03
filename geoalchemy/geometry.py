@@ -60,6 +60,9 @@ class MultiLineString(Geometry):
 class MultiPolygon(Geometry):
     name = 'MULTIPOLYGON'
 
+class GeometryCollection(Geometry):
+    name = 'GEOMETRYCOLLECTION'
+
 
 class GeometryDDL(object):
     """A DDL extension which integrates SQLAlchemy table create/drop 

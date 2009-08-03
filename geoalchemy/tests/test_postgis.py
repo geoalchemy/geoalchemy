@@ -5,8 +5,8 @@ from sqlalchemy import (create_engine, MetaData, Column, Integer, String,
 from sqlalchemy.orm import sessionmaker, column_property
 from sqlalchemy.ext.declarative import declarative_base
 
-from geoalchemy.geometry import (Geometry, GeometryColumn, GeometryDDL,
-	WKTSpatialElement)
+from geoalchemy.geometry import (Geometry, GeometryCollection, GeometryColumn,
+        GeometryDDL, WKTSpatialElement)
 from nose.tools import eq_, ok_
 
 engine = create_engine('postgres://gis:gis@localhost/gis', echo=True)
@@ -35,12 +35,20 @@ class Spot(Base):
     spot_height = Column(Numeric)
     spot_location = GeometryColumn(Geometry(2))
 
+class Shape(Base):
+    __tablename__ = 'shapes'
+
+    shape_id = Column(Integer, primary_key=True)
+    shape_name = Column(String)
+    shape_geom = GeometryColumn(GeometryCollection(2))
+
 # enable the DDL extension, which allows CREATE/DROP operations
 # to work correctly.  This is not needed if working with externally
 # defined tables.    
 GeometryDDL(Road.__table__)
 GeometryDDL(Lake.__table__)
 GeometryDDL(Spot.__table__)
+GeometryDDL(Shape.__table__)
 
 class TestGeometry(TestCase):
 
@@ -65,6 +73,9 @@ class TestGeometry(TestCase):
             Spot(spot_height=102.34, spot_location='POINT(-88.9055734203822 43.0048567324841)'),
             Spot(spot_height=388.62, spot_location='POINT(-89.201512910828 43.1051752038217)'),
             Spot(spot_height=454.66, spot_location='POINT(-88.3304141847134 42.6269904904459)'),
+            Shape(shape_name='Bus Stop', shape_geom='GEOMETRYCOLLECTION(POINT(-88.3304141847134 42.6269904904459))'),
+            Shape(shape_name='Jogging Track', shape_geom='GEOMETRYCOLLECTION(LINESTRING(-88.2652071783439 42.5584395350319,-88.1598727834395 42.6269904904459,-88.1013536751592 42.621974566879,-88.0244428471338 42.6437102356688,-88.0110670509554 42.6771497261147))'),
+            Shape(shape_name='Play Ground', shape_geom='GEOMETRYCOLLECTION(POLYGON((-88.7968950764331 43.2305732929936,-88.7935511273885 43.1553344394904,-88.716640299363 43.1570064140127,-88.7250001719745 43.2339172420382,-88.7968950764331 43.2305732929936)))'),
         ])
 
         # or use an explicit WKTSpatialElement (similar to saying func.GeomFromText())
@@ -77,6 +88,14 @@ class TestGeometry(TestCase):
         metadata.drop_all()
 
     # Test Geometry Functions
+
+    def test_geometry_type(self):
+        r = session.query(Road).get(1)
+        l = session.query(Lake).get(1)
+        s = session.query(Spot).get(1)
+        eq_(session.scalar(self.r.road_geom.geometry_type), 'LINESTRING')
+        eq_(session.scalar(self.l.lake_geom.geometry_type), 'POLYGON')
+        eq_(session.scalar(self.s.spot_location.geometry_type), 'POINT')
 
     def test_wkt(self):
         assert session.scalar(self.r.road_geom.wkt) == 'LINESTRING(-88.6748409363057 43.1035032292994,-88.6464173694267 42.9981688343949,-88.607961955414 42.9680732929936,-88.5160033566879 42.9363057770701,-88.4390925286624 43.0031847579618)'

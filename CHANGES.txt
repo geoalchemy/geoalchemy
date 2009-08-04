@@ -1,0 +1,30 @@
+GeoAlchemy Change Log
+=====================
+
+0.1
+---
+
+* Some documentation
+* Support for spatial indexing
+* Support for geometry collections
+* MySQL support and MBR comparators
+* Spatialite geometry relations as column comparators
+* Postgis geometry relations as column comparators
+* Spatial comparator
+* GeometryBase as base class
+* Unittests for spatialite
+* Geometry functions for spatialite
+* EPSG:4326 as default SRID
+
+0.2
+---
+
+* OGC geometry relations
+* PostGIS functions and format converters
+* Posgis spatial functions based on OGC SQL/MM
+* minor changes
+* Improved spatialite support
+* Unit tests for postgis
+* Spatialite support
+* PostGIS geometry support based on SQLAlchemy postgis example
+

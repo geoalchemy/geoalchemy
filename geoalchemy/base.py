@@ -2,7 +2,7 @@ from sqlalchemy import func, literal
 from sqlalchemy.orm.properties import ColumnProperty
 from sqlalchemy.sql import expression
 from sqlalchemy.types import TypeEngine
-from geoalchemy.utils import extract_coordinates
+from geoalchemy.utils import extract_wkt_coordinates
 
 # Base classes for geoalchemy
 
@@ -25,7 +25,7 @@ class SpatialElement(object):
             return session.scalar(self.x), session.scalar(self.y)
         else:
             wkt = session.scalar(self.wkt)
-            return extract_coordinates(wkt, geom_type)
+            return extract_wkt_coordinates(wkt, geom_type)
 
 class PersistentSpatialElement(SpatialElement):
     """Represents a Geometry value loaded from the database."""

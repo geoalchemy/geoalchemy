@@ -16,7 +16,7 @@ def polygon_coordinates(wkt):
     wkt = "".join(wkt.split(")")[:-1]) + ")"
     return tuple([l for l in linestring_coordinates(wkt)])
 
-def extract_coordinates(wkt, geom_type):
+def extract_wkt_coordinates(wkt, geom_type):
     if geom_type in linestring_types: return linestring_coordinates(wkt)
     elif geom_type in polygon_types: return polygon_coordinates(wkt)
     else: raise NotImplementedError("Not implemented for this geometry type")

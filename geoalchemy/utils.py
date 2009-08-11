@@ -7,13 +7,8 @@ def linestring_coordinates(wkt):
     wkt = wkt.split(")")[0]
     wkt = wkt.strip()
     points = wkt.split(",")
-    coords = "("
-    for point in points:
-        c = point.split(" ")
-        print c
-        print ""
-        coords += "(%s,%s)" % (c[0], c[1])
-    return coords+")"
+    return tuple([tuple([float(value) for value in point.split(" ")]
+                  ) for point in points])
 
 #TODO Enhance it to support polygons with holes
 def polygon_coordinates(wkt):

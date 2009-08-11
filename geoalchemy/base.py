@@ -15,12 +15,6 @@ class SpatialElement(object):
     def __repr__(self):
         return "<%s at 0x%x; %r>" % (self.__class__.__name__, id(self), self.desc)
 
-class PersistentSpatialElement(SpatialElement):
-    """Represents a Geometry value loaded from the database."""
-    
-    def __init__(self, desc):
-        self.desc = desc
-
     @property
     def geometry_type(self):
         return func.GeometryType(literal(self, GeometryBase))
@@ -32,6 +26,12 @@ class PersistentSpatialElement(SpatialElement):
         else:
             wkt = session.scalar(self.wkt)
             return extract_coordinates(wkt, geom_type)
+
+class PersistentSpatialElement(SpatialElement):
+    """Represents a Geometry value loaded from the database."""
+    
+    def __init__(self, desc):
+        self.desc = desc
 
 class WKTSpatialElement(SpatialElement, expression.Function):
     """Represents a Geometry value expressed within application code; i.e. in

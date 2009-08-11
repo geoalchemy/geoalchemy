@@ -14,7 +14,7 @@ def linestring_coordinates(wkt):
 def polygon_coordinates(wkt):
     wkt = "(" + "".join(wkt.split("(")[1:])
     wkt = "".join(wkt.split(")")[:-1]) + ")"
-    return linestring_coordinates(wkt)
+    return tuple([l for l in linestring_coordinates(wkt)])
 
 def extract_coordinates(wkt, geom_type):
     if geom_type in linestring_types: return linestring_coordinates(wkt)

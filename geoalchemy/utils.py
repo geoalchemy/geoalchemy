@@ -1,6 +1,6 @@
 
-linestring_types = ("LineString", "ST_LineString")
-polygon_types = ("Polygon", "ST_Polygon")
+linestring_types = ("LINESTRING", "LineString", "ST_LineString")
+polygon_types = ("POLYGON", "Polygon", "ST_Polygon")
 
 def linestring_coordinates(wkt):
     wkt = wkt.split("(")[1]

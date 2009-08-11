@@ -21,7 +21,7 @@ class SpatialElement(object):
 
     def coords(self, session):
         geom_type = session.scalar(self.geometry_type)
-        if geom_type in ('ST_Point', 'Point'):
+        if geom_type in ('POINT', 'Point', 'ST_Point'):
             return session.scalar(self.x), session.scalar(self.y)
         else:
             wkt = session.scalar(self.wkt)

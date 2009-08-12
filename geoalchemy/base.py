@@ -19,9 +19,15 @@ class SpatialElement(object):
     def geometry_type(self):
         return func.GeometryType(literal(self, GeometryBase))
 
+    def geom_type(self, session):
+        db_geom_type = session.scalar(self.geometry_type)
+        if db_geom_type.startswith('ST_') or db_geom_type.startswith('st_'):
+            db_geom_type = db_geom_type[3:]
+        return db_geom_type.upper()
+
     def coords(self, session):
-        geom_type = session.scalar(self.geometry_type)
-        if geom_type in ('POINT', 'Point', 'ST_Point'):
+        geom_type = self.geom_type(session)
+        if geom_type  == 'POINT':
             return session.scalar(self.x), session.scalar(self.y)
         else:
             wkt = session.scalar(self.wkt)

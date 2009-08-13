@@ -2,7 +2,7 @@ from sqlalchemy import func, literal
 from sqlalchemy.orm.properties import ColumnProperty
 from sqlalchemy.sql import expression
 from sqlalchemy.types import TypeEngine
-from geoalchemy.utils import extract_wkt_coordinates
+from geoalchemy.utils import from_wkt
 
 # Base classes for geoalchemy
 
@@ -16,22 +16,16 @@ class SpatialElement(object):
         return "<%s at 0x%x; %r>" % (self.__class__.__name__, id(self), self.desc)
 
     @property
-    def geometry_type(self):
-        return func.GeometryType(literal(self, GeometryBase))
+    def wkt(self):
+        return func.AsText(literal(self, GeometryBase))
 
     def geom_type(self, session):
-        db_geom_type = session.scalar(self.geometry_type)
-        if db_geom_type.startswith('ST_') or db_geom_type.startswith('st_'):
-            db_geom_type = db_geom_type[3:]
-        return db_geom_type.upper()
+        wkt = session.scalar(self.wkt)
+        return from_wkt(wkt)["type"]
 
     def coords(self, session):
-        geom_type = self.geom_type(session)
-        if geom_type  == 'POINT':
-            return session.scalar(self.x), session.scalar(self.y)
-        else:
-            wkt = session.scalar(self.wkt)
-            return extract_wkt_coordinates(wkt, geom_type)
+        wkt = session.scalar(self.wkt)
+        return from_wkt(wkt)["coordinates"]
 
 class PersistentSpatialElement(SpatialElement):
     """Represents a Geometry value loaded from the database."""

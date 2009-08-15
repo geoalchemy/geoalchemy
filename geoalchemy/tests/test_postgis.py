@@ -5,7 +5,7 @@ from sqlalchemy import (create_engine, MetaData, Column, Integer, String,
 from sqlalchemy.orm import sessionmaker, column_property
 from sqlalchemy.ext.declarative import declarative_base
 
-from geoalchemy.geometry import (Geometry, GeometryCollection, GeometryColumn,
+from geoalchemy import (Geometry, GeometryCollection, GeometryColumn,
         GeometryDDL, WKTSpatialElement)
 from nose.tools import eq_, ok_
 

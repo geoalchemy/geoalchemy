@@ -6,7 +6,7 @@ from sqlalchemy.orm import sessionmaker, column_property
 from sqlalchemy.exc import NotSupportedError
 from sqlalchemy.ext.declarative import declarative_base
 
-from geoalchemy.geometry import (Geometry, GeometryColumn, Point, Polygon,
+from geoalchemy import (Geometry, GeometryColumn, Point, Polygon,
 		LineString, GeometryDDL, WKTSpatialElement)
 from nose.tools import ok_, eq_, raises
 

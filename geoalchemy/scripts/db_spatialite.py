@@ -6,7 +6,7 @@ from sqlalchemy.orm import sessionmaker, column_property
 from sqlalchemy.ext.declarative import declarative_base
 
 from pysqlite2 import dbapi2 as sqlite
-from geoalchemy.geometry import (Geometry, GeometryColumn, GeometryDDL,
+from geoalchemy import (Geometry, GeometryColumn, GeometryDDL,
 	WKTSpatialElement)
 
 

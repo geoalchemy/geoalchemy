@@ -1,12 +1,8 @@
-from unittest import TestCase
-from binascii import b2a_hex
-from sqlalchemy import (create_engine, MetaData, Column, Integer, String,
-        Numeric, func, literal, select)
-from sqlalchemy.orm import sessionmaker, column_property
+from sqlalchemy import *
+from sqlalchemy.orm import *
 from sqlalchemy.ext.declarative import declarative_base
 
-from geoalchemy import (Geometry, GeometryCollection, Point,
-           LineString, Polygon, GeometryColumn, GeometryDDL, WKTSpatialElement)
+from geoalchemy import *
 
 engine = create_engine('postgres://gis:gis@localhost/gis', echo=True)
 metadata = MetaData(engine)

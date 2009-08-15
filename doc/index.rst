@@ -3,12 +3,16 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to GeoAlchemy's documentation!
-======================================
+GeoAlchemy: Using SQLAlchemy with Spatial Databases
+===================================================
 
 Contents:
 
 .. toctree::
+
+   install.rst
+   tutorial.rst
+   reference.rst
    :maxdepth: 2
 
 Indices and tables

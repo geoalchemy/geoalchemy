@@ -12,7 +12,7 @@ Setting up PostGIS
 This tutorial requires a working postgis installation. The PostGIS
 Documentation has extensive `installation instructions
 <http://postgis.refractions.net/docs/ch02.html#PGInstall>`_. Create a
-spatially enabled database called `gisdb` as per instructions given
+spatially enabled database called `gis` as per instructions given
 `here <http://postgis.refractions.net/docs/ch02.html#id2532099>`_. Also
 create a new user and grant it permissions on this database.
 
@@ -30,7 +30,7 @@ either bound or unbound. In this example we will create an bound session.
     from sqlalchemy import *
     from sqlalchemy.orm import *
 
-    engine = create_engine('postgres://gis:password@localhost/gisdb', echo=True)
+    engine = create_engine('postgres://gis:password@localhost/gis', echo=True)
     Session = sessionmaker(bind=engine)
     session = Session()
 
@@ -138,7 +138,7 @@ Addind GIS features is now as simple as instantiating the model classes and addi
     session.commit()
 
 Scripts for creating sample gis objects as shown above are available in the examples directory. You could run those scripts to create the database tables and the gis objects. Running them with -i option to the interpreter will drop you at the interactive interpreter promt. You can then follow the rest of the tutorial on the interpreter.
-:
+
     $ python -i examples/tutorial.py
     >>>
 

@@ -3,18 +3,24 @@ import sys, os
 
 version = '0.1'
 
-setup(name='geoalchemy',
+setup(name='GeoAlchemy',
       version=version,
-      description="Geospatial data types support for SQLAlchemy",
+      description="Using SQLAlchemy with Spatial Databases",
       long_description="""\
 """,
-      classifiers=[], # Get strings from http://pypi.python.org/pypi?%3Aaction=list_classifiers
+      classifiers=[
+          "Development Status :: 3 - Alpha",
+          "Environment :: Plugins",
+          "Intended Audience :: Information Technology",
+          "License :: OSI Approved :: MIT License",
+          "Topic :: Scientific/Engineering :: GIS"
+      ],
       keywords='geo gis sqlalchemy orm',
       author='Sanjiv Singh',
       author_email='singhsanjivk@gmail.com',
-      url='http://gsoc.turbogears.org/',
+      url='http://geoalchemy.org/',
       license='MIT',
-      packages=find_packages(exclude=['ez_setup', 'examples', 'tests']),
+      packages=find_packages(exclude=['ez_setup', 'examples', 'tests', "doc"]),
       include_package_data=True,
       zip_safe=False,
       install_requires=[

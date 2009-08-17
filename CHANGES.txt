@@ -16,7 +16,7 @@ GeoAlchemy Change Log
 * Geometry functions for spatialite
 * EPSG:4326 as default SRID
 
-0.2
+0.1dev
 ---
 
 * OGC geometry relations

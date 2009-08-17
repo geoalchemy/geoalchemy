@@ -138,10 +138,10 @@ html_static_path = ['_static']
 #html_additional_pages = {}
 
 # If false, no module index is generated.
-#html_use_modindex = True
+html_use_modindex = True
 
 # If false, no index is generated.
-#html_use_index = True
+html_use_index = True
 
 # If true, the index is split into individual pages for each letter.
 #html_split_index = False
@@ -194,4 +194,5 @@ latex_documents = [
 #latex_use_modindex = True
 
 jsmath_path = '_static/jsMath/jsMath.js'
+script_files = '_static/remove.js'
 

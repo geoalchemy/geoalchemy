@@ -90,7 +90,7 @@ creating the objects in the database.
 
 In the above model definition we have defined an `id` field for each class
 which is also the primary key in the database. We have defined a set of
-standards attributes using datatyes availabe under `sqlalchemy.types`. We
+standard attributes using datatyes availabe under `sqlalchemy.types`. We
 have also created a `geometry attribute` for each class using `GeometryColumn`
 and Point, LineString and Polygon datatypes of GeoAlchemy. Here we pass the
 dimension parameter to `GeometryColumn`. We leave out the `srid` parameter which
@@ -115,13 +115,13 @@ also first drop the tables so that the database is emptied before creating table
 Adding GIS Features
 -------------------
 
-Addind GIS features is now as simple as instantiating the model classes and addind them to the SQLAlchemy session object that we created earlier. Geoalchemy enables creation of spatial attributes Well Known Text (WKT) format using the `WKTSpatialElement class`.
+Addind GIS features is now as simple as instantiating the model classes and addind them to the SQLAlchemy session object that we created earlier. Geoalchemy enables creation of spatial attributes specified using the Well Known Text (WKT) format using geoalchemy `WKTSpatialElement` class.
 
 .. code-block:: python
 
     wkt = "POINT(-81.40 38.08)"
-    wkt = "POINT(-81.42 37.65)"
     spot1 = Spot(name="Gas Station", height=240.8, geom=WKTSpatialElement(wkt))
+    wkt = "POINT(-81.42 37.65)"
     spot2 = Spot(name="Restaurant", height=233.6, geom=WKTSpatialElement(wkt)
     
     wkt = "LINESTRING(-80.3 38.2, -81.03 38.04, -81.2 37.89)"
@@ -166,7 +166,7 @@ Functions to obtain geometry value in different formats
     '01010000007b14ae47e15a54c03333333333d34240'
 
 Functions to obtain the geometry type, coordinates, etc
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
 .. code-block:: python
@@ -192,7 +192,7 @@ Spatial operations that return new geometries
     >>>
     >>> buffer_geom = WKBSpatialElement(session.scalar(r.geom.buffer(10.0)))
     >>> session.scalar(buffer_geom.wkt)
-    'POLYGON((-77.4495270615657 28.6622373442108,-77.9569183543725 28.4304851371862,-79.8646930595254 27.9795532202266,-81.8237828615519 27.9094742151711,-83.7589010380305 28.2229412188832,-85.5956820826657 28.9079078702047,-87.2635395299911 29.9380512848588,-88.698378553651 31.2737836291316,-89.8450590946332 32.86377345812,-90.6595148628138 34.6469183543725,-91.1104467797734 36.5546930595254,-91.1805257848289 38.5137828615519,-90.8670587811168 40.4489010380304,-90.1820921297954 42.2856820826657,-89.1519487151412 43.953539529991,-87.8162163708684 45.388378553651,-87.6462163708684 45.538378553651,-86.2901515097915 46.5447519713416,-84.7840829416022 47.3085954312167,-83.1709592140701 47.8081264141947,-82.4409592140701 47.9681264141947,-80.4941543554641 48.1981150266565,-78.5398882538607 48.0438816856514,-76.6532622595793 47.5113534919791,-74.9067783515483 46.6209952054773,-73.3675529269137 45.4070227957775,-72.0947375555367 43.916088541781,-71.1372458183362 42.2054882107431,-70.5318735858053 40.3409592140701,-70.3018849733435 38.3941543554641,-70.4561183143486 36.4398882538607,-70.9886465080209 34.5532622595794,-71.8790047945227 32.8067783515483,-73.0929772042225 31.2675529269137,-74.583911458219 29.9947375555367,-76.2945117892569 29.0372458183362,-77.4495270615657 28.6622373442108))'
+    'POLYGON((-77.4495270615657 28.6622373442108,-77.9569183543725 28.4304851371862,-79.8646930595254 27.9795532202266, ........ ,28.6622373442108))'
     >>> envelope_geom = WKBSpatialElement(session.scalar(r.geom.envelope))
     >>> session.scalar(envelope_geom.wkt)
     'POLYGON((-81.2000045776367 37.8899993896484,-81.2000045776367 38.2000007629395,-80.2999954223633 38.2000007629395,-80.2999954223633 37.8899993896484,-81.2000045776367 37.8899993896484))'

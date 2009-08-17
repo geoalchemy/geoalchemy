@@ -139,6 +139,8 @@ Addind GIS features is now as simple as instantiating the model classes and addi
 
 Scripts for creating sample gis objects as shown above are available in the examples directory. You could run those scripts to create the database tables and the gis objects. Running them with -i option to the interpreter will drop you at the interactive interpreter promt. You can then follow the rest of the tutorial on the interpreter.
 
+.. code-block:: python
+
     $ python -i examples/tutorial.py
     >>>
 

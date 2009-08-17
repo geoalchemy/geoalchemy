@@ -29,10 +29,11 @@ It is assumed that a fresh virtualenv has been created and TG2 installed followi
 
     (tg2env)$ easy_install -i http://www.turbogears.org/2.0/downloads/current/index/ tgext.geo
 
-We assume that a PostgreSQL server is installed and ready for use. Install PostGIS and create a new PostGIS enabled database called `gis`. Refer the docs `here <http://postgis.refractions.net/documentation>`_ to achieve this. We also need to install the python db-api for postgres::
+We assume that a PostgreSQL server is installed and ready for use. Install PostGIS and create a new PostGIS enabled database called `gis`. Refer the docs `here <http://postgis.refractions.net/documentation>`_ to achieve this. Install GeoAlchemy and the python db-api for postgres::
 
-    (tg2env)$ easy_install -i http://www.turbogears.org/2.0/downloads/current/index egenix-mx-base
-    (tg2env)$ easy_install -i http://www.turbogears.org/2.0/downloads/current/index psycopg2 
+    (tg2env)$ easy_install GeoAlchemy
+    (tg2env)$ easy_install egenix-mx-base
+    (tg2env)$ easy_install psycopg2 
 
 
 Creating a New TG2 App
@@ -70,7 +71,7 @@ The database tables can now be created using the setup-app paster command
 
     $ (tg2env) paster setup-app development.ini
 
-In case we need sample data to be inserted during application startup, we must add them into the setup script, i.e. tgformat/websetup.py prior ro running the setup command. Let us add some sample data.
+In case we need sample data to be inserted during application startup, we must add them into the setup script, i.e. tgfeature/websetup.py prior ro running the setup command. Let us add some sample data.
 
 .. code-block:: python
 
@@ -205,9 +206,9 @@ The server is now ready to be accessed by client applications for storing, manip
 
 .. code-block:: bash
 
-    $(tg2env) cp /path/to/featureserversource/index.html tgformat/public/demo.html
-    $(tg2env) cp /path/to/featureserversource/json.html tgformat/public/
-    $(tg2env) cp /path/to/featureserversource/kml.html tgformat/public/
+    $(tg2env) cp /path/to/featureserversource/index.html tgfeature/public/demo.html
+    $(tg2env) cp /path/to/featureserversource/json.html tgfeature/public/
+    $(tg2env) cp /path/to/featureserversource/kml.html tgfeature/public/
 
 Now modify these files to change the following::
 

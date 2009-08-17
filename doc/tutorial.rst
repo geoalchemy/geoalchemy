@@ -4,7 +4,9 @@ GeoAlchemy Tutorial
 This is a short tutorial to illustrate the use of GeoAlchemy and to get
 you started quickly. In this tutorial we will create a simple model using
 three vector layers in PostGIS. The same tutorial will be applicable for
-MySQL and Spatialte with minor changes.
+MySQL. Minor changes are required for spatialte as the spatialite extension
+needs to be loaded. Spatialite specific details are given `here
+<#notes-for-spatialite>`_.
 
 Setting up PostGIS
 ------------------
@@ -217,4 +219,41 @@ Spatial relations for filtering features
     >>> session.query(Spot).filter(Spot.geom.contained_by(l.geom)).count()
     0L
 
+
+Notes for Spatilate
+-------------------
+
+Although Python2.5 and its higher versions include sqlite support, while using
+spatialite in python we have to use the db-api module provided by pysqlite2.
+So we have to install pysqlite2 separately as:
+
+.. code-block:: bash
+
+    $ easy_install pysqlite
+
+While creating the engine we must specify the pysqlite dbapi as the module
+to be used:
+
+.. code-block:: python
+
+    from pysqlite2 import dbapi2 as sqlite
+
+    engine = create_engine('sqlite:////tmp/devdata.db', module=sqlite, echo=True)
+
+Enable sqlite extension loading and load the spatialite extension:
+
+.. code-block:: python
+
+    connection = engine.raw_connection().connection
+    connection.enable_load_extension(True)
+    metadata = MetaData(engine)
+    session = sessionmaker(bind=engine)()
+    session.execute("select load_extension('/usr/local/lib/libspatialite.so')")
+
+When using for the database for the first time we have to initialize the
+database. Details are given in `spatialite documentation
+<http://www.gaia-gis.it/spatialite/spatialite-tutorial-2.3.1.html#t2>`_.
+
+    sqlite3> SELECT InitSpatialMetaData();
+    sqlite3> INSERT INTO spatial_ref_sys (srid, auth_name, auth_srid, ref_sys_name, proj4text) VALUES (4326, 'epsg', 4326, 'WGS 84', '+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs');
 

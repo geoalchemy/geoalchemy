@@ -3,7 +3,8 @@ Introduction
 GeoAlchemy is an extension of SQLAlchemy. It provides support for
 Geospatial data types at the ORM layer using SQLAlchemy. It aims to
 support spatial operations and relations specified by the Open Geospatial
-Consortium (OGC).
+Consortium (OGC). The project started under Google Summer of Code Program
+under the mentorship of `Mark Ramm-Christensen <http://compoundthinking.com/blog/>`_.
 
 Requirements
 ------------
@@ -15,8 +16,8 @@ requires a supported spatial database.
 Supported Spatial Databases
 ---------------------------
 At present `PostGIS <http://postgis.refractions.net/>`_, `Spatialite
-<http://www.gaia-gis.it/spatialite/>`_ and `MySQL Spatial
-<http://www.mysql.com/>`_  are supported.
+<http://www.gaia-gis.it/spatialite/>`_ and `MySQL <http://www.mysql.com/>`_ 
+are supported.
 
 Support
 -------
@@ -65,4 +66,11 @@ License
 
 GeoAlchemy is released under the MIT License.
 
+Author
+------
 
+Sanjiv Singh
+
+Mentored by : Mark Ramm-Christensen
+
+The project was started based on example code written by Michael Bayer, the author of SQLAlchemy project.

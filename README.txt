@@ -9,7 +9,8 @@ Introduction
 GeoAlchemy is an extension of SQLAlchemy. It provides support for
 Geospatial data types at the ORM layer using SQLAlchemy. It aims to
 support spatial operations and relations specified by the Open Geospatial
-Consortium (OGC).
+Consortium (OGC). The project started under Google Summer of Code Program
+under the mentorship of `Mark Ramm-Christensen <http://compoundthinking.com/blog/>`_.
 
 Requirements
 ------------

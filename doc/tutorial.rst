@@ -125,14 +125,14 @@ Addind GIS features is now as simple as instantiating the model classes and addi
     spot2 = Spot(name="Restaurant", height=233.6, geom=WKTSpatialElement(wkt)
     
     wkt = "LINESTRING(-80.3 38.2, -81.03 38.04, -81.2 37.89)"
-    road1 = Road(name="Peter St", width=6.0, geom=WKTSpatialElement(wkt))
+    road1 = Road(name="Peter St", width=6, geom=WKTSpatialElement(wkt))
     wkt = "LINESTRING(-79.8 38.5, -80.03 38.2, -80.2 37.89)"
-    road2 = Road(name="George Ave", width=8.0, geom=WKTSpatialElement(wkt))
+    road2 = Road(name="George Ave", width=8, geom=WKTSpatialElement(wkt))
     
     wkt = "POLYGON((-81.3 37.2, -80.63 38.04, -80.02 37.49, -81.3 37.2))"
-    lake1 = Lake(name="Lake Juliet", depth=36.0, geom=WKTSpatialElement(wkt))
+    lake1 = Lake(name="Lake Juliet", depth=36, geom=WKTSpatialElement(wkt))
     wkt = "POLYGON((-79.8 38.5, -80.03 38.2, -80.02 37.89, -79.92 37.75, -79.8 38.5))"
-    lake2 = Lake(name="Lake Blue", depth=58.0, geom=WKTSpatialElement(wkt))
+    lake2 = Lake(name="Lake Blue", depth=58, geom=WKTSpatialElement(wkt))
     
     session.add_all([spot1, spot2, road1, road2, lake1, lake2])
     session.commit()

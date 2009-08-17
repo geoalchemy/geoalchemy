@@ -254,6 +254,8 @@ When using for the database for the first time we have to initialize the
 database. Details are given in `spatialite documentation
 <http://www.gaia-gis.it/spatialite/spatialite-tutorial-2.3.1.html#t2>`_.
 
+.. code-block:: sql
+
     sqlite3> SELECT InitSpatialMetaData();
     sqlite3> INSERT INTO spatial_ref_sys (srid, auth_name, auth_srid, ref_sys_name, proj4text) VALUES (4326, 'epsg', 4326, 'WGS 84', '+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs');
 

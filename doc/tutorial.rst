@@ -220,8 +220,8 @@ Spatial relations for filtering features
     0L
 
 
-Notes for Spatilate
--------------------
+Notes for Spatialite
+--------------------
 
 Although Python2.5 and its higher versions include sqlite support, while using
 spatialite in python we have to use the db-api module provided by pysqlite2.

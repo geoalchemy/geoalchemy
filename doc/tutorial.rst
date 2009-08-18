@@ -216,7 +216,7 @@ Spatial relations for filtering features
     1L
     >>> session.query(Lake).filter(Lake.geom.touches(r.geom)).count()
     0L
-    >>> session.query(Spot).filter(Spot.geom.contained_by(l.geom)).count()
+    >>> session.query(Spot).filter(Spot.geom.covered_by(l.geom)).count()
     0L
 
 

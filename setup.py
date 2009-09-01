@@ -6,7 +6,7 @@ version = '0.1'
 setup(name='GeoAlchemy',
       version=version,
       description="Using SQLAlchemy with Spatial Databases",
-      long_description=open('README.txt'),
+      long_description=open('README.txt').read(),
       classifiers=[
           "Development Status :: 3 - Alpha",
           "Environment :: Plugins",

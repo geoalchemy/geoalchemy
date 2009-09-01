@@ -6,7 +6,7 @@ from sqlalchemy.orm import sessionmaker, column_property
 from sqlalchemy.ext.declarative import declarative_base
 
 from geoalchemy import (Geometry, GeometryCollection, GeometryColumn,
-        GeometryDDL, WKTSpatialElement)
+        GeometryDDL, WKTSpatialElement, WKBSpatialElement)
 from nose.tools import eq_, ok_
 
 engine = create_engine('postgres://gis:gis@localhost/gis', echo=True)
@@ -322,3 +322,12 @@ class TestGeometry(TestCase):
         ok_(p1 in covered_spots)
         ok_(p2 not in covered_spots)
 
+    def test_intersection(self):
+        l = session.query(Lake).filter(Lake.lake_name=='Lake Blue').one()
+        r = session.query(Road).filter(Road.road_name=='Geordie Rd').one()
+        s = session.query(Spot).filter(Spot.spot_height==454.66).one()
+        eq_(session.scalar(WKBSpatialElement(session.scalar(l.lake_geom.intersection(s.spot_location))).wkt), 'GEOMETRYCOLLECTION EMPTY')
+        eq_(session.scalar(WKBSpatialElement(session.scalar(l.lake_geom.intersection(r.road_geom))).wkt), 'POINT(-89.0710987261147 43.243949044586)')
+        l = session.query(Lake).filter(Lake.lake_name=='Lake White').one()
+        r = session.query(Road).filter(Road.road_name=='Paul St').one()
+        eq_(session.scalar(WKBSpatialElement(session.scalar(l.lake_geom.intersection(r.road_geom))).wkt), 'LINESTRING(-88.1430673666454 42.6255500261493,-88.1140839697546 42.6230657349872)')

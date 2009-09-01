@@ -132,3 +132,7 @@ class SQLMMComparator(SpatialComparator):
         return func.ST_CoveredBy(self.__clause_element__(),
 			literal(_to_gis(other), GeometryBase))
 
+    def intersection(self, other):
+        return func.ST_Intersection(self.__clause_element__(),
+			literal(_to_gis(other), GeometryBase))
+

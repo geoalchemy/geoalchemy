@@ -155,6 +155,10 @@ class PGSpatialElement(SpatialElement):
         return func.ST_CoveredBy(literal(self, Geometry),
 			literal(_to_gis(geom), Geometry))
 
+    def intersection(self, geom):
+        return func.ST_Intersection(literal(self, Geometry),
+			literal(_to_gis(geom), Geometry))
+
 
 class PGPersistentSpatialElement(PGSpatialElement):
     """Represents a Geometry value as loaded from the database."""

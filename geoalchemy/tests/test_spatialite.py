@@ -19,6 +19,7 @@ metadata = MetaData(engine)
 session = sessionmaker(bind=engine)()
 session.execute("select load_extension('/usr/local/lib/libspatialite.so')")
 session.execute("SELECT InitSpatialMetaData()")
+connection.enable_load_extension(False)
 session.commit()
 Base = declarative_base(metadata=metadata)
 

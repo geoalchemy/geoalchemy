@@ -32,6 +32,7 @@ class PersistentSpatialElement(SpatialElement):
     
     def __init__(self, desc):
         self.desc = desc
+        self.shape = None
 
 class WKTSpatialElement(SpatialElement, expression.Function):
     """Represents a Geometry value expressed within application code; i.e. in
@@ -72,10 +73,11 @@ class GeometryBase(TypeEngine):
     
     name = 'GEOMETRY'
     
-    def __init__(self, dimension=None, srid=4326, spatial_index=True, **kwargs):
+    def __init__(self, dimension=None, srid=4326, spatial_index=True, shape=False, **kwargs):
         self.dimension = dimension
         self.srid = srid
         self.spatial_index = spatial_index
+        self.shape = shape
         super(GeometryBase, self).__init__(**kwargs)
     
     def bind_processor(self, dialect):
@@ -89,7 +91,11 @@ class GeometryBase(TypeEngine):
     def result_processor(self, dialect):
         def process(value):
             if value is not None:
-                return PersistentSpatialElement(value)
+                elt = PersistentSpatialElement(value)
+                if self.shape:
+                    from shapely.wkb import loads
+                    elt.shape = loads(value)
+                return elt
             else:
                 return value
         return process

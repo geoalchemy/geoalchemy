@@ -24,14 +24,21 @@ class Geometry(GeometryBase):
     def result_processor(self, dialect):
         def process(value):
             if value is not None:
+                elt = None
+                wkb = value
                 if isinstance(dialect, PGDialect):
-                    return PGPersistentSpatialElement(value)
-                if isinstance(dialect, SQLiteDialect):
-                    return SQLitePersistentSpatialElement(value)
-                if isinstance(dialect, MySQLDialect):
-                    return MySQLPersistentSpatialElement(value)
+                    elt = PGPersistentSpatialElement(value)
+                    wkb = value.decode("hex")
+                elif isinstance(dialect, SQLiteDialect):
+                    elt = SQLitePersistentSpatialElement(value)
+                elif isinstance(dialect, MySQLDialect):
+                    elt = MySQLPersistentSpatialElement(value)
                 else:
                     raise NotImplementedError
+                if self.shape:
+                    from shapely.wkb import loads
+                    elt.shape = loads(wkb)
+                return elt
             else:
                 return value
         return process

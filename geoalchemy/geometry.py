@@ -94,7 +94,7 @@ class GeometryDDL(object):
             if event == 'before-drop':
                 for c in gis_cols:
                     if bind.dialect.__class__.__name__ == 'PGDialect':
-                        bind.execute(select([func.DropGeometryColumn('public', table.name, c.name)], autocommit=True))
+			bind.execute(select([func.DropGeometryColumn((table.schema or 'public'), table.name, c.name)], autocommit=True))
                     elif bind.dialect.__class__.__name__ == 'SQLiteDialect':
                         bind.execute(select([func.DiscardGeometryColumn(table.name, c.name)], autocommit=True))
                     else:
@@ -107,9 +107,9 @@ class GeometryDDL(object):
             for c in table.c:
                 if isinstance(c.type, Geometry):
                     if bind.dialect.__class__.__name__ == 'PGDialect':
-                        bind.execute(select([func.AddGeometryColumn(table.name, c.name, c.type.srid, c.type.name, c.type.dimension)], autocommit=True))
+			bind.execute(select([func.AddGeometryColumn((table.schema or 'public'), table.name, c.name, c.type.srid, c.type.name, c.type.dimension)], autocommit=True))
                         if c.type.spatial_index:
-                            bind.execute("CREATE INDEX idx_%s_%s ON %s USING GIST (%s GIST_GEOMETRY_OPS)" % (table.name, c.name, table.name, c.name))
+			    bind.execute("CREATE INDEX idx_%s_%s ON %s.%s USING GIST (%s GIST_GEOMETRY_OPS)" % (table.name, c.name, (table.schema or 'public'), table.name, c.name))
                     elif bind.dialect.__class__.__name__ == 'SQLiteDialect':
                         bind.execute(select([func.AddGeometryColumn(table.name, c.name, c.type.srid, c.type.name, c.type.dimension)], autocommit=True))
                         if c.type.spatial_index:

@@ -225,13 +225,26 @@ Notes for Spatialite
 
 Although Python2.5 and its higher versions include sqlite support, while using
 spatialite in python we have to use the db-api module provided by pysqlite2.
-So we have to install pysqlite2 separately as:
+So we have to install pysqlite2 separately. Also, by default the pysqlite2
+disables extension loading. In order to enable extension loading, we have
+to build it ourselves. Download the pysqlite tarball, open the file setup.cfg
+and comment out the line that reads:
+
+.. code-block:: python
+
+    define=SQLITE_OMIT_LOAD_EXTENSION
+
+Now save the file and then build and install pysqlite2:
 
 .. code-block:: bash
 
-    $ easy_install pysqlite
+    $ python setup.py install
 
-While creating the engine we must specify the pysqlite dbapi as the module
+Now, we are ready to use spatialte in our code. While importing pysqlite
+in our code we must ensure that we are importing from the newly installed
+pysqlite2 and not from the pysqlite library included in python. Also pass
+the imported module as a parameter to sqlalchemy create_engine function
+so that sqlalchemy uses this module instead of the default module:
 to be used:
 
 .. code-block:: python

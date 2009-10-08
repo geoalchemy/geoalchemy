@@ -18,6 +18,7 @@ Contents:
    install.rst
    tutorial.rst
    featureserver.rst
+   testing.rst
    reference.rst
 
 Indices and tables

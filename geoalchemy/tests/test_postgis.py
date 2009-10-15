@@ -93,9 +93,9 @@ class TestGeometry(TestCase):
         r = session.query(Road).get(1)
         l = session.query(Lake).get(1)
         s = session.query(Spot).get(1)
-        eq_(session.scalar(self.r.road_geom.geometry_type), 'LINESTRING')
-        eq_(session.scalar(self.l.lake_geom.geometry_type), 'POLYGON')
-        eq_(session.scalar(self.s.spot_location.geometry_type), 'POINT')
+        eq_(session.scalar(r.road_geom.geometry_type), 'ST_LineString')
+        eq_(session.scalar(l.lake_geom.geometry_type), 'ST_Polygon')
+        eq_(session.scalar(s.spot_location.geometry_type), 'ST_Point')
 
     def test_wkt(self):
         l = session.query(Lake).get(1)

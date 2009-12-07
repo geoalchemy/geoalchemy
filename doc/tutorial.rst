@@ -11,7 +11,7 @@ needs to be loaded. Spatialite specific details are given `here
 Setting up PostGIS
 ------------------
 
-This tutorial requires a working postgis installation. The PostGIS
+This tutorial requires a working PostGIS installation. The PostGIS
 Documentation has extensive `installation instructions
 <http://postgis.refractions.net/docs/ch02.html#PGInstall>`_. Create a
 spatially enabled database called `gis` as per instructions given
@@ -25,7 +25,7 @@ First of all we need some code to initialize sqlalchemy and to create an
 engine with a database specific dialect. We use the standard sqlalchemy
 dburi format to create the engine. For more details refer to the sqlalchemy
 documentation. We use this engine to create a session. A session could be
-either bound or unbound. In this example we will create an bound session.
+either bound or unbound. In this example we will create a bound session.
 
 .. code-block:: python
 
@@ -39,19 +39,20 @@ either bound or unbound. In this example we will create an bound session.
 Model Definition
 ----------------
 
-Let us assume we have to model the following GIS layers in the database::
+Let us assume we have to model the following GIS layers in the database:
 
-    * spots - represented as point geometry
-    * roads - represented as line geometry, and
-    * lakes - represented as polygon geometry
+* spots - represented as point geometry
+* roads - represented as line geometry, and
+* lakes - represented as polygon geometry
 
-In SQLAlchemy, models can be defined either by declaraing the model classes
-and database tables seperately and then mapping the classes to the tables
-using mapper configuration, or they can be defined declaratively using the
-new declarative extenstion. In this example we use the SQLAlchemy deaclarative
-extension to define the model. We also create a metadata object that holds
-the schema information of all database objects and will thus be useful for
-creating the objects in the database.
+In SQLAlchemy, models can be defined either by declaring the model
+classes and database tables separately and then mapping the classes to
+the tables using mapper configuration, or they can be defined
+declaratively using the new declarative extension. In this example we
+use the SQLAlchemy declarative extension to define the model. We also
+create a metadata object that holds the schema information of all
+database objects and will thus be useful for creating the objects in
+the database.
 
 .. code-block:: python
 
@@ -106,8 +107,9 @@ database.
 Creating Database Tables
 ------------------------
 
-Now we use the metadata object to create our tables. On subsequent use we will
-also first drop the tables so that the database is emptied before creating tables.
+Now we use the metadata object to create our tables. On subsequent use
+we will also first drop the tables so that the database is emptied
+before creating tables.
 
 .. code-block:: python
 
@@ -117,7 +119,11 @@ also first drop the tables so that the database is emptied before creating table
 Adding GIS Features
 -------------------
 
-Addind GIS features is now as simple as instantiating the model classes and addind them to the SQLAlchemy session object that we created earlier. Geoalchemy enables creation of spatial attributes specified using the Well Known Text (WKT) format using geoalchemy `WKTSpatialElement` class.
+Adding GIS features is now as simple as instantiating the model
+classes and adding them to the SQLAlchemy session object that we
+created earlier. Geoalchemy enables creation of spatial attributes
+specified using the Well Known Text (WKT) format using geoalchemy
+`WKTSpatialElement` class.
 
 .. code-block:: python
 
@@ -139,7 +145,12 @@ Addind GIS features is now as simple as instantiating the model classes and addi
     session.add_all([spot1, spot2, road1, road2, lake1, lake2])
     session.commit()
 
-Scripts for creating sample gis objects as shown above are available in the examples directory. You could run those scripts to create the database tables and the gis objects. Running them with -i option to the interpreter will drop you at the interactive interpreter promt. You can then follow the rest of the tutorial on the interpreter.
+Scripts for creating sample gis objects as shown above are available
+in the examples directory. You could run those scripts to create the
+database tables and the gis objects. Running them with -i option to
+the interpreter will drop you at the interactive interpreter
+promt. You can then follow the rest of the tutorial on the
+interpreter.
 
 .. code-block:: python
 
@@ -149,9 +160,10 @@ Scripts for creating sample gis objects as shown above are available in the exam
 Performing Spatial Queries
 --------------------------
 
-The GeoAlchemy project intends to cover most of the spatial operations and
-spatial relations supported by the underlying spatial database. Some of these
-are shown below and the rest are documented in the reference docs.
+The GeoAlchemy project intends to cover most of the spatial operations
+and spatial relations supported by the underlying spatial
+database. Some of these are shown below and the rest are documented in
+the reference docs.
 
 Functions to obtain geometry value in different formats
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -223,12 +235,13 @@ Spatial relations for filtering features
 Notes for Spatialite
 --------------------
 
-Although Python2.5 and its higher versions include sqlite support, while using
-spatialite in python we have to use the db-api module provided by pysqlite2.
-So we have to install pysqlite2 separately. Also, by default the pysqlite2
-disables extension loading. In order to enable extension loading, we have
-to build it ourselves. Download the pysqlite tarball, open the file setup.cfg
-and comment out the line that reads:
+Although Python2.5 and its higher versions include sqlite support,
+while using spatialite in python we have to use the db-api module
+provided by pysqlite2.  So we have to install pysqlite2
+separately. Also, by default the pysqlite2 disables extension
+loading. In order to enable extension loading, we have to build it
+ourselves. Download the pysqlite tarball, open the file setup.cfg and
+comment out the line that reads:
 
 .. code-block:: python
 

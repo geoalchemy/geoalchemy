@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from sqlalchemy import Column, select, func, literal
 from sqlalchemy.orm import column_property
 from sqlalchemy.orm.interfaces import AttributeExtension
@@ -104,6 +105,10 @@ class PGSpatialElement(SpatialElement):
     @property
     def y(self):
         return func.ST_Y(literal(self, Geometry))
+        
+    def transform(self, epsg=4326):
+        return func.ST_Boundary(literal(self, Geometry))
+        #return func.ST_Transform(literal(self, Geometry), epsg)
 
     # OGC Geometry Relations
 

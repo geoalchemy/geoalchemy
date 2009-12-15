@@ -107,8 +107,7 @@ class PGSpatialElement(SpatialElement):
         return func.ST_Y(literal(self, Geometry))
         
     def transform(self, epsg=4326):
-        return func.ST_Boundary(literal(self, Geometry))
-        #return func.ST_Transform(literal(self, Geometry), epsg)
+        return func.ST_Transform(literal(self, Geometry), epsg)
 
     # OGC Geometry Relations
 

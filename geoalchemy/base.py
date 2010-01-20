@@ -45,7 +45,11 @@ class WKTSpatialElement(SpatialElement, expression.Function):
     def __init__(self, desc, srid=4326):
         assert isinstance(desc, basestring)
         self.desc = desc
+        self.srid = srid
         expression.Function.__init__(self, "GeomFromText", desc, srid)
+
+    def geom(self):
+        return func.GeomFromText(self.desc, self.srid)
 
 class WKBSpatialElement(SpatialElement, expression.Function):
     """Represents a Geometry value as expressed in the OGC Well
@@ -59,8 +63,11 @@ class WKBSpatialElement(SpatialElement, expression.Function):
     def __init__(self, desc, srid=4326):
         assert isinstance(desc, basestring)
         self.desc = desc
+        self.srid = srid
         expression.Function.__init__(self, "GeomFromWKB", desc, srid)
 
+    def geom(self):
+        return func.GeomFromWKB(self.desc, self.srid)
 
 class GeometryBase(TypeEngine):
     """Base Geometry column type for all spatial databases.

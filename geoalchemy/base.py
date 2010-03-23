@@ -93,7 +93,7 @@ class GeometryBase(TypeEngine):
                 return value
         return process
         
-    def result_processor(self, dialect):
+    def result_processor(self, dialect, coltype=None):
         def process(value):
             if value is not None:
                 return PersistentSpatialElement(value)

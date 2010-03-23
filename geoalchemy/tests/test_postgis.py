@@ -9,7 +9,7 @@ from geoalchemy import (Geometry, GeometryCollection, GeometryColumn,
         GeometryDDL, WKTSpatialElement, WKBSpatialElement)
 from nose.tools import eq_, ok_
 
-engine = create_engine('postgres://gis:gis@localhost/gis', echo=True)
+engine = create_engine('postgresql://gis:gis@localhost/gis', echo=True)
 metadata = MetaData(engine)
 session = sessionmaker(bind=engine)()
 Base = declarative_base(metadata=metadata)

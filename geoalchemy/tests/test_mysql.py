@@ -34,7 +34,7 @@ class Spot(Base):
     __tablename__ = 'spots'
 
     spot_id = Column(Integer, primary_key=True)
-    spot_height = Column(Numeric)
+    spot_height = Column(Numeric(precision=10, scale=2))
     spot_location = GeometryColumn(Point(2, srid=4326), sfs=True)
 
 # enable the DDL extension, which allows CREATE/DROP operations

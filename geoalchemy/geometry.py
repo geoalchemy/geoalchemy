@@ -3,9 +3,9 @@ from sqlalchemy.orm import column_property
 from sqlalchemy.orm.interfaces import AttributeExtension
 from sqlalchemy.types import TypeEngine
 from sqlalchemy.sql import expression
-from sqlalchemy.databases.postgres import PGDialect
-from sqlalchemy.databases.sqlite import SQLiteDialect
-from sqlalchemy.databases.mysql import MySQLDialect
+from sqlalchemy.dialects.postgresql.base import PGDialect
+from sqlalchemy.dialects.sqlite.base import SQLiteDialect
+from sqlalchemy.dialects.mysql.base import MySQLDialect
 from geoalchemy.postgis import PGPersistentSpatialElement
 from geoalchemy.spatialite import SQLitePersistentSpatialElement
 from geoalchemy.mysql import MySQLPersistentSpatialElement
@@ -21,7 +21,7 @@ class Geometry(GeometryBase):
     
     """
     
-    def result_processor(self, dialect):
+    def result_processor(self, dialect, coltype=None):
         def process(value):
             if value is not None:
                 if isinstance(dialect, PGDialect):
@@ -93,10 +93,10 @@ class GeometryDDL(object):
             
             if event == 'before-drop':
                 for c in gis_cols:
-                    if bind.dialect.__class__.__name__ == 'PGDialect':
-			bind.execute(select([func.DropGeometryColumn((table.schema or 'public'), table.name, c.name)], autocommit=True))
-                    elif bind.dialect.__class__.__name__ == 'SQLiteDialect':
-                        bind.execute(select([func.DiscardGeometryColumn(table.name, c.name)], autocommit=True))
+                    if isinstance(bind.dialect, PGDialect):
+                        bind.execute(select([func.DropGeometryColumn((table.schema or 'public'), table.name, c.name)]).execution_options(autocommit=True))
+                    elif isinstance(bind.dialect, SQLiteDialect):
+                        bind.execute(select([func.DiscardGeometryColumn(table.name, c.name)]).execution_options(autocommit=True))
                     else:
                         pass
                     break
@@ -106,16 +106,16 @@ class GeometryDDL(object):
             
             for c in table.c:
                 if isinstance(c.type, Geometry):
-                    if bind.dialect.__class__.__name__ == 'PGDialect':
-			bind.execute(select([func.AddGeometryColumn((table.schema or 'public'), table.name, c.name, c.type.srid, c.type.name, c.type.dimension)], autocommit=True))
+                    if isinstance(bind.dialect, PGDialect):    
+                        bind.execute(select([func.AddGeometryColumn((table.schema or 'public'), table.name, c.name, c.type.srid, c.type.name, c.type.dimension)]).execution_options(autocommit=True))
                         if c.type.spatial_index:
-			    bind.execute("CREATE INDEX idx_%s_%s ON %s.%s USING GIST (%s GIST_GEOMETRY_OPS)" % (table.name, c.name, (table.schema or 'public'), table.name, c.name))
-                    elif bind.dialect.__class__.__name__ == 'SQLiteDialect':
-                        bind.execute(select([func.AddGeometryColumn(table.name, c.name, c.type.srid, c.type.name, c.type.dimension)], autocommit=True))
+                            bind.execute("CREATE INDEX idx_%s_%s ON %s.%s USING GIST (%s GIST_GEOMETRY_OPS)" % (table.name, c.name, (table.schema or 'public'), table.name, c.name))
+                    elif isinstance(bind.dialect, SQLiteDialect):
+                        bind.execute(select([func.AddGeometryColumn(table.name, c.name, c.type.srid, c.type.name, c.type.dimension)]).execution_options(autocommit=True))
                         if c.type.spatial_index:
                             bind.execute("CREATE INDEX idx_%s_%s ON %s(%s)" % (table.name, c.name, table.name, c.name))
                             bind.execute("VACUUM %s" % table.name)
-                    elif bind.dialect.__class__.__name__ == 'MySQLDialect':
+                    elif isinstance(bind.dialect, MySQLDialect):
                         if c.type.spatial_index:
                             bind.execute("ALTER TABLE %s ADD %s %s NOT NULL" % (
                                 table.name, c.name, c.type.name))

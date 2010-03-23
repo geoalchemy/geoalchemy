@@ -1,6 +1,11 @@
 GeoAlchemy Change Log
 =====================
 
+0.2
+---
+
+* Ported to SQLAlchemy 0.6
+
 0.1
 ---
 

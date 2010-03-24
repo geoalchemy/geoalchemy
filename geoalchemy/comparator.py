@@ -23,7 +23,7 @@ class SFSComparator(SpatialComparator):
             wkt = WKTSpatialElement(geom)
             return func.GeomFromText(literal(wkt, GeometryBase), wkt.srid)
             
-        return literal(_to_gis(geom), GeometryBase) #todo: ?
+        return literal(_to_gis(geom), GeometryBase)
 
 
     # Geometry relations using the spatial element geometry
@@ -104,55 +104,73 @@ class SQLMMComparator(SpatialComparator):
     for OGC SQL/MM geometries.
     """
 
+    @staticmethod
+    def geom_from_wkb(geom):
+        """This method is used for relation functions that take two geometries.
+        According to the type of geom, a conversion to the database geometry type is added.
+            
+        """
+        if isinstance(geom, SpatialElement):
+            if isinstance(geom, WKTSpatialElement):
+                return func.ST_GeomFromText(literal(geom.desc, GeometryBase), geom.srid)
+            if isinstance(geom, WKBSpatialElement):
+                return func.ST_GeomFromWKB(literal(geom.desc, GeometryBase), geom.srid)  
+            return func.ST_GeomFromWKB(literal(geom.desc.desc, GeometryBase), geom.desc.srid)
+        elif isinstance(geom, basestring):
+            wkt = WKTSpatialElement(geom)
+            return func.ST_GeomFromText(literal(wkt, GeometryBase), wkt.srid)
+            
+        return literal(_to_gis(geom), GeometryBase)
+    
     def equals(self, other):
         return func.ST_Equals(self.__clause_element__(),
-			literal(_to_gis(other), GeometryBase))
+            SQLMMComparator.geom_from_wkb(other))
 
     def distance(self, other):
         return func.ST_Distance(self.__clause_element__(),
-			literal(_to_gis(other), GeometryBase))
+			SQLMMComparator.geom_from_wkb(other))
 
     def within_distance(self, other, distance=0.0):
         return func.ST_DWithin(self.__clause_element__(),
-			literal(_to_gis(other), GeometryBase), distance)
+			SQLMMComparator.geom_from_wkb(other), distance)
 
     def disjoint(self, other):
         return func.ST_Disjoint(self.__clause_element__(),
-			literal(_to_gis(other), GeometryBase))
+			SQLMMComparator.geom_from_wkb(other))
 
     def intersects(self, other):
         return func.ST_Intersects(self.__clause_element__(),
-			literal(_to_gis(other), GeometryBase))
+			SQLMMComparator.geom_from_wkb(other))
 
     def touches(self, other):
         return func.ST_Touches(self.__clause_element__(),
-			literal(_to_gis(other), GeometryBase))
+			SQLMMComparator.geom_from_wkb(other))
 
     def crosses(self, other):
         return func.ST_Crosses(self.__clause_element__(),
-    			literal(_to_gis(other), GeometryBase))
+    		SQLMMComparator.geom_from_wkb(other))
 
     def within(self, other):
         return func.ST_Within(self.__clause_element__(),
-			literal(_to_gis(other), GeometryBase))
+			SQLMMComparator.geom_from_wkb(other))
 
     def overlaps(self, other):
         return func.ST_Overlaps(self.__clause_element__(),
-			literal(_to_gis(other), GeometryBase))
+			SQLMMComparator.geom_from_wkb(other))
 
     def gcontains(self, other):
         return func.ST_Contains(self.__clause_element__(),
-			literal(_to_gis(other), GeometryBase))
+			SQLMMComparator.geom_from_wkb(other))
 
     def covers(self, other):
         return func.ST_Covers(self.__clause_element__(),
-			literal(_to_gis(other), GeometryBase))
+			SQLMMComparator.geom_from_wkb(other))
 
     def covered_by(self, other):
         return func.ST_CoveredBy(self.__clause_element__(),
-			literal(_to_gis(other), GeometryBase))
+			SQLMMComparator.geom_from_wkb(other))
 
     def intersection(self, other):
         return func.ST_Intersection(self.__clause_element__(),
-			literal(_to_gis(other), GeometryBase))
+			SQLMMComparator.geom_from_wkb(other))
 

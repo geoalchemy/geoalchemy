@@ -76,7 +76,7 @@ class WKBSpatialElement(SpatialElement, expression.Function):
     """
     
     def __init__(self, desc, srid=4326):
-        assert isinstance(desc, basestring)
+        assert isinstance(desc, (basestring, buffer))
         self.desc = desc
         self.srid = srid
         expression.Function.__init__(self, "GeomFromWKB", desc, srid)
@@ -129,7 +129,11 @@ def _to_gis(value):
 
     if hasattr(value, '__clause_element__'):
         return value.__clause_element__()
-    elif isinstance(value, (expression.ClauseElement, SpatialElement)):
+    elif isinstance(value, expression.ClauseElement):
+        return value
+    elif isinstance(value, SpatialElement):
+        if isinstance(value.desc, (WKBSpatialElement, WKTSpatialElement)):
+            return value.desc
         return value
     elif isinstance(value, basestring):
         return WKTSpatialElement(value)

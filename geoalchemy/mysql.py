@@ -12,9 +12,9 @@ class MySQLSpatialElement(SpatialElement):
 
     @property
     def __geom_from_wkb(self):
-        if self.desc is not None:
+        if self.desc is not None and isinstance(self.desc, WKBSpatialElement):
             return func.GeomFromWKB(literal(self, Geometry), self.desc.srid)
-        return func.GeomFromWKB(literal(self, Geometry))
+        return literal(self, Geometry)
 
     @property
     def wkt(self):

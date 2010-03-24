@@ -198,6 +198,8 @@ class TestGeometry(TestCase):
     def test_envelope(self):
         r = session.query(Road).filter(Road.road_name=='Graeme Ave').one()
         eq_(session.scalar(r.road_geom.envelope), '0103000020E6100000010000000500000000000040042756C0000000007559454000000040042756C000000000F3974540000000A00E2356C000000000F3974540000000A00E2356C0000000007559454000000040042756C00000000075594540')
+        env =  WKBSpatialElement(session.scalar(func.AsBinary(self.r.road_geom.envelope)))
+        eq_(env.geom_type(session), 'Polygon')
 
     def test_start_point(self):
         r = session.query(Road).filter(Road.road_name=='Graeme Ave').one()
@@ -300,6 +302,10 @@ class TestGeometry(TestCase):
         ok_(not session.scalar(l.lake_geom.gcontains(p2.spot_location)))
         ok_(l in containing_lakes)
         ok_(l1 not in containing_lakes)
+        ok_(session.scalar(l.lake_geom.gcontains(WKTSpatialElement('POINT(-88.9055734203822 43.0048567324841)'))))
+        containing_lakes = session.query(Lake).filter(Lake.lake_geom.gcontains('POINT(-88.9055734203822 43.0048567324841)')).all()
+        ok_(l in containing_lakes)
+        ok_(l1 not in containing_lakes)
 
     def test_covers(self):
         l = session.query(Lake).filter(Lake.lake_name=='Lake Blue').one()
@@ -326,8 +332,9 @@ class TestGeometry(TestCase):
         l = session.query(Lake).filter(Lake.lake_name=='Lake Blue').one()
         r = session.query(Road).filter(Road.road_name=='Geordie Rd').one()
         s = session.query(Spot).filter(Spot.spot_height==454.66).one()
-        eq_(session.scalar(WKBSpatialElement(session.scalar(l.lake_geom.intersection(s.spot_location))).wkt), 'GEOMETRYCOLLECTION EMPTY')
-        eq_(session.scalar(WKBSpatialElement(session.scalar(l.lake_geom.intersection(r.road_geom))).wkt), 'POINT(-89.0710987261147 43.243949044586)')
+        eq_(session.scalar(func.ST_AsText(l.lake_geom.intersection(s.spot_location))), 'GEOMETRYCOLLECTION EMPTY')
+        eq_(session.scalar(func.ST_AsText(session.scalar(l.lake_geom.intersection(r.road_geom)))), 'POINT(-89.0710987261147 43.243949044586)')
         l = session.query(Lake).filter(Lake.lake_name=='Lake White').one()
         r = session.query(Road).filter(Road.road_name=='Paul St').one()
-        eq_(session.scalar(WKBSpatialElement(session.scalar(l.lake_geom.intersection(r.road_geom))).wkt), 'LINESTRING(-88.1430673666454 42.6255500261493,-88.1140839697546 42.6230657349872)')
+        eq_(session.scalar(func.ST_AsText(session.scalar(l.lake_geom.intersection(r.road_geom)))), 'LINESTRING(-88.1430673666454 42.6255500261493,-88.1140839697546 42.6230657349872)')
+        

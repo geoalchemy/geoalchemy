@@ -10,6 +10,8 @@ setup(name='GeoAlchemy',
       classifiers=[
           "Development Status :: 3 - Alpha",
           "Environment :: Plugins",
+          "Operating System :: OS Independent",
+          "Programming Language :: Python",
           "Intended Audience :: Information Technology",
           "License :: OSI Approved :: MIT License",
           "Topic :: Scientific/Engineering :: GIS"

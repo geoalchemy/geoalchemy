@@ -3,6 +3,7 @@ from sqlalchemy.orm.properties import ColumnProperty
 from sqlalchemy.sql import expression
 from sqlalchemy.types import TypeEngine
 from geoalchemy.utils import from_wkt
+from sqlalchemy.sql.expression import Function
 from types import StringType
 
 # Base classes for geoalchemy
@@ -20,12 +21,24 @@ class SpatialElement(object):
     def wkt(self):
         return func.AsText(literal(self, GeometryBase))
 
+    def __get_wkt(self, session):
+        """This method converts the object into a WKT geometry. It takes into
+        account that WKTSpatialElement does not have to make a new query
+        to retrieve the WKT geometry.
+        
+        """
+        if isinstance(self.wkt, Function):
+            return session.scalar(self.wkt)
+        else:
+            # for WKTSpatialElement we don't need to make a new query
+            return self.wkt        
+
     def geom_type(self, session):
-        wkt = session.scalar(self.wkt)
+        wkt = self.__get_wkt(session)
         return from_wkt(wkt)["type"]
 
     def coords(self, session):
-        wkt = session.scalar(self.wkt)
+        wkt = self.__get_wkt(session)
         return from_wkt(wkt)["coordinates"]
 
 class PersistentSpatialElement(SpatialElement):
@@ -49,8 +62,9 @@ class WKTSpatialElement(SpatialElement, expression.Function):
         self.srid = srid
         expression.Function.__init__(self, "GeomFromText", desc, srid)
 
-    def geom(self):
-        return func.GeomFromText(self.desc, self.srid)
+    @property
+    def wkt(self):
+        return self.desc
 
 class WKBSpatialElement(SpatialElement, expression.Function):
     """Represents a Geometry value as expressed in the OGC Well
@@ -66,9 +80,10 @@ class WKBSpatialElement(SpatialElement, expression.Function):
         self.desc = desc
         self.srid = srid
         expression.Function.__init__(self, "GeomFromWKB", desc, srid)
-
-    def geom(self):
-        return func.GeomFromWKB(self.desc, self.srid)
+        
+    @property
+    def wkt(self):
+        return func.AsText(func.GeomFromWKB(literal(self, GeometryBase), self.srid))
 
 class GeometryBase(TypeEngine):
     """Base Geometry column type for all spatial databases.

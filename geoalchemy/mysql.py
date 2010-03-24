@@ -4,7 +4,8 @@ from sqlalchemy.orm import column_property
 from sqlalchemy.orm.interfaces import AttributeExtension
 from sqlalchemy.orm.properties import ColumnProperty
 from sqlalchemy.exc import NotSupportedError
-from geoalchemy.base import SpatialElement, _to_gis, GeometryBase as Geometry
+from geoalchemy.base import SpatialElement, _to_gis, WKTSpatialElement, WKBSpatialElement, GeometryBase as Geometry
+from geoalchemy.comparator import SFSComparator
 
 class MySQLSpatialElement(SpatialElement):
     """Represents a geometry value."""
@@ -14,12 +15,6 @@ class MySQLSpatialElement(SpatialElement):
         if self.desc is not None:
             return func.GeomFromWKB(literal(self, Geometry), self.desc.srid)
         return func.GeomFromWKB(literal(self, Geometry))
-
-    def __geom_from_wkb_to_gis(self, geom):
-        if self.desc is not None:
-            return func.GeomFromWKB(literal(_to_gis(geom), Geometry), self.desc.srid)
-        return func.GeomFromWKB(literal(_to_gis(geom), Geometry))
-
 
     @property
     def wkt(self):
@@ -121,22 +116,22 @@ class MySQLSpatialElement(SpatialElement):
 
     def equals(self, geom):
         return func.Equals(self.__geom_from_wkb,
-			self.__geom_from_wkb_to_gis(geom))
+			SFSComparator.geom_from_wkb(geom))
 
     def distance(self, geom):
         raise NotImplementedError("At the moment MySQL does not support the Distance function.")
 
     def within_distance(self, geom, distance=0.0):
         return func.DWithin(self.__geom_from_wkb,
-			self.__geom_from_wkb_to_gis(geom), distance)
+			SFSComparator.geom_from_wkb(geom), distance)
 
     def disjoint(self, geom):
         return func.Disjoint(self.__geom_from_wkb,
-			self.__geom_from_wkb_to_gis(geom))
+			SFSComparator.geom_from_wkb(geom))
 
     def intersects(self, geom):
         return func.Intersects(self.__geom_from_wkb,
-			self.__geom_from_wkb_to_gis(geom))
+			SFSComparator.geom_from_wkb(geom))
 
     def touches(self, geom):
         raise NotImplementedError("At the moment MySQL only supports MBR relations.")
@@ -146,23 +141,23 @@ class MySQLSpatialElement(SpatialElement):
 
     def within(self, geom):
         return func.Within(self.__geom_from_wkb,
-			self.__geom_from_wkb_to_gis(geom))
+			SFSComparator.geom_from_wkb(geom))
 
     def overlaps(self, geom):
         return func.Overlaps(self.__geom_from_wkb,
-			self.__geom_from_wkb_to_gis(geom))
+			SFSComparator.geom_from_wkb(geom))
 
     def gcontains(self, geom):
         return func.Contains(self.__geom_from_wkb,
-			self.__geom_from_wkb_to_gis(geom))
+			SFSComparator.geom_from_wkb(geom))
 
     def covers(self, geom):
         return func.Covers(self.__geom_from_wkb,
-			literal(_to_gis(geom), Geometry))
+			SFSComparator.geom_from_wkb(geom))
 
     def covered_by(self, geom):
         return func.CoveredBy(self.__geom_from_wkb,
-			self.__geom_from_wkb_to_gis(geom))
+			SFSComparator.geom_from_wkb(geom))
 
     # OGC Geometry Relations based on Minimum Bounding Rectangle
 
@@ -171,38 +166,38 @@ class MySQLSpatialElement(SpatialElement):
 
     def mbr_within_distance(self, geom, distance=0.0):
         return func.MBRDWithin(self.__geom_from_wkb,
-			self.__geom_from_wkb_to_gis(geom))
+			SFSComparator.geom_from_wkb(geom))
 
     def mbr_disjoint(self, geom):
         return func.MBRDisjoint(self.__geom_from_wkb,
-			self.__geom_from_wkb_to_gis(geom))
+			SFSComparator.geom_from_wkb(geom))
 
     def mbr_intersects(self, geom):
         return func.MBRIntersects(self.__geom_from_wkb,
-			self.__geom_from_wkb_to_gis(geom))
+			SFSComparator.geom_from_wkb(geom))
 
     def mbr_touches(self, geom):
         raise NotImplementedError("At the moment MySQL only supports MBR relations.")
 
     def mbr_within(self, geom):
         return func.MBRWithin(self.__geom_from_wkb,
-			self.__geom_from_wkb_to_gis(geom))
+			SFSComparator.geom_from_wkb(geom))
 
     def mbr_overlaps(self, geom):
         return func.MBROverlaps(self.__geom_from_wkb,
-			self.__geom_from_wkb_to_gis(geom))
+			SFSComparator.geom_from_wkb(geom))
 
     def mbr_contains(self, geom):
         return func.MBRContains(self.__geom_from_wkb,
-			self.__geom_from_wkb_to_gis(geom))
+			SFSComparator.geom_from_wkb(geom))
 
     def mbr_covers(self, geom):
         return func.MBRCovers(self.__geom_from_wkb,
-			self.__geom_from_wkb_to_gis(geom))
+			SFSComparator.geom_from_wkb(geom))
 
     def mbr_covered_by(self, geom):
         return func.MBRCoveredBy(self.__geom_from_wkb,
-			self.__geom_from_wkb_to_gis(geom))
+			SFSComparator.geom_from_wkb(geom))
 
 
 class MySQLPersistentSpatialElement(MySQLSpatialElement):

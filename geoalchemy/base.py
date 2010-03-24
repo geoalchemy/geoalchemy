@@ -3,6 +3,7 @@ from sqlalchemy.orm.properties import ColumnProperty
 from sqlalchemy.sql import expression
 from sqlalchemy.types import TypeEngine
 from geoalchemy.utils import from_wkt
+from types import StringType
 
 # Base classes for geoalchemy
 
@@ -88,7 +89,12 @@ class GeometryBase(TypeEngine):
     def bind_processor(self, dialect):
         def process(value):
             if value is not None:
-                return value.desc
+                if isinstance(value, SpatialElement):
+                    if isinstance(value.desc, SpatialElement):
+                        return value.desc.desc
+                    return value.desc
+                else:
+                    return value
             else:
                 return value
         return process

@@ -6,10 +6,12 @@ from sqlalchemy.sql import expression
 from sqlalchemy.dialects.postgresql.base import PGDialect
 from sqlalchemy.dialects.sqlite.base import SQLiteDialect
 from sqlalchemy.dialects.mysql.base import MySQLDialect
+from sqlalchemy.ext.compiler import compiles
+from sqlalchemy.sql.expression import ColumnClause
 from geoalchemy.postgis import PGPersistentSpatialElement
 from geoalchemy.spatialite import SQLitePersistentSpatialElement
 from geoalchemy.mysql import MySQLPersistentSpatialElement
-from geoalchemy.base import SpatialElement, WKTSpatialElement, GeometryBase, _to_gis
+from geoalchemy.base import SpatialElement, WKTSpatialElement, WKBSpatialElement, GeometryBase, _to_gis
 from geoalchemy.comparator import SFSComparator, SQLMMComparator
 
 class Geometry(GeometryBase):
@@ -22,14 +24,15 @@ class Geometry(GeometryBase):
     """
     
     def result_processor(self, dialect, coltype=None):
+        
         def process(value):
             if value is not None:
                 if isinstance(dialect, PGDialect):
-                    return PGPersistentSpatialElement(value)
+                    return PGPersistentSpatialElement(WKBSpatialElement(value, self.srid))
                 if isinstance(dialect, SQLiteDialect):
-                    return SQLitePersistentSpatialElement(value)
+                    return SQLitePersistentSpatialElement(WKBSpatialElement(value, self.srid))
                 if isinstance(dialect, MySQLDialect):
-                    return MySQLPersistentSpatialElement(value)
+                    return MySQLPersistentSpatialElement(WKBSpatialElement(value, self.srid))
                 else:
                     raise NotImplementedError
             else:
@@ -137,6 +140,18 @@ class SpatialAttribute(AttributeExtension):
     
     def set(self, state, value, oldvalue, initiator):
         return _to_gis(value)
+ 
+class GeometryExtensionColumn(Column):
+    pass
+        
+@compiles(GeometryExtensionColumn)
+def compile_column(element, compiler, **kw):
+    print "compile " + element.name
+    if kw.has_key("within_columns_clause") and kw["within_columns_clause"] == True:
+        return "AsBinary(%s)" % element.name # todo: take dialect into account
+        
+    return element.name
+     
             
 def GeometryColumn(*args, **kw):
     """Define a declarative column property with GIS behavior.
@@ -151,12 +166,12 @@ def GeometryColumn(*args, **kw):
     if kw.has_key("sfs"): sfs = kw.pop("sfs")
     if sfs:
         return column_property(
-                Column(*args, **kw), 
+                GeometryExtensionColumn(*args, **kw), 
                 extension=SpatialAttribute(), 
                 comparator_factory=SFSComparator
         )
     return column_property(
-        Column(*args, **kw), 
+        GeometryExtensionColumn(*args, **kw), 
         extension=SpatialAttribute(), 
         comparator_factory=SQLMMComparator
     )

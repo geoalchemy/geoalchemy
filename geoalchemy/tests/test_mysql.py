@@ -8,7 +8,7 @@ from sqlalchemy.ext.declarative import declarative_base
 
 from geoalchemy import (Geometry, GeometryColumn, Point, Polygon,
 		LineString, GeometryDDL, WKTSpatialElement)
-from nose.tools import ok_, eq_, raises
+from nose.tools import ok_, eq_, raises, assert_almost_equal
 
 
 engine = create_engine('mysql://gis:gis@localhost/gis', echo=True)

@@ -8,7 +8,7 @@ from sqlalchemy.ext.declarative import declarative_base
 
 from pysqlite2 import dbapi2 as sqlite
 from geoalchemy import (Geometry, GeometryColumn, Point, Polygon,
-		LineString, GeometryDDL, WKTSpatialElement)
+		LineString, GeometryDDL, WKTSpatialElement, WKBSpatialElement)
 from nose.tools import ok_, eq_, raises, assert_almost_equal
 
 
@@ -141,7 +141,9 @@ class TestGeometry(TestCase):
 
     def test_envelope(self):
         eq_(b2a_hex(session.scalar(self.r.road_geom.envelope)), '0001ffffffffd7db0998302b56c036c921ded877454078a18c171a1c56c0876f04983f8d45407c030000000100000005000000d7db0998302b56c036c921ded877454078a18c171a1c56c036c921ded877454078a18c171a1c56c0876f04983f8d4540d7db0998302b56c0876f04983f8d4540d7db0998302b56c036c921ded8774540fe')
-
+        env =  WKBSpatialElement(session.scalar(func.AsBinary(self.r.road_geom.envelope)))
+        eq_(env.geom_type(session), 'Polygon')
+        
     def test_x(self):
         l = session.query(Lake).get(1)
         r = session.query(Road).get(1)
@@ -322,6 +324,10 @@ class TestGeometry(TestCase):
         containing_lakes = session.query(Lake).filter(Lake.lake_geom.gcontains(p1.spot_location)).all()
         ok_(session.scalar(l.lake_geom.gcontains(p1.spot_location)))
         ok_(not session.scalar(l.lake_geom.gcontains(p2.spot_location)))
+        ok_(l in containing_lakes)
+        ok_(l1 not in containing_lakes)
+        ok_(session.scalar(l.lake_geom.gcontains(WKTSpatialElement('POINT(-88.9055734203822 43.0048567324841)'))))
+        containing_lakes = session.query(Lake).filter(Lake.lake_geom.gcontains('POINT(-88.9055734203822 43.0048567324841)')).all()
         ok_(l in containing_lakes)
         ok_(l1 not in containing_lakes)
 

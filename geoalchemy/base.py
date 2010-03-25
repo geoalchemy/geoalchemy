@@ -4,7 +4,9 @@ from sqlalchemy.sql import expression
 from sqlalchemy.types import TypeEngine
 from geoalchemy.utils import from_wkt
 from sqlalchemy.sql.expression import Function
-from types import StringType
+from sqlalchemy.dialects.postgresql.base import PGDialect
+from sqlalchemy.dialects.sqlite.base import SQLiteDialect
+from sqlalchemy.dialects.mysql.base import MySQLDialect
 
 # Base classes for geoalchemy
 
@@ -24,7 +26,7 @@ class SpatialElement(object):
     def __get_wkt(self, session):
         """This method converts the object into a WKT geometry. It takes into
         account that WKTSpatialElement does not have to make a new query
-        to retrieve the WKT geometry.
+        to retrieve the WKT geometry
         
         """
         if isinstance(self.wkt, Function):
@@ -145,13 +147,31 @@ def _to_gis(value):
 class SpatialComparator(ColumnProperty.ColumnComparator):
     """Intercepts standard Column operators on mapped class attributes
         and overrides their behavior.
+        
+        A comparator class makes sure that queries like 
+        "session.query(Lake).filter(Lake.lake_geom.gcontains(..)).all()" can be executed.
     """
-
-    # override the __eq__() operator
-    def __eq__(self, other):
-        return self.__clause_element__().op('~=')(_to_gis(other))
-
-    # add a custom operator
-    def intersects(self, other):
-        return self.__clause_element__().op('&&')(_to_gis(other)) 
+    
+    def __init__(self, prop, mapper, adapter=None):
+        super(ColumnProperty.ColumnComparator, self).__init__(prop, mapper, adapter)
+        
+        dialect = mapper.mapped_table.bind.dialect
+        
+        comparator_factory = None
+        if isinstance(dialect, PGDialect):
+            from postgis import PGComparator
+            comparator_factory = PGComparator
+        elif isinstance(dialect, MySQLDialect):
+            from mysql import MySQLComparator
+            comparator_factory = MySQLComparator
+        elif isinstance(dialect, SQLiteDialect):
+            from spatialite import SQLiteComparator
+            comparator_factory = SQLiteComparator
+            
+        if comparator_factory is not None:
+            if comparator_factory not in SpatialComparator.__bases__:
+                SpatialComparator.__bases__ = (comparator_factory,) + SpatialComparator.__bases__
+            
+            
+        
 

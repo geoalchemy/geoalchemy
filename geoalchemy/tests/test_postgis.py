@@ -172,6 +172,8 @@ class TestGeometry(TestCase):
     def test_x(self):
         s = session.query(Spot).filter(Spot.spot_height==420.40).one()
         eq_(session.scalar(s.spot_location.x), -88.5945861592357)
+#        s = session.query(Spot).filter(Spot.spot_location.x()>0).one()
+#        ok_(s is not None)
 
     def test_y(self):
         s = session.query(Spot).filter(Spot.spot_height==420.40).one()

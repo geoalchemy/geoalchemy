@@ -8,11 +8,11 @@ from sqlalchemy.dialects.sqlite.base import SQLiteDialect
 from sqlalchemy.dialects.mysql.base import MySQLDialect
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.sql.expression import ColumnClause
-from geoalchemy.postgis import PGPersistentSpatialElement
+from geoalchemy.postgis import PGPersistentSpatialElement, PGComparator
 from geoalchemy.spatialite import SQLitePersistentSpatialElement
 from geoalchemy.mysql import MySQLPersistentSpatialElement
-from geoalchemy.base import SpatialElement, WKTSpatialElement, WKBSpatialElement, GeometryBase, _to_gis
-from geoalchemy.comparator import SFSComparator, SQLMMComparator
+from geoalchemy.base import SpatialElement, WKTSpatialElement, WKBSpatialElement, GeometryBase, _to_gis, SpatialComparator
+
 
 class Geometry(GeometryBase):
     """Geometry column type. This is the base class for all other
@@ -147,7 +147,7 @@ class GeometryExtensionColumn(Column):
 @compiles(GeometryExtensionColumn)
 def compile_column(element, compiler, **kw):
     if kw.has_key("within_columns_clause") and kw["within_columns_clause"] == True:
-        return "AsBinary(%s)" % element.name # todo: take dialect into account
+        return "AsBinary(%s)" % element.name
         
     return element.name
      
@@ -161,17 +161,13 @@ def GeometryColumn(*args, **kw):
     the Column for inclusion in the mapped table.
     
     """
-    sfs = False
-    if kw.has_key("sfs"): sfs = kw.pop("sfs")
-    if sfs:
-        return column_property(
-                GeometryExtensionColumn(*args, **kw), 
-                extension=SpatialAttribute(), 
-                comparator_factory=SFSComparator
-        )
+    if kw.has_key("sfs"): 
+        #todo: print warning no to use sfs flag, or just let an error raise?
+        kw.pop("sfs")
+
     return column_property(
         GeometryExtensionColumn(*args, **kw), 
         extension=SpatialAttribute(), 
-        comparator_factory=SQLMMComparator
+        comparator_factory=SpatialComparator
     )
 

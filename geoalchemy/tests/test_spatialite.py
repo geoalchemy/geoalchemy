@@ -28,21 +28,21 @@ class Road(Base):
 
     road_id = Column(Integer, primary_key=True)
     road_name = Column(String)
-    road_geom = GeometryColumn(LineString(2, srid=4326), sfs=True)
+    road_geom = GeometryColumn(LineString(2, srid=4326))
 
 class Lake(Base):
     __tablename__ = 'lakes'
 
     lake_id = Column(Integer, primary_key=True)
     lake_name = Column(String)
-    lake_geom = GeometryColumn(Polygon(2, srid=4326), sfs=True)
+    lake_geom = GeometryColumn(Polygon(2, srid=4326))
 
 class Spot(Base):
     __tablename__ = 'spots'
 
     spot_id = Column(Integer, primary_key=True)
     spot_height = Column(Numeric)
-    spot_location = GeometryColumn(Point(2, srid=4326), sfs=True)
+    spot_location = GeometryColumn(Point(2, srid=4326))
 
 # enable the DDL extension, which allows CREATE/DROP operations
 # to work correctly.  This is not needed if working with externally
@@ -332,6 +332,24 @@ class TestGeometry(TestCase):
         ok_(l1 not in containing_lakes)
 
     # Test Geometry Relations for Minimum Bounding Rectangles (MBRs)
+
+    def test_mbr_equal(self):
+        r1 = session.query(Road).filter(Road.road_name==u'Jeff Rd').one()
+        r2 = session.query(Road).filter(Road.road_name==u'Peter Rd').one()
+        r3 = session.query(Road).filter(Road.road_name==u'Paul St').one()
+        equal_roads = session.query(Road).filter(Road.road_geom.mbr_equal(r1.road_geom)).all()
+        ok_(r1 in equal_roads)
+        ok_(r2 in equal_roads)
+        ok_(r3 not in equal_roads)
+        ok_(session.scalar(r2.road_geom.mbr_equal(r1.road_geom)))
+
+    @raises(NotImplementedError)
+    def test_mbr_distance(self):
+        r1 = session.query(Road).filter(Road.road_name==u'Jeff Rd').one()
+        r2 = session.query(Road).filter(Road.road_name==u'Geordie Rd').one()
+        r3 = session.query(Road).filter(Road.road_name==u'Peter Rd').one()
+        value = session.scalar(r1.road_geom.mbr_distance(r2.road_geom))
+        value = session.scalar(r1.road_geom.mbr_distance(r3.road_geom))
 
     def test_mbr_disjoint(self):
         r1 = session.query(Road).filter(Road.road_name==u'Jeff Rd').one()

@@ -44,12 +44,6 @@ class SpatialElement(object):
         wkt = self.__get_wkt(session)
         return from_wkt(wkt)["coordinates"]
 
-class PersistentSpatialElement(SpatialElement):
-    """Represents a Geometry value loaded from the database."""
-    
-    def __init__(self, desc):
-        self.desc = desc
-
 class WKTSpatialElement(SpatialElement, expression.Function):
     """Represents a Geometry value expressed within application code; i.e. in
     the OGC Well Known Text (WKT) format.
@@ -88,6 +82,19 @@ class WKBSpatialElement(SpatialElement, expression.Function):
     @property
     def wkt(self):
         return func.AsText(func.GeomFromWKB(literal(self, GeometryBase), self.srid))
+
+class PersistentSpatialElement(SpatialElement):
+    """Represents a Geometry value loaded from the database."""
+    
+    def __init__(self, desc):
+        self.desc = desc
+    
+    @property    
+    def geom_wkb(self):
+        if self.desc is not None and isinstance(self.desc, WKBSpatialElement):
+            return self.desc.desc
+        else:
+            return None
 
 class GeometryBase(TypeEngine):
     """Base Geometry column type for all spatial databases.

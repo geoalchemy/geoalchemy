@@ -4,7 +4,7 @@ from sqlalchemy.orm import column_property
 from sqlalchemy.orm.interfaces import AttributeExtension
 from sqlalchemy.orm.properties import ColumnProperty
 from sqlalchemy.exc import NotSupportedError
-from geoalchemy.base import SpatialElement, _to_gis, WKTSpatialElement, WKBSpatialElement, GeometryBase as Geometry, SpatialComparator
+from geoalchemy.base import SpatialElement, _to_gis, WKBSpatialElement, GeometryBase as Geometry, SpatialComparator, PersistentSpatialElement
 from geoalchemy.comparator import SFSComparator, SFSComparatorFunctions
 from geoalchemy.dialect import SpatialDialect 
 
@@ -73,7 +73,7 @@ class MySQLSpatialElement(MySQLComparatorFunctions, SpatialElement):
     """Represents a geometry value."""
     pass
 
-class MySQLPersistentSpatialElement(MySQLSpatialElement):
+class MySQLPersistentSpatialElement(MySQLSpatialElement, PersistentSpatialElement):
     """Represents a Geometry value as loaded from the database."""
     
     def __init__(self, desc):

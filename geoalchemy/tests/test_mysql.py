@@ -85,7 +85,8 @@ class TestGeometry(TestCase):
 
     def test_wkb(self):
         eq_(b2a_hex(session.scalar(self.r.road_geom.wkb)).upper(), '010200000005000000D7DB0998302B56C0876F04983F8D45404250F5E65E2956C068CE11FFC37F4540C8ED42D9E82656C0EFC45ED3E97B45407366F132062156C036C921DED877454078A18C171A1C56C053A5AF5B68804540')
-
+        eq_(session.scalar(self.r.road_geom.wkb), self.r.road_geom.geom_wkb)
+        
     def test_coords(self):
         eq_(self.r.road_geom.coords(session), [[-88.674840936305998, 43.103503229299001], [-88.646417369426999, 42.998168834395003], [-88.607961955413998, 42.968073292993999], [-88.516003356688003, 42.936305777069997], [-88.439092528662002, 43.003184757962003]])
         s = session.query(Spot).filter(Spot.spot_height==102.34).one()

@@ -14,7 +14,7 @@ under the mentorship of `Mark Ramm-Christensen <http://compoundthinking.com/blog
 
 Requirements
 ------------
-Requires SQLAlchemy >= 0.5. Supported on python 2.5 and python 2.6.
+Requires SQLAlchemy >= 0.6. Supported on python 2.5 and python 2.6.
 Should also work with python 2.4 but has not been tested. It also
 requires a supported spatial database.
 

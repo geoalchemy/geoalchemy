@@ -3,14 +3,16 @@ from sqlalchemy.orm import column_property
 from sqlalchemy.orm.interfaces import AttributeExtension
 from sqlalchemy.types import TypeEngine
 from sqlalchemy.sql import expression
-from sqlalchemy.databases.postgres import PGDialect
-from sqlalchemy.databases.sqlite import SQLiteDialect
-from sqlalchemy.databases.mysql import MySQLDialect
-from geoalchemy.postgis import PGPersistentSpatialElement
+from sqlalchemy.dialects.postgresql.base import PGDialect
+from sqlalchemy.dialects.sqlite.base import SQLiteDialect
+from sqlalchemy.dialects.mysql.base import MySQLDialect
+from sqlalchemy.ext.compiler import compiles
+from sqlalchemy.sql.expression import ColumnClause
+from geoalchemy.postgis import PGPersistentSpatialElement, PGComparator
 from geoalchemy.spatialite import SQLitePersistentSpatialElement
 from geoalchemy.mysql import MySQLPersistentSpatialElement
-from geoalchemy.base import SpatialElement, WKTSpatialElement, GeometryBase, _to_gis
-from geoalchemy.comparator import SFSComparator, SQLMMComparator
+from geoalchemy.base import SpatialElement, WKTSpatialElement, WKBSpatialElement, GeometryBase, _to_gis, SpatialComparator
+from geoalchemy.dialect import DialectManager
 
 class Geometry(GeometryBase):
     """Geometry column type. This is the base class for all other
@@ -21,17 +23,12 @@ class Geometry(GeometryBase):
     
     """
     
-    def result_processor(self, dialect):
+    def result_processor(self, dialect, coltype=None):
+        
         def process(value):
             if value is not None:
-                if isinstance(dialect, PGDialect):
-                    return PGPersistentSpatialElement(value)
-                if isinstance(dialect, SQLiteDialect):
-                    return SQLitePersistentSpatialElement(value)
-                if isinstance(dialect, MySQLDialect):
-                    return MySQLPersistentSpatialElement(value)
-                else:
-                    raise NotImplementedError
+                wkb_element = WKBSpatialElement(value, self.srid)
+                return DialectManager.get_spatial_dialect(dialect).process_result(wkb_element)
             else:
                 return value
         return process
@@ -85,6 +82,7 @@ class GeometryDDL(object):
         self._stack = []
         
     def __call__(self, event, table, bind):
+        spatial_dialect = DialectManager.get_spatial_dialect(bind.dialect)
         if event in ('before-create', 'before-drop'):
             regular_cols = [c for c in table.c if not isinstance(c.type, Geometry)]
             gis_cols = set(table.c).difference(regular_cols)
@@ -93,38 +91,15 @@ class GeometryDDL(object):
             
             if event == 'before-drop':
                 for c in gis_cols:
-                    if bind.dialect.__class__.__name__ == 'PGDialect':
-			bind.execute(select([func.DropGeometryColumn((table.schema or 'public'), table.name, c.name)], autocommit=True))
-                    elif bind.dialect.__class__.__name__ == 'SQLiteDialect':
-                        bind.execute(select([func.DiscardGeometryColumn(table.name, c.name)], autocommit=True))
-                    else:
-                        pass
-                    break
+                    spatial_dialect.handle_ddl_before_drop(bind, table, c)
                 
         elif event == 'after-create':
             table._columns = self._stack.pop()
             
             for c in table.c:
                 if isinstance(c.type, Geometry):
-                    if bind.dialect.__class__.__name__ == 'PGDialect':
-			bind.execute(select([func.AddGeometryColumn((table.schema or 'public'), table.name, c.name, c.type.srid, c.type.name, c.type.dimension)], autocommit=True))
-                        if c.type.spatial_index:
-			    bind.execute("CREATE INDEX idx_%s_%s ON %s.%s USING GIST (%s GIST_GEOMETRY_OPS)" % (table.name, c.name, (table.schema or 'public'), table.name, c.name))
-                    elif bind.dialect.__class__.__name__ == 'SQLiteDialect':
-                        bind.execute(select([func.AddGeometryColumn(table.name, c.name, c.type.srid, c.type.name, c.type.dimension)], autocommit=True))
-                        if c.type.spatial_index:
-                            bind.execute("CREATE INDEX idx_%s_%s ON %s(%s)" % (table.name, c.name, table.name, c.name))
-                            bind.execute("VACUUM %s" % table.name)
-                    elif bind.dialect.__class__.__name__ == 'MySQLDialect':
-                        if c.type.spatial_index:
-                            bind.execute("ALTER TABLE %s ADD %s %s NOT NULL" % (
-                                table.name, c.name, c.type.name))
-                            bind.execute("CREATE SPATIAL INDEX idx_%s_%s ON %s(%s)" % (table.name, c.name, table.name, c.name))
-                        else:
-                            bind.execute("ALTER TABLE %s ADD %s %s" % (
-                                table.name, c.name, c.type.name))
-                    else:
-                      pass
+                    spatial_dialect.handle_ddl_after_create(bind, table, c)
+
         elif event == 'after-drop':
             table._columns = self._stack.pop()
 
@@ -137,6 +112,17 @@ class SpatialAttribute(AttributeExtension):
     
     def set(self, state, value, oldvalue, initiator):
         return _to_gis(value)
+ 
+class GeometryExtensionColumn(Column):
+    pass
+        
+@compiles(GeometryExtensionColumn)
+def compile_column(element, compiler, **kw):
+    if kw.has_key("within_columns_clause") and kw["within_columns_clause"] == True:
+        return "AsBinary(%s)" % element.name
+        
+    return element.name
+     
             
 def GeometryColumn(*args, **kw):
     """Define a declarative column property with GIS behavior.
@@ -147,17 +133,13 @@ def GeometryColumn(*args, **kw):
     the Column for inclusion in the mapped table.
     
     """
-    sfs = False
-    if kw.has_key("sfs"): sfs = kw.pop("sfs")
-    if sfs:
-        return column_property(
-                Column(*args, **kw), 
-                extension=SpatialAttribute(), 
-                comparator_factory=SFSComparator
-        )
+    if kw.has_key("sfs"): 
+        #todo: print warning no to use sfs flag, or just let an error raise?
+        kw.pop("sfs")
+
     return column_property(
-        Column(*args, **kw), 
+        GeometryExtensionColumn(*args, **kw), 
         extension=SpatialAttribute(), 
-        comparator_factory=SQLMMComparator
+        comparator_factory=SpatialComparator
     )
 

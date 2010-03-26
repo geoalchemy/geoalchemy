@@ -8,8 +8,8 @@ from sqlalchemy.ext.declarative import declarative_base
 
 from pysqlite2 import dbapi2 as sqlite
 from geoalchemy import (Geometry, GeometryColumn, Point, Polygon,
-		LineString, GeometryDDL, WKTSpatialElement)
-from nose.tools import ok_, eq_, raises
+		LineString, GeometryDDL, WKTSpatialElement, WKBSpatialElement)
+from nose.tools import ok_, eq_, raises, assert_almost_equal
 
 
 engine = create_engine('sqlite://', module=sqlite, echo=True)
@@ -28,21 +28,21 @@ class Road(Base):
 
     road_id = Column(Integer, primary_key=True)
     road_name = Column(String)
-    road_geom = GeometryColumn(LineString(2, srid=4326), sfs=True)
+    road_geom = GeometryColumn(LineString(2, srid=4326))
 
 class Lake(Base):
     __tablename__ = 'lakes'
 
     lake_id = Column(Integer, primary_key=True)
     lake_name = Column(String)
-    lake_geom = GeometryColumn(Polygon(2, srid=4326), sfs=True)
+    lake_geom = GeometryColumn(Polygon(2, srid=4326))
 
 class Spot(Base):
     __tablename__ = 'spots'
 
     spot_id = Column(Integer, primary_key=True)
     spot_height = Column(Numeric)
-    spot_location = GeometryColumn(Point(2, srid=4326), sfs=True)
+    spot_location = GeometryColumn(Point(2, srid=4326))
 
 # enable the DDL extension, which allows CREATE/DROP operations
 # to work correctly.  This is not needed if working with externally
@@ -98,6 +98,7 @@ class TestGeometry(TestCase):
 
     def test_wkb(self):
         eq_(b2a_hex(session.scalar(self.r.road_geom.wkb)).upper(), '010200000005000000D7DB0998302B56C0876F04983F8D45404250F5E65E2956C068CE11FFC37F4540C8ED42D9E82656C0EFC45ED3E97B45407366F132062156C036C921DED877454078A18C171A1C56C053A5AF5B68804540')
+        eq_(session.scalar(self.r.road_geom.wkb), self.r.road_geom.geom_wkb)
 
     def test_persistent(self):
         eq_(b2a_hex(session.scalar(self.r.road_geom.wkb)).upper(), '010200000005000000D7DB0998302B56C0876F04983F8D45404250F5E65E2956C068CE11FFC37F4540C8ED42D9E82656C0EFC45ED3E97B45407366F132062156C036C921DED877454078A18C171A1C56C053A5AF5B68804540')
@@ -141,7 +142,9 @@ class TestGeometry(TestCase):
 
     def test_envelope(self):
         eq_(b2a_hex(session.scalar(self.r.road_geom.envelope)), '0001ffffffffd7db0998302b56c036c921ded877454078a18c171a1c56c0876f04983f8d45407c030000000100000005000000d7db0998302b56c036c921ded877454078a18c171a1c56c036c921ded877454078a18c171a1c56c0876f04983f8d4540d7db0998302b56c0876f04983f8d4540d7db0998302b56c036c921ded8774540fe')
-
+        env =  WKBSpatialElement(session.scalar(func.AsBinary(self.r.road_geom.envelope)))
+        eq_(env.geom_type(session), 'Polygon')
+        
     def test_x(self):
         l = session.query(Lake).get(1)
         r = session.query(Road).get(1)
@@ -163,15 +166,19 @@ class TestGeometry(TestCase):
         r = session.query(Road).get(1)
         s = session.query(Spot).get(1)
         ok_(not session.scalar(l.lake_geom.start_point))
-        eq_(b2a_hex(session.scalar(r.road_geom.start_point)), '0001ffffffff850811e27d3a56c0997b2f540f414540850811e27d3a56c0997b2f540f4145407c01000000850811e27d3a56c0997b2f540f414540fe')
+        assert_almost_equal(session.scalar(func.X(r.road_geom.start_point)), -88.9139332929936)
+        assert_almost_equal(session.scalar(func.Y(r.road_geom.start_point)), 42.5082802993631)
+        #eq_(b2a_hex(session.scalar(r.road_geom.start_point)), '0001ffffffff850811e27d3a56c0997b2f540f414540850811e27d3a56c0997b2f540f4145407c01000000850811e27d3a56c0997b2f540f414540fe')
         ok_(not session.scalar(s.spot_location.start_point))
 
     def test_end_point(self):
         l = session.query(Lake).get(1)
         r = session.query(Road).get(1)
         s = session.query(Spot).get(1)
-        ok_(not session.scalar(l.lake_geom.end_point))
-        eq_(b2a_hex(session.scalar(r.road_geom.end_point)), '0001ffffffffccceb1c5641756c02c42dfe9f4914540ccceb1c5641756c02c42dfe9f49145407c01000000ccceb1c5641756c02c42dfe9f4914540fe')
+        ok_(not session.scalar(l.lake_geom.end_point)) 
+        assert_almost_equal(session.scalar(func.X(r.road_geom.end_point)), -88.3655256496815)
+        assert_almost_equal(session.scalar(func.Y(r.road_geom.end_point)), 43.1402866687898)
+        #eq_(b2a_hex(session.scalar(r.road_geom.end_point)), '0001ffffffffccceb1c5641756c02c42dfe9f4914540ccceb1c5641756c02c42dfe9f49145407c01000000ccceb1c5641756c02c42dfe9f4914540fe')
         ok_(not session.scalar(s.spot_location.end_point))
 
     def test_length(self):
@@ -207,20 +214,28 @@ class TestGeometry(TestCase):
         ok_(not session.scalar(s.spot_location.num_points))
 
     def test_point_n(self):
-        l = session.query(Lake).get(1)
+        l = session.query(Lake).get(1)  
         r = session.query(Road).get(1)
         s = session.query(Spot).get(1)
         ok_(not session.scalar(l.lake_geom.point_n()))
-        eq_(b2a_hex(session.scalar(r.road_geom.point_n(5))), '0001ffffffffccceb1c5641756c02c42dfe9f4914540ccceb1c5641756c02c42dfe9f49145407c01000000ccceb1c5641756c02c42dfe9f4914540fe')
+        assert_almost_equal(session.scalar(func.X(r.road_geom.point_n(5))), -88.3655256496815)
+        assert_almost_equal(session.scalar(func.Y(r.road_geom.point_n(5))), 43.1402866687898)
+        #eq_(b2a_hex(session.scalar(r.road_geom.point_n(5))), '0001ffffffffccceb1c5641756c02c42dfe9f4914540ccceb1c5641756c02c42dfe9f49145407c01000000ccceb1c5641756c02c42dfe9f4914540fe')
         ok_(not session.scalar(s.spot_location.point_n()))
 
     def test_centroid(self):
         l = session.query(Lake).get(1)
         r = session.query(Road).get(1)
         s = session.query(Spot).get(1)
-        eq_(b2a_hex(session.scalar(l.lake_geom.centroid)), '0001ffffffff81ec9573803056c04bc4995bce98454081ec9573803056c04bc4995bce9845407c0100000081ec9573803056c04bc4995bce984540fe')
-        eq_(b2a_hex(session.scalar(r.road_geom.centroid)), '0001ffffffff1cecabbd0b2a56c022b0f465cd6b45401cecabbd0b2a56c022b0f465cd6b45407c010000001cecabbd0b2a56c022b0f465cd6b4540fe')
-        ok_(b2a_hex(session.scalar(s.spot_location.centroid)), '0001ffffffff95241bb30d2656c04e69e7605879454095241bb30d2656c04e69e760587945407c0100000095241bb30d2656c04e69e76058794540fe')
+        assert_almost_equal(session.scalar(func.X(l.lake_geom.centroid)), -88.7578400578)
+        assert_almost_equal(session.scalar(func.Y(l.lake_geom.centroid)), 43.1937975407)
+        #eq_(b2a_hex(session.scalar(l.lake_geom.centroid)), '0001ffffffff81ec9573803056c04bc4995bce98454081ec9573803056c04bc4995bce9845407c0100000081ec9573803056c04bc4995bce984540fe')
+        assert_almost_equal(session.scalar(func.X(r.road_geom.centroid)), -88.6569666079)
+        assert_almost_equal(session.scalar(func.Y(r.road_geom.centroid)), 42.8422057576)
+        #eq_(b2a_hex(session.scalar(r.road_geom.centroid)), '0001ffffffff1cecabbd0b2a56c022b0f465cd6b45401cecabbd0b2a56c022b0f465cd6b45407c010000001cecabbd0b2a56c022b0f465cd6b4540fe')
+        assert_almost_equal(session.scalar(func.X(s.spot_location.centroid)), -88.5945861592)
+        assert_almost_equal(session.scalar(func.Y(s.spot_location.centroid)), 42.9480095987)
+        #ok_(b2a_hex(session.scalar(s.spot_location.centroid)), '0001ffffffff95241bb30d2656c04e69e7605879454095241bb30d2656c04e69e760587945407c0100000095241bb30d2656c04e69e76058794540fe')
 
     def test_area(self):
         l = session.query(Lake).get(1)
@@ -312,8 +327,30 @@ class TestGeometry(TestCase):
         ok_(not session.scalar(l.lake_geom.gcontains(p2.spot_location)))
         ok_(l in containing_lakes)
         ok_(l1 not in containing_lakes)
+        ok_(session.scalar(l.lake_geom.gcontains(WKTSpatialElement('POINT(-88.9055734203822 43.0048567324841)'))))
+        containing_lakes = session.query(Lake).filter(Lake.lake_geom.gcontains('POINT(-88.9055734203822 43.0048567324841)')).all()
+        ok_(l in containing_lakes)
+        ok_(l1 not in containing_lakes)
 
     # Test Geometry Relations for Minimum Bounding Rectangles (MBRs)
+
+    def test_mbr_equal(self):
+        r1 = session.query(Road).filter(Road.road_name==u'Jeff Rd').one()
+        r2 = session.query(Road).filter(Road.road_name==u'Peter Rd').one()
+        r3 = session.query(Road).filter(Road.road_name==u'Paul St').one()
+        equal_roads = session.query(Road).filter(Road.road_geom.mbr_equal(r1.road_geom)).all()
+        ok_(r1 in equal_roads)
+        ok_(r2 in equal_roads)
+        ok_(r3 not in equal_roads)
+        ok_(session.scalar(r2.road_geom.mbr_equal(r1.road_geom)))
+
+    @raises(NotImplementedError)
+    def test_mbr_distance(self):
+        r1 = session.query(Road).filter(Road.road_name==u'Jeff Rd').one()
+        r2 = session.query(Road).filter(Road.road_name==u'Geordie Rd').one()
+        r3 = session.query(Road).filter(Road.road_name==u'Peter Rd').one()
+        value = session.scalar(r1.road_geom.mbr_distance(r2.road_geom))
+        value = session.scalar(r1.road_geom.mbr_distance(r3.road_geom))
 
     def test_mbr_disjoint(self):
         r1 = session.query(Road).filter(Road.road_name==u'Jeff Rd').one()

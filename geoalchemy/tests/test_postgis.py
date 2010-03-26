@@ -4,12 +4,13 @@ from sqlalchemy import (create_engine, MetaData, Column, Integer, String,
         Numeric, func, literal, select)
 from sqlalchemy.orm import sessionmaker, column_property
 from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy import and_
 
 from geoalchemy import (Geometry, GeometryCollection, GeometryColumn,
         GeometryDDL, WKTSpatialElement, WKBSpatialElement)
 from nose.tools import eq_, ok_
 
-engine = create_engine('postgres://gis:gis@localhost/gis', echo=True)
+engine = create_engine('postgresql://gis:gis@localhost/gis', echo=True)
 metadata = MetaData(engine)
 session = sessionmaker(bind=engine)()
 Base = declarative_base(metadata=metadata)
@@ -111,7 +112,8 @@ class TestGeometry(TestCase):
 
     def test_wkb(self):
         eq_(b2a_hex(session.scalar(self.r.road_geom.wkb)).upper(), '010200000005000000D7DB0998302B56C0876F04983F8D45404250F5E65E2956C068CE11FFC37F4540C8ED42D9E82656C0EFC45ED3E97B45407366F132062156C036C921DED877454078A18C171A1C56C053A5AF5B68804540')
-
+        eq_(session.scalar(self.r.road_geom.wkb), self.r.road_geom.geom_wkb)
+        
     def test_svg(self):
         eq_(session.scalar(self.r.road_geom.svg), 'M -88.674840936305699 -43.103503229299399 -88.6464173694267 -42.998168834394903 -88.607961955413998 -42.968073292993601 -88.516003356687904 -42.936305777070103 -88.4390925286624 -43.003184757961797')
 
@@ -152,6 +154,22 @@ class TestGeometry(TestCase):
         r = session.query(Road).filter(Road.road_name=='Graeme Ave').one()
         assert not session.scalar(r.road_geom.is_ring)
 
+    def test_num_points(self):
+        l = session.query(Lake).get(1)
+        r = session.query(Road).get(1)
+        s = session.query(Spot).get(1)
+        ok_(not session.scalar(l.lake_geom.num_points))
+        eq_(session.scalar(r.road_geom.num_points), 5)
+        ok_(not session.scalar(s.spot_location.num_points))
+
+    def test_point_n(self):
+        l = session.query(Lake).get(1)
+        r = session.query(Road).get(1)
+        s = session.query(Spot).get(1)
+        ok_(not session.scalar(l.lake_geom.point_n()))
+        eq_(session.scalar(func.AsText(r.road_geom.point_n(5))), u'POINT(-88.3655256496815 43.1402866687898)')
+        ok_(not session.scalar(s.spot_location.point_n()))
+
     def test_persistent(self):
         assert b2a_hex(session.scalar(self.r.road_geom.wkb)).upper() == '010200000005000000D7DB0998302B56C0876F04983F8D45404250F5E65E2956C068CE11FFC37F4540C8ED42D9E82656C0EFC45ED3E97B45407366F132062156C036C921DED877454078A18C171A1C56C053A5AF5B68804540'
 
@@ -172,6 +190,8 @@ class TestGeometry(TestCase):
     def test_x(self):
         s = session.query(Spot).filter(Spot.spot_height==420.40).one()
         eq_(session.scalar(s.spot_location.x), -88.5945861592357)
+        s = session.query(Spot).filter(and_(Spot.spot_location.x < 0, Spot.spot_location.y > 42)).all()
+        ok_(s is not None)
 
     def test_y(self):
         s = session.query(Spot).filter(Spot.spot_height==420.40).one()
@@ -198,6 +218,8 @@ class TestGeometry(TestCase):
     def test_envelope(self):
         r = session.query(Road).filter(Road.road_name=='Graeme Ave').one()
         eq_(session.scalar(r.road_geom.envelope), '0103000020E6100000010000000500000000000040042756C0000000007559454000000040042756C000000000F3974540000000A00E2356C000000000F3974540000000A00E2356C0000000007559454000000040042756C00000000075594540')
+        env =  WKBSpatialElement(session.scalar(func.AsBinary(self.r.road_geom.envelope)))
+        eq_(env.geom_type(session), 'Polygon')
 
     def test_start_point(self):
         r = session.query(Road).filter(Road.road_name=='Graeme Ave').one()
@@ -300,6 +322,10 @@ class TestGeometry(TestCase):
         ok_(not session.scalar(l.lake_geom.gcontains(p2.spot_location)))
         ok_(l in containing_lakes)
         ok_(l1 not in containing_lakes)
+        ok_(session.scalar(l.lake_geom.gcontains(WKTSpatialElement('POINT(-88.9055734203822 43.0048567324841)'))))
+        containing_lakes = session.query(Lake).filter(Lake.lake_geom.gcontains('POINT(-88.9055734203822 43.0048567324841)')).all()
+        ok_(l in containing_lakes)
+        ok_(l1 not in containing_lakes)
 
     def test_covers(self):
         l = session.query(Lake).filter(Lake.lake_name=='Lake Blue').one()
@@ -326,8 +352,9 @@ class TestGeometry(TestCase):
         l = session.query(Lake).filter(Lake.lake_name=='Lake Blue').one()
         r = session.query(Road).filter(Road.road_name=='Geordie Rd').one()
         s = session.query(Spot).filter(Spot.spot_height==454.66).one()
-        eq_(session.scalar(WKBSpatialElement(session.scalar(l.lake_geom.intersection(s.spot_location))).wkt), 'GEOMETRYCOLLECTION EMPTY')
-        eq_(session.scalar(WKBSpatialElement(session.scalar(l.lake_geom.intersection(r.road_geom))).wkt), 'POINT(-89.0710987261147 43.243949044586)')
+        eq_(session.scalar(func.ST_AsText(l.lake_geom.intersection(s.spot_location))), 'GEOMETRYCOLLECTION EMPTY')
+        eq_(session.scalar(func.ST_AsText(session.scalar(l.lake_geom.intersection(r.road_geom)))), 'POINT(-89.0710987261147 43.243949044586)')
         l = session.query(Lake).filter(Lake.lake_name=='Lake White').one()
         r = session.query(Road).filter(Road.road_name=='Paul St').one()
-        eq_(session.scalar(WKBSpatialElement(session.scalar(l.lake_geom.intersection(r.road_geom))).wkt), 'LINESTRING(-88.1430673666454 42.6255500261493,-88.1140839697546 42.6230657349872)')
+        eq_(session.scalar(func.ST_AsText(session.scalar(l.lake_geom.intersection(r.road_geom)))), 'LINESTRING(-88.1430673666454 42.6255500261493,-88.1140839697546 42.6230657349872)')
+        

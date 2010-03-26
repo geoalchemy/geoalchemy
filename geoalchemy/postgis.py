@@ -4,170 +4,71 @@ from sqlalchemy.orm import column_property
 from sqlalchemy.orm.interfaces import AttributeExtension
 from sqlalchemy.orm.properties import ColumnProperty
 from sqlalchemy.sql import expression
-from geoalchemy.base import SpatialElement, _to_gis, GeometryBase as Geometry
+from geoalchemy.base import SpatialElement, _to_gis, WKBSpatialElement, GeometryBase as Geometry, SpatialComparator, PersistentSpatialElement
+from geoalchemy.comparator import SQLMMComparator, SQLMMComparatorFunctions
+from geoalchemy.dialect import SpatialDialect 
 
-class PGSpatialElement(SpatialElement):
-    """Represents a geometry value."""
+class PGComparatorFunctions(SQLMMComparatorFunctions):
+    """This class contains functions supported by PostGIS that are not part of SQL MM
+    """
 
     # OGC Geometry Functions
-
-    @property
-    def wkt(self):
-        return func.ST_AsText(literal(self, Geometry))
-
-    @property
-    def wkb(self):
-        return func.ST_AsBinary(literal(self, Geometry))
-
     @property
     def svg(self):
-        return func.ST_AsSVG(literal(self, Geometry))
-
-    @property
-    def gml(self):
-        return func.ST_AsGML(literal(self, Geometry))
+        return func.ST_AsSVG(self._geom_from_wkb())
 
     @property
     def kml(self):
-        return func.ST_AsKML(literal(self, Geometry))
+        return func.ST_AsKML(self._geom_from_wkb())
 
     @property
     def geojson(self):
-        return func.ST_AsGeoJson(literal(self, Geometry))
+        return func.ST_AsGeoJson(self._geom_from_wkb())
+    
+    # override the __eq__() operator
+    def __eq__(self, other):
+        return self.__clause_element__().op('~=')(self._geom_from_wkb(other))
 
-    @property
-    def dimension(self):
-        return func.ST_Dimension(literal(self, Geometry))
+    # add a custom operator
+    def intersects(self, other):
+        return self.__clause_element__().op('&&')(self._geom_from_wkb(other)) 
 
-    @property
-    def srid(self):
-        return func.ST_SRID(literal(self, Geometry))
-
-    @property
-    def geometry_type(self):
-        return func.ST_GeometryType(literal(self, Geometry))
-
-    @property
-    def is_empty(self):
-        return func.ST_IsEmpty(literal(self, Geometry))
-
-    @property
-    def is_simple(self):
-        return func.ST_IsSimple(literal(self, Geometry))
-
-    @property
-    def is_closed(self):
-        return func.ST_IsClosed(literal(self, Geometry))
-
-    @property
-    def is_ring(self):
-        return func.ST_IsRing(literal(self, Geometry))
-
-    @property
-    def length(self):
-        return func.ST_Length(literal(self, Geometry))
-
-    @property
-    def area(self):
-        return func.ST_Area(literal(self, Geometry))
-
-    @property
-    def centroid(self):
-        return func.ST_Centroid(literal(self, Geometry))
-
-    @property
-    def boundary(self):
-        return func.ST_Boundary(literal(self, Geometry))
-
-    def buffer(self, length=0.0, num_segs=8):
-        return func.ST_Buffer(literal(self, Geometry), length, num_segs)
-
-    @property
-    def convex_hull(self):
-        return func.ST_ConvexHull(literal(self, Geometry))
-
-    @property
-    def envelope(self):
-        return func.ST_Envelope(literal(self, Geometry))
-
-    @property
-    def start_point(self):
-        return func.ST_StartPoint(literal(self, Geometry))
-
-    @property
-    def end_point(self):
-        return func.ST_EndPoint(literal(self, Geometry))
-
-    @property
-    def x(self):
-        return func.ST_X(literal(self, Geometry))
-
-    @property
-    def y(self):
-        return func.ST_Y(literal(self, Geometry))
-        
-    def transform(self, epsg=4326):
-        return func.ST_Transform(literal(self, Geometry), epsg)
-
-    # OGC Geometry Relations
-
-    def equals(self, geom):
-        return func.ST_Equals(literal(self, Geometry),
-			literal(_to_gis(geom), Geometry))
-
-    def distance(self, geom):
-        return func.ST_Distance(literal(self, Geometry),
-			literal(_to_gis(geom), Geometry))
-
-    def within_distance(self, geom, distance=0.0):
-        return func.ST_DWithin(literal(self, Geometry),
-			literal(_to_gis(geom), Geometry), distance)
-
-    def disjoint(self, geom):
-        return func.ST_Disjoint(literal(self, Geometry),
-			literal(_to_gis(geom), Geometry))
-
-    def intersects(self, geom):
-        return func.ST_Intersects(literal(self, Geometry),
-			literal(_to_gis(geom), Geometry))
-
-    def touches(self, geom):
-        return func.ST_Touches(literal(self, Geometry),
-			literal(_to_gis(geom), Geometry))
-
-    def crosses(self, geom):
-        return func.ST_Crosses(literal(self, Geometry),
-    			literal(_to_gis(geom), Geometry))
-
-    def within(self, geom):
-        return func.ST_Within(literal(self, Geometry),
-			literal(_to_gis(geom), Geometry))
-
-    def overlaps(self, geom):
-        return func.ST_Overlaps(literal(self, Geometry),
-			literal(_to_gis(geom), Geometry))
-
-    def gcontains(self, geom):
-        return func.ST_Contains(literal(self, Geometry),
-			literal(_to_gis(geom), Geometry))
-
-    def covers(self, geom):
-        return func.ST_Covers(literal(self, Geometry),
-			literal(_to_gis(geom), Geometry))
-
-    def covered_by(self, geom):
-        return func.ST_CoveredBy(literal(self, Geometry),
-			literal(_to_gis(geom), Geometry))
-
-    def intersection(self, geom):
-        return func.ST_Intersection(literal(self, Geometry),
-			literal(_to_gis(geom), Geometry))
+class PGComparator(PGComparatorFunctions, SpatialComparator):
+    """Comparator class used for PostGIS
+    """
 
 
-class PGPersistentSpatialElement(PGSpatialElement):
+class PGSpatialElement(PGComparatorFunctions, SpatialElement):
+    """Represents a geometry value."""
+    pass
+
+class PGPersistentSpatialElement(PGSpatialElement, PersistentSpatialElement):
     """Represents a Geometry value as loaded from the database."""
 
     def __init__(self, desc):
         self.desc = desc
 
 
+class PGSpatialDialect(SpatialDialect):
+    """Implementation of SpatialDialect for PostGIS."""
+    
+    def get_comparator(self):
+        return PGComparator
+    
+    def process_result(self, wkb_element):
+        return PGPersistentSpatialElement(wkb_element)
+    
+    def handle_ddl_before_drop(self, bind, table, column):
+        bind.execute(select([func.DropGeometryColumn((table.schema or 'public'), table.name, column.name)]).execution_options(autocommit=True))
+    
+    def handle_ddl_after_create(self, bind, table, column):    
+        bind.execute(select([func.AddGeometryColumn((table.schema or 'public'), 
+                                                    table.name, 
+                                                    column.name, 
+                                                    column.type.srid, 
+                                                    column.type.name, 
+                                                    column.type.dimension)]).execution_options(autocommit=True))
+        if column.type.spatial_index:
+            bind.execute("CREATE INDEX idx_%s_%s ON %s.%s USING GIST (%s GIST_GEOMETRY_OPS)" % 
+                            (table.name, column.name, (table.schema or 'public'), table.name, column.name))
+            

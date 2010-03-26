@@ -7,8 +7,8 @@ from sqlalchemy.exc import NotSupportedError
 from sqlalchemy.ext.declarative import declarative_base
 
 from geoalchemy import (Geometry, GeometryColumn, Point, Polygon,
-		LineString, GeometryDDL, WKTSpatialElement)
-from nose.tools import ok_, eq_, raises
+		LineString, GeometryDDL, WKTSpatialElement, WKBSpatialElement)
+from nose.tools import ok_, eq_, raises, assert_almost_equal
 
 
 engine = create_engine('mysql://gis:gis@localhost/gis', echo=True)
@@ -21,21 +21,21 @@ class Road(Base):
 
     road_id = Column(Integer, primary_key=True)
     road_name = Column(Unicode(40))
-    road_geom = GeometryColumn(LineString(2, srid=4326), sfs=True)
+    road_geom = GeometryColumn(LineString(2, srid=4326))
 
 class Lake(Base):
     __tablename__ = 'lakes'
 
     lake_id = Column(Integer, primary_key=True)
     lake_name = Column(Unicode(40))
-    lake_geom = GeometryColumn(Polygon(2, srid=4326), sfs=True)
+    lake_geom = GeometryColumn(Polygon(2, srid=4326))
 
 class Spot(Base):
     __tablename__ = 'spots'
 
     spot_id = Column(Integer, primary_key=True)
-    spot_height = Column(Numeric)
-    spot_location = GeometryColumn(Point(2, srid=4326), sfs=True)
+    spot_height = Column(Numeric(precision=10, scale=2))
+    spot_location = GeometryColumn(Point(2, srid=4326))
 
 # enable the DDL extension, which allows CREATE/DROP operations
 # to work correctly.  This is not needed if working with externally
@@ -85,7 +85,8 @@ class TestGeometry(TestCase):
 
     def test_wkb(self):
         eq_(b2a_hex(session.scalar(self.r.road_geom.wkb)).upper(), '010200000005000000D7DB0998302B56C0876F04983F8D45404250F5E65E2956C068CE11FFC37F4540C8ED42D9E82656C0EFC45ED3E97B45407366F132062156C036C921DED877454078A18C171A1C56C053A5AF5B68804540')
-
+        eq_(session.scalar(self.r.road_geom.wkb), self.r.road_geom.geom_wkb)
+        
     def test_coords(self):
         eq_(self.r.road_geom.coords(session), [[-88.674840936305998, 43.103503229299001], [-88.646417369426999, 42.998168834395003], [-88.607961955413998, 42.968073292993999], [-88.516003356688003, 42.936305777069997], [-88.439092528662002, 43.003184757962003]])
         s = session.query(Spot).filter(Spot.spot_height==102.34).one()
@@ -141,7 +142,9 @@ class TestGeometry(TestCase):
 
     def test_envelope(self):
         eq_(b2a_hex(session.scalar(self.r.road_geom.envelope)), 'e610000001030000000100000005000000d7db0998302b56c036c921ded877454078a18c171a1c56c036c921ded877454078a18c171a1c56c0876f04983f8d4540d7db0998302b56c0876f04983f8d4540d7db0998302b56c036c921ded8774540')
-
+        env =  WKBSpatialElement(session.scalar(func.AsBinary(self.r.road_geom.envelope)))
+        eq_(env.geom_type(session), 'Polygon')
+        
     def test_x(self):
         l = session.query(Lake).get(1)
         r = session.query(Road).get(1)
@@ -247,9 +250,9 @@ class TestGeometry(TestCase):
     def test_distance(self):
         r1 = session.query(Road).filter(Road.road_name==u'Jeff Rd').one()
         r2 = session.query(Road).filter(Road.road_name==u'Geordie Rd').one()
-        r3 = session.query(Road).filter(Road.road_name==u'Peter Rd').one()
-        value = session.scalar(r1.road_geom.distance(r2.road_geom))
-        value = session.scalar(r1.road_geom.distance(r3.road_geom))
+        value1 = session.scalar(r1.road_geom.distance(r2.road_geom))
+        value2 = session.scalar(r2.road_geom.distance(r1.road_geom))
+        eq_(value1, value2)
 
     def test_disjoint(self):
         r1 = session.query(Road).filter(Road.road_name==u'Jeff Rd').one()
@@ -319,8 +322,22 @@ class TestGeometry(TestCase):
         ok_(not session.scalar(l.lake_geom.gcontains(p2.spot_location)))
         ok_(l in containing_lakes)
         ok_(l1 not in containing_lakes)
+        ok_(session.scalar(l.lake_geom.gcontains(WKTSpatialElement('POINT(-88.9055734203822 43.0048567324841)'))))
+        containing_lakes = session.query(Lake).filter(Lake.lake_geom.gcontains('POINT(-88.9055734203822 43.0048567324841)')).all()
+        ok_(l in containing_lakes)
+        ok_(l1 not in containing_lakes)
 
     # Test Geometry Relations for Minimum Bounding Rectangles (MBRs)
+
+    def test_mbr_equal(self):
+        r1 = session.query(Road).filter(Road.road_name==u'Jeff Rd').one()
+        r2 = session.query(Road).filter(Road.road_name==u'Peter Rd').one()
+        r3 = session.query(Road).filter(Road.road_name==u'Paul St').one()
+        equal_roads = session.query(Road).filter(Road.road_geom.mbr_equal(r1.road_geom)).all()
+        ok_(r1 in equal_roads)
+        ok_(r2 in equal_roads)
+        ok_(r3 not in equal_roads)
+        ok_(session.scalar(r2.road_geom.mbr_equal(r1.road_geom)))
 
     @raises(NotImplementedError)
     def test_mbr_distance(self):
@@ -346,7 +363,6 @@ class TestGeometry(TestCase):
         ok_(r2 in intersecting_roads)
         ok_(r3 not in intersecting_roads)
 
-    @raises(NotImplementedError)
     def test_mbr_touches(self):
         l1 = session.query(Lake).filter(Lake.lake_name==u'Lake White').one()
         l2 = session.query(Lake).filter(Lake.lake_name==u'Lake Blue').one()

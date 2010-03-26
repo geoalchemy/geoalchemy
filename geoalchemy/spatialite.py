@@ -6,6 +6,7 @@ from sqlalchemy.orm.properties import ColumnProperty
 from sqlalchemy.exc import NotSupportedError
 from geoalchemy.base import SpatialElement, _to_gis, WKBSpatialElement, GeometryBase as Geometry, SpatialComparator
 from geoalchemy.comparator import SFSComparator, SFSComparatorFunctions
+from geoalchemy.dialect import SpatialDialect 
 
 
 class SQLiteComparatorFunctions(SFSComparatorFunctions):
@@ -51,3 +52,27 @@ class SQLitePersistentSpatialElement(SQLiteSpatialElement):
     
     def __init__(self, desc):
         self.desc = desc
+
+
+class SQLiteSpatialDialect(SpatialDialect):
+    """Implementation of SpatialDialect for SQLite."""
+    
+    def get_comparator(self):
+        return SQLiteComparator
+    
+    def process_result(self, wkb_element):
+        return SQLitePersistentSpatialElement(wkb_element)
+    
+    def handle_ddl_before_drop(self, bind, table, column):
+        bind.execute(select([func.DiscardGeometryColumn(table.name, column.name)]).execution_options(autocommit=True))
+    
+    def handle_ddl_after_create(self, bind, table, column):
+        bind.execute(select([func.AddGeometryColumn(table.name, 
+                                                    column.name, 
+                                                    column.type.srid, 
+                                                    column.type.name, 
+                                                    column.type.dimension)]).execution_options(autocommit=True))
+        if column.type.spatial_index:
+            bind.execute("CREATE INDEX idx_%s_%s ON %s(%s)" % 
+                            (table.name, column.name, table.name, column.name))
+            bind.execute("VACUUM %s" % table.name)

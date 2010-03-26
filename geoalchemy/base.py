@@ -2,11 +2,12 @@ from sqlalchemy import func, literal
 from sqlalchemy.orm.properties import ColumnProperty
 from sqlalchemy.sql import expression
 from sqlalchemy.types import TypeEngine
-from geoalchemy.utils import from_wkt
 from sqlalchemy.sql.expression import Function
 from sqlalchemy.dialects.postgresql.base import PGDialect
 from sqlalchemy.dialects.sqlite.base import SQLiteDialect
 from sqlalchemy.dialects.mysql.base import MySQLDialect
+from geoalchemy.utils import from_wkt
+from geoalchemy.dialect import DialectManager
 
 # Base classes for geoalchemy
 
@@ -164,18 +165,7 @@ class SpatialComparator(ColumnProperty.ColumnComparator):
         """
         dialect = mapper.mapped_table.bind.dialect
         
-        comparator_factory = None
-        if isinstance(dialect, PGDialect): 
-            from postgis import PGComparator          
-            comparator_factory = PGComparator
-        elif isinstance(dialect, MySQLDialect):
-            from mysql import MySQLComparator
-            comparator_factory = MySQLComparator
-        elif isinstance(dialect, SQLiteDialect):
-            from spatialite import SQLiteComparator
-            comparator_factory = SQLiteComparator
-            
-        if comparator_factory is not None:
-            # "reclass" instance to a dialect specific comparator 
-            self.__class__ = comparator_factory
+        comparator_factory = DialectManager.get_spatial_dialect(dialect).get_comparator()
+        self.__class__ = comparator_factory
+
      

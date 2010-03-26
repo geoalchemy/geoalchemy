@@ -6,6 +6,7 @@ from sqlalchemy.orm.properties import ColumnProperty
 from sqlalchemy.exc import NotSupportedError
 from geoalchemy.base import SpatialElement, _to_gis, WKTSpatialElement, WKBSpatialElement, GeometryBase as Geometry, SpatialComparator
 from geoalchemy.comparator import SFSComparator, SFSComparatorFunctions
+from geoalchemy.dialect import SpatialDialect 
 
 class MySQLComparatorFunctions(SFSComparatorFunctions):
     """This class defines functions for MySQL that vary from SFS
@@ -78,3 +79,22 @@ class MySQLPersistentSpatialElement(MySQLSpatialElement):
     def __init__(self, desc):
         self.desc = desc
 
+
+class MySQLSpatialDialect(SpatialDialect):
+    """Implementation of SpatialDialect for MySQL."""
+    
+    def get_comparator(self):
+        return MySQLComparator
+    
+    def process_result(self, wkb_element):
+        return MySQLPersistentSpatialElement(wkb_element)
+    
+    def handle_ddl_after_create(self, bind, table, column):
+        if column.type.spatial_index:
+            bind.execute("ALTER TABLE %s ADD %s %s NOT NULL" % 
+                            (table.name, column.name, column.type.name))
+            bind.execute("CREATE SPATIAL INDEX idx_%s_%s ON %s(%s)" % 
+                            (table.name, column.name, table.name, column.name))
+        else:
+            bind.execute("ALTER TABLE %s ADD %s %s" % 
+                            (table.name, column.name, column.type.name))

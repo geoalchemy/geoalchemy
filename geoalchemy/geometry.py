@@ -12,7 +12,7 @@ from geoalchemy.postgis import PGPersistentSpatialElement, PGComparator
 from geoalchemy.spatialite import SQLitePersistentSpatialElement
 from geoalchemy.mysql import MySQLPersistentSpatialElement
 from geoalchemy.base import SpatialElement, WKTSpatialElement, WKBSpatialElement, GeometryBase, _to_gis, SpatialComparator
-
+from geoalchemy.dialect import DialectManager
 
 class Geometry(GeometryBase):
     """Geometry column type. This is the base class for all other
@@ -27,14 +27,8 @@ class Geometry(GeometryBase):
         
         def process(value):
             if value is not None:
-                if isinstance(dialect, PGDialect):
-                    return PGPersistentSpatialElement(WKBSpatialElement(value, self.srid))
-                if isinstance(dialect, SQLiteDialect):
-                    return SQLitePersistentSpatialElement(WKBSpatialElement(value, self.srid))
-                if isinstance(dialect, MySQLDialect):
-                    return MySQLPersistentSpatialElement(WKBSpatialElement(value, self.srid))
-                else:
-                    raise NotImplementedError
+                wkb_element = WKBSpatialElement(value, self.srid)
+                return DialectManager.get_spatial_dialect(dialect).process_result(wkb_element)
             else:
                 return value
         return process
@@ -88,6 +82,7 @@ class GeometryDDL(object):
         self._stack = []
         
     def __call__(self, event, table, bind):
+        spatial_dialect = DialectManager.get_spatial_dialect(bind.dialect)
         if event in ('before-create', 'before-drop'):
             regular_cols = [c for c in table.c if not isinstance(c.type, Geometry)]
             gis_cols = set(table.c).difference(regular_cols)
@@ -96,38 +91,15 @@ class GeometryDDL(object):
             
             if event == 'before-drop':
                 for c in gis_cols:
-                    if isinstance(bind.dialect, PGDialect):
-                        bind.execute(select([func.DropGeometryColumn((table.schema or 'public'), table.name, c.name)]).execution_options(autocommit=True))
-                    elif isinstance(bind.dialect, SQLiteDialect):
-                        bind.execute(select([func.DiscardGeometryColumn(table.name, c.name)]).execution_options(autocommit=True))
-                    else:
-                        pass
-                    break
+                    spatial_dialect.handle_ddl_before_drop(bind, table, c)
                 
         elif event == 'after-create':
             table._columns = self._stack.pop()
             
             for c in table.c:
                 if isinstance(c.type, Geometry):
-                    if isinstance(bind.dialect, PGDialect):    
-                        bind.execute(select([func.AddGeometryColumn((table.schema or 'public'), table.name, c.name, c.type.srid, c.type.name, c.type.dimension)]).execution_options(autocommit=True))
-                        if c.type.spatial_index:
-                            bind.execute("CREATE INDEX idx_%s_%s ON %s.%s USING GIST (%s GIST_GEOMETRY_OPS)" % (table.name, c.name, (table.schema or 'public'), table.name, c.name))
-                    elif isinstance(bind.dialect, SQLiteDialect):
-                        bind.execute(select([func.AddGeometryColumn(table.name, c.name, c.type.srid, c.type.name, c.type.dimension)]).execution_options(autocommit=True))
-                        if c.type.spatial_index:
-                            bind.execute("CREATE INDEX idx_%s_%s ON %s(%s)" % (table.name, c.name, table.name, c.name))
-                            bind.execute("VACUUM %s" % table.name)
-                    elif isinstance(bind.dialect, MySQLDialect):
-                        if c.type.spatial_index:
-                            bind.execute("ALTER TABLE %s ADD %s %s NOT NULL" % (
-                                table.name, c.name, c.type.name))
-                            bind.execute("CREATE SPATIAL INDEX idx_%s_%s ON %s(%s)" % (table.name, c.name, table.name, c.name))
-                        else:
-                            bind.execute("ALTER TABLE %s ADD %s %s" % (
-                                table.name, c.name, c.type.name))
-                    else:
-                      pass
+                    spatial_dialect.handle_ddl_after_create(bind, table, c)
+
         elif event == 'after-drop':
             table._columns = self._stack.pop()
 

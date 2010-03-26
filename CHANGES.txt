@@ -6,6 +6,14 @@ GeoAlchemy Change Log
 
 * Ported to SQLAlchemy 0.6
 
+0.1.1
+-----
+
+* ST_Transform support for postgis
+* Non public schema support
+* Several documentation fixes
+* Some new examples
+
 0.1
 ---
 

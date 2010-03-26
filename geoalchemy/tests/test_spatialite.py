@@ -8,7 +8,7 @@ from sqlalchemy.ext.declarative import declarative_base
 
 from pysqlite2 import dbapi2 as sqlite
 from geoalchemy import (Geometry, GeometryColumn, Point, Polygon,
-		LineString, GeometryDDL, WKTSpatialElement, WKBSpatialElement)
+		LineString, GeometryDDL, WKTSpatialElement, WKBSpatialElement, DBSpatialElement)
 from nose.tools import ok_, eq_, raises, assert_almost_equal
 
 
@@ -95,10 +95,14 @@ class TestGeometry(TestCase):
 
     def test_wkt(self):
         eq_(session.scalar(self.r.road_geom.wkt), 'LINESTRING(-88.674841 43.103503, -88.646417 42.998169, -88.607962 42.968073, -88.516003 42.936306, -88.439093 43.003185)')
-
+        centroid_geom = DBSpatialElement(session.scalar(self.r.road_geom.centroid))
+        eq_(session.scalar(centroid_geom.wkt), u'POINT(-88.576937 42.991563)')
+        
     def test_wkb(self):
         eq_(b2a_hex(session.scalar(self.r.road_geom.wkb)).upper(), '010200000005000000D7DB0998302B56C0876F04983F8D45404250F5E65E2956C068CE11FFC37F4540C8ED42D9E82656C0EFC45ED3E97B45407366F132062156C036C921DED877454078A18C171A1C56C053A5AF5B68804540')
         eq_(session.scalar(self.r.road_geom.wkb), self.r.road_geom.geom_wkb)
+        centroid_geom = DBSpatialElement(session.scalar(self.r.road_geom.centroid))
+        eq_(b2a_hex(session.scalar(centroid_geom.wkb)).upper(), '0101000000366CF289EC2456C01BB6668DEB7E4540')
 
     def test_persistent(self):
         eq_(b2a_hex(session.scalar(self.r.road_geom.wkb)).upper(), '010200000005000000D7DB0998302B56C0876F04983F8D45404250F5E65E2956C068CE11FFC37F4540C8ED42D9E82656C0EFC45ED3E97B45407366F132062156C036C921DED877454078A18C171A1C56C053A5AF5B68804540')
@@ -306,6 +310,10 @@ class TestGeometry(TestCase):
         ok_(not session.scalar(p2.spot_location.within(l.lake_geom)))
         ok_(p1 in spots_within)
         ok_(p2 not in spots_within)
+        envelope_geom = DBSpatialElement(session.scalar(l.lake_geom.envelope))
+        spots_within = session.query(Spot).filter(l.lake_geom.within(envelope_geom)).all()
+        ok_(p1 in spots_within)
+        ok_(p2 in spots_within)
 
     def test_overlaps(self):
         l1 = session.query(Lake).filter(Lake.lake_name=='Lake White').one()
@@ -331,6 +339,11 @@ class TestGeometry(TestCase):
         containing_lakes = session.query(Lake).filter(Lake.lake_geom.gcontains('POINT(-88.9055734203822 43.0048567324841)')).all()
         ok_(l in containing_lakes)
         ok_(l1 not in containing_lakes)
+        spots_within = session.query(Spot).filter(l.lake_geom.gcontains(Spot.spot_location)).all()
+        ok_(session.scalar(l.lake_geom.gcontains(p1.spot_location)))
+        ok_(not session.scalar(l.lake_geom.gcontains(p2.spot_location)))
+        ok_(p1 in spots_within)
+        ok_(p2 not in spots_within)
 
     # Test Geometry Relations for Minimum Bounding Rectangles (MBRs)
 

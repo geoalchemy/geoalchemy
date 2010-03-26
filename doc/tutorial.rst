@@ -121,8 +121,8 @@ Adding GIS Features
 
 Adding GIS features is now as simple as instantiating the model
 classes and adding them to the SQLAlchemy session object that we
-created earlier. Geoalchemy enables creation of spatial attributes
-specified using the Well Known Text (WKT) format using geoalchemy
+created earlier. GeoAlchemy enables creation of spatial attributes
+specified using the Well Known Text (WKT) format using GeoAlchemy
 `WKTSpatialElement` class.
 
 .. code-block:: python
@@ -180,6 +180,20 @@ Functions to obtain geometry value in different formats
     >>> import binascii
     >>> binascii.hexlify(session.scalar(s.geom.wkb))
     '01010000007b14ae47e15a54c03333333333d34240'
+    
+Note that for all commands above a new query had to be made to the database. Internally
+GeoAlchemy uses Well-Known-Binary (WKB) to fetch the geometry, that belongs to an object of a mapped class. 
+All the time an object is queried, the geometry for this object is loaded in WKB.
+
+You can also access this internal WKB geometry directly and use it for example to create a
+`Shapely <http://trac.gispython.org/lab/wiki/Shapely>`_ geometry. In this case, no new query has to be made to 
+the database.
+
+.. code-block:: python
+
+    >>> binascii.hexlify(s.geom.geom_wkb)
+	'01010000007b14ae47e15a54c03333333333d34240'
+
 
 Functions to obtain the geometry type, coordinates, etc
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -206,13 +220,13 @@ Spatial operations that return new geometries
     >>> r = session.query(Road).first()
     >>> l = session.query(Lake).first()
     >>>
-    >>> buffer_geom = WKBSpatialElement(session.scalar(r.geom.buffer(10.0)))
+    >>> buffer_geom = DBSpatialElement(session.scalar(r.geom.buffer(10.0)))
     >>> session.scalar(buffer_geom.wkt)
     'POLYGON((-77.4495270615657 28.6622373442108,-77.9569183543725 28.4304851371862,-79.8646930595254 27.9795532202266, ........ ,28.6622373442108))'
-    >>> envelope_geom = WKBSpatialElement(session.scalar(r.geom.envelope))
+    >>> envelope_geom = DBSpatialElement(session.scalar(r.geom.envelope))
     >>> session.scalar(envelope_geom.wkt)
     'POLYGON((-81.2000045776367 37.8899993896484,-81.2000045776367 38.2000007629395,-80.2999954223633 38.2000007629395,-80.2999954223633 37.8899993896484,-81.2000045776367 37.8899993896484))'
-    >>> cv_geom = WKBSpatialElement(session.scalar(r.geom.convex_hull))
+    >>> cv_geom = DBSpatialElement(session.scalar(r.geom.convex_hull))
     >>> session.scalar(cv_geom.wkt)
     'POLYGON((-81.2 37.89,-81.03 38.04,-80.3 38.2,-81.2 37.89))'
 
@@ -230,6 +244,8 @@ Spatial relations for filtering features
     0L
     >>> session.query(Spot).filter(Spot.geom.covered_by(l.geom)).count()
     0L
+    >>> session.scalar(r.geom.touches(l.geom))
+    False
 
 
 Notes for Spatialite

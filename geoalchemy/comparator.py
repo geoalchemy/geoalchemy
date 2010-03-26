@@ -1,5 +1,5 @@
 from sqlalchemy import func, literal
-from geoalchemy.base import GeometryBase, SpatialComparator, _to_gis, SpatialElement, WKTSpatialElement, WKBSpatialElement
+from geoalchemy.base import GeometryBase, SpatialComparator, _to_gis, SpatialElement, WKTSpatialElement, WKBSpatialElement, DBSpatialElement
 
 class ComparatorFunctions(object):
     """This class provides methods to insert a SpatialElement into a query clause.
@@ -20,7 +20,9 @@ class ComparatorFunctions(object):
             if isinstance(geom, WKTSpatialElement):
                 return func.GeomFromText(literal(geom.desc, GeometryBase), geom.srid)
             if isinstance(geom, WKBSpatialElement):
-                return func.GeomFromWKB(literal(geom.desc, GeometryBase), geom.srid)  
+                return func.GeomFromWKB(literal(geom.desc, GeometryBase), geom.srid)
+            if isinstance(geom, DBSpatialElement):
+                return literal(geom.desc, GeometryBase)    
             return func.GeomFromWKB(literal(geom.desc.desc, GeometryBase), geom.desc.srid)
         elif isinstance(geom, basestring):
             wkt = WKTSpatialElement(geom)

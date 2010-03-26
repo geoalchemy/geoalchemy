@@ -83,6 +83,28 @@ class WKBSpatialElement(SpatialElement, expression.Function):
     def wkt(self):
         return func.AsText(func.GeomFromWKB(literal(self, GeometryBase), self.srid))
 
+class DBSpatialElement(SpatialElement, expression.Function):
+    """This class can be used to wrap a geometry returned by a 
+    spatial database operation.
+    
+    For example: 
+    element = DBSpatialElement(session.scalar(r.geom.buffer(10.0)))
+    session.scalar(element.wkt)
+    
+    """
+    
+    def __init__(self, desc):
+        self.desc = desc
+        expression.Function.__init__(self, "", desc)
+        
+    @property
+    def wkt(self):
+        return func.AsText(literal(self, GeometryBase))
+        
+    @property
+    def wkb(self):
+        return func.AsBinary(literal(self, GeometryBase))
+
 class PersistentSpatialElement(SpatialElement):
     """Represents a Geometry value loaded from the database."""
     

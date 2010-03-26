@@ -7,7 +7,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import and_
 
 from geoalchemy import (Geometry, GeometryCollection, GeometryColumn,
-        GeometryDDL, WKTSpatialElement, WKBSpatialElement)
+        GeometryDDL, WKTSpatialElement, WKBSpatialElement, DBSpatialElement)
 from nose.tools import eq_, ok_
 
 engine = create_engine('postgresql://gis:gis@localhost/gis', echo=True)
@@ -102,6 +102,8 @@ class TestGeometry(TestCase):
         l = session.query(Lake).get(1)
         assert session.scalar(self.r.road_geom.wkt) == 'LINESTRING(-88.6748409363057 43.1035032292994,-88.6464173694267 42.9981688343949,-88.607961955414 42.9680732929936,-88.5160033566879 42.9363057770701,-88.4390925286624 43.0031847579618)'
         eq_(session.scalar(l.lake_geom.wkt),'POLYGON((-88.7968950764331 43.2305732929936,-88.7935511273885 43.1553344394904,-88.716640299363 43.1570064140127,-88.7250001719745 43.2339172420382,-88.7968950764331 43.2305732929936))')
+        centroid_geom = DBSpatialElement(session.scalar(self.r.road_geom.centroid))
+        eq_(session.scalar(centroid_geom.wkt), u'POINT(-88.5769371859941 42.9915634871979)')
 
     def test_coords(self):
         eq_(self.r.road_geom.coords(session), [[-88.6748409363057,43.1035032292994],[-88.6464173694267,42.9981688343949],[-88.607961955414,42.9680732929936],[-88.5160033566879,42.9363057770701],[-88.4390925286624,43.0031847579618]])
@@ -113,6 +115,9 @@ class TestGeometry(TestCase):
     def test_wkb(self):
         eq_(b2a_hex(session.scalar(self.r.road_geom.wkb)).upper(), '010200000005000000D7DB0998302B56C0876F04983F8D45404250F5E65E2956C068CE11FFC37F4540C8ED42D9E82656C0EFC45ED3E97B45407366F132062156C036C921DED877454078A18C171A1C56C053A5AF5B68804540')
         eq_(session.scalar(self.r.road_geom.wkb), self.r.road_geom.geom_wkb)
+        centroid_geom = DBSpatialElement(session.scalar(self.r.road_geom.centroid))
+        eq_(b2a_hex(session.scalar(centroid_geom.wkb)).upper(), '0101000000366CF289EC2456C01BB6668DEB7E4540')
+
         
     def test_svg(self):
         eq_(session.scalar(self.r.road_geom.svg), 'M -88.674840936305699 -43.103503229299399 -88.6464173694267 -42.998168834394903 -88.607961955413998 -42.968073292993601 -88.516003356687904 -42.936305777070103 -88.4390925286624 -43.003184757961797')
@@ -301,6 +306,10 @@ class TestGeometry(TestCase):
         ok_(not session.scalar(p2.spot_location.within(l.lake_geom)))
         ok_(p1 in spots_within)
         ok_(p2 not in spots_within)
+        buffer_geom = DBSpatialElement(session.scalar(l.lake_geom.buffer(10.0)))
+        spots_within = session.query(Spot).filter(l.lake_geom.within(buffer_geom)).all()
+        ok_(p1 in spots_within)
+        ok_(p2 in spots_within)
 
     def test_overlaps(self):
         l1 = session.query(Lake).filter(Lake.lake_name=='Lake White').one()
@@ -326,6 +335,11 @@ class TestGeometry(TestCase):
         containing_lakes = session.query(Lake).filter(Lake.lake_geom.gcontains('POINT(-88.9055734203822 43.0048567324841)')).all()
         ok_(l in containing_lakes)
         ok_(l1 not in containing_lakes)
+        spots_within = session.query(Spot).filter(l.lake_geom.gcontains(Spot.spot_location)).all()
+        ok_(session.scalar(l.lake_geom.gcontains(p1.spot_location)))
+        ok_(not session.scalar(l.lake_geom.gcontains(p2.spot_location)))
+        ok_(p1 in spots_within)
+        ok_(p2 not in spots_within)
 
     def test_covers(self):
         l = session.query(Lake).filter(Lake.lake_name=='Lake Blue').one()

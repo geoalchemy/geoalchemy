@@ -4,7 +4,7 @@ from sqlalchemy.orm import column_property
 from sqlalchemy.orm.interfaces import AttributeExtension
 from sqlalchemy.orm.properties import ColumnProperty
 from sqlalchemy.exc import NotSupportedError
-from geoalchemy.base import SpatialElement, _to_gis, WKTSpatialElement, WKBSpatialElement, GeometryBase as Geometry
+from geoalchemy.base import SpatialElement, _to_gis, WKTSpatialElement, WKBSpatialElement, GeometryBase as Geometry, SpatialComparator
 from geoalchemy.comparator import SFSComparator, SFSComparatorFunctions
 
 class MySQLComparatorFunctions(SFSComparatorFunctions):
@@ -63,7 +63,7 @@ class MySQLComparatorFunctions(SFSComparatorFunctions):
         raise NotImplementedError("At the moment MySQL does not support the Distance function.")
 
 
-class MySQLComparator(MySQLComparatorFunctions):
+class MySQLComparator(MySQLComparatorFunctions, SpatialComparator):
     """Comparator class used for MySQL
     """
     pass

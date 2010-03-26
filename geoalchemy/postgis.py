@@ -32,7 +32,7 @@ class PGComparatorFunctions(SQLMMComparatorFunctions):
     def intersects(self, other):
         return self.__clause_element__().op('&&')(self._geom_from_wkb(other)) 
 
-class PGComparator(PGComparatorFunctions):
+class PGComparator(PGComparatorFunctions, SpatialComparator):
     """Comparator class used for PostGIS
     """
 

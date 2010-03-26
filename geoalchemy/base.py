@@ -7,6 +7,9 @@ from sqlalchemy.sql.expression import Function
 from sqlalchemy.dialects.postgresql.base import PGDialect
 from sqlalchemy.dialects.sqlite.base import SQLiteDialect
 from sqlalchemy.dialects.mysql.base import MySQLDialect
+from postgis import PGComparator
+from mysql import MySQLComparator
+from spatialite import SQLiteComparator
 
 # Base classes for geoalchemy
 
@@ -26,7 +29,7 @@ class SpatialElement(object):
     def __get_wkt(self, session):
         """This method converts the object into a WKT geometry. It takes into
         account that WKTSpatialElement does not have to make a new query
-        to retrieve the WKT geometry
+        to retrieve the WKT geometry.
         
         """
         if isinstance(self.wkt, Function):
@@ -66,6 +69,7 @@ class WKTSpatialElement(SpatialElement, expression.Function):
 
     @property
     def wkt(self):
+        # directly return WKT value
         return self.desc
 
 class WKBSpatialElement(SpatialElement, expression.Function):
@@ -155,23 +159,23 @@ class SpatialComparator(ColumnProperty.ColumnComparator):
     def __init__(self, prop, mapper, adapter=None):
         super(ColumnProperty.ColumnComparator, self).__init__(prop, mapper, adapter)
         
+        """At this point we have to find a Comparator class for our
+        specific database dialect, so that all functions for this 
+        database are available.
+        Once we have a dialect specific comparator, we can use it to "reclass"
+        the current instance. 
+        """
         dialect = mapper.mapped_table.bind.dialect
         
         comparator_factory = None
-        if isinstance(dialect, PGDialect):
-            from postgis import PGComparator
+        if isinstance(dialect, PGDialect):            
             comparator_factory = PGComparator
         elif isinstance(dialect, MySQLDialect):
-            from mysql import MySQLComparator
             comparator_factory = MySQLComparator
         elif isinstance(dialect, SQLiteDialect):
-            from spatialite import SQLiteComparator
             comparator_factory = SQLiteComparator
             
         if comparator_factory is not None:
-            if comparator_factory not in SpatialComparator.__bases__:
-                SpatialComparator.__bases__ = (comparator_factory,) + SpatialComparator.__bases__
+            # "reclass" instance to a dialect specific comparator 
+            self.__class__ = comparator_factory
             
-            
-        
-

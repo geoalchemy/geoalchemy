@@ -4,7 +4,7 @@ from sqlalchemy.orm import column_property
 from sqlalchemy.orm.interfaces import AttributeExtension
 from sqlalchemy.orm.properties import ColumnProperty
 from sqlalchemy.exc import NotSupportedError
-from geoalchemy.base import SpatialElement, _to_gis, WKBSpatialElement, GeometryBase as Geometry
+from geoalchemy.base import SpatialElement, _to_gis, WKBSpatialElement, GeometryBase as Geometry, SpatialComparator
 from geoalchemy.comparator import SFSComparator, SFSComparatorFunctions
 
 
@@ -37,7 +37,7 @@ class SQLiteComparatorFunctions(SFSComparatorFunctions):
     def mbr_distance(self, other):
         raise NotImplementedError("At the moment Spatialite does not support the MBRDistance function.")
 
-class SQLiteComparator(SQLiteComparatorFunctions):
+class SQLiteComparator(SQLiteComparatorFunctions, SpatialComparator):
     """Comparator class used for Spatialite
     """
     pass

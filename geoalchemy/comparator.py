@@ -40,7 +40,7 @@ class SFSComparatorFunctions(ComparatorFunctions):
 
     @property
     def wkb(self):
-        return func.AsBinary(self._geom_from_wkb()) # todo: in case we already have wkb, just return it
+        return func.AsBinary(self._geom_from_wkb())
 
     @property
     def dimension(self):
@@ -233,6 +233,13 @@ class SQLMMComparatorFunctions(ComparatorFunctions):
     @property
     def is_ring(self):
         return func.ST_IsRing(self._geom_from_wkb())
+
+    @property
+    def num_points(self):
+        return func.ST_NumPoints(self._geom_from_wkb())    
+    
+    def point_n(self, n=1):
+        return func.ST_PointN(self._geom_from_wkb(), n)
 
     @property
     def length(self):

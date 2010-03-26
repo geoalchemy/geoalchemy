@@ -4,6 +4,7 @@ from sqlalchemy import (create_engine, MetaData, Column, Integer, String,
         Numeric, func, literal, select)
 from sqlalchemy.orm import sessionmaker, column_property
 from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy import and_
 
 from geoalchemy import (Geometry, GeometryCollection, GeometryColumn,
         GeometryDDL, WKTSpatialElement, WKBSpatialElement)
@@ -153,6 +154,22 @@ class TestGeometry(TestCase):
         r = session.query(Road).filter(Road.road_name=='Graeme Ave').one()
         assert not session.scalar(r.road_geom.is_ring)
 
+    def test_num_points(self):
+        l = session.query(Lake).get(1)
+        r = session.query(Road).get(1)
+        s = session.query(Spot).get(1)
+        ok_(not session.scalar(l.lake_geom.num_points))
+        eq_(session.scalar(r.road_geom.num_points), 5)
+        ok_(not session.scalar(s.spot_location.num_points))
+
+    def test_point_n(self):
+        l = session.query(Lake).get(1)
+        r = session.query(Road).get(1)
+        s = session.query(Spot).get(1)
+        ok_(not session.scalar(l.lake_geom.point_n()))
+        eq_(session.scalar(func.AsText(r.road_geom.point_n(5))), u'POINT(-88.3655256496815 43.1402866687898)')
+        ok_(not session.scalar(s.spot_location.point_n()))
+
     def test_persistent(self):
         assert b2a_hex(session.scalar(self.r.road_geom.wkb)).upper() == '010200000005000000D7DB0998302B56C0876F04983F8D45404250F5E65E2956C068CE11FFC37F4540C8ED42D9E82656C0EFC45ED3E97B45407366F132062156C036C921DED877454078A18C171A1C56C053A5AF5B68804540'
 
@@ -173,8 +190,8 @@ class TestGeometry(TestCase):
     def test_x(self):
         s = session.query(Spot).filter(Spot.spot_height==420.40).one()
         eq_(session.scalar(s.spot_location.x), -88.5945861592357)
-#        s = session.query(Spot).filter(Spot.spot_location.x()>0).one()
-#        ok_(s is not None)
+        s = session.query(Spot).filter(and_(Spot.spot_location.x < 0, Spot.spot_location.y > 42)).all()
+        ok_(s is not None)
 
     def test_y(self):
         s = session.query(Spot).filter(Spot.spot_height==420.40).one()

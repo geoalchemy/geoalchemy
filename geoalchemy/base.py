@@ -1,13 +1,7 @@
-from sqlalchemy import func, literal
 from sqlalchemy.orm.properties import ColumnProperty
 from sqlalchemy.sql import expression
 from sqlalchemy.types import TypeEngine
-from sqlalchemy.sql.expression import Function
-from sqlalchemy.dialects.postgresql.base import PGDialect
-from sqlalchemy.dialects.sqlite.base import SQLiteDialect
-from sqlalchemy.dialects.mysql.base import MySQLDialect
-from geoalchemy.utils import from_wkt
-from geoalchemy.dialect import DialectManager
+from utils import from_wkt
 
 # Base classes for geoalchemy
 
@@ -19,22 +13,23 @@ class SpatialElement(object):
 
     def __repr__(self):
         return "<%s at 0x%x; %r>" % (self.__class__.__name__, id(self), self.desc)
-
-    @property
-    def wkt(self):
-        return func.AsText(literal(self, GeometryBase))
-
+    
+    def __getattr__(self, name):
+        import functions
+        
+        return getattr(functions, name)(self)
+#
     def __get_wkt(self, session):
         """This method converts the object into a WKT geometry. It takes into
         account that WKTSpatialElement does not have to make a new query
         to retrieve the WKT geometry.
         
         """
-        if isinstance(self.wkt, Function):
-            return session.scalar(self.wkt)
-        else:
+        if isinstance(self, WKTSpatialElement):
             # for WKTSpatialElement we don't need to make a new query
-            return self.wkt        
+            return self.desc 
+        else:
+            return session.scalar(self.wkt)       
 
     def geom_type(self, session):
         wkt = self.__get_wkt(session)
@@ -60,7 +55,7 @@ class WKTSpatialElement(SpatialElement, expression.Function):
         expression.Function.__init__(self, "GeomFromText", desc, srid)
 
     @property
-    def wkt(self):
+    def geom_wkt(self):
         # directly return WKT value
         return self.desc
 
@@ -79,9 +74,6 @@ class WKBSpatialElement(SpatialElement, expression.Function):
         self.srid = srid
         expression.Function.__init__(self, "GeomFromWKB", desc, srid)
         
-    @property
-    def wkt(self):
-        return func.AsText(func.GeomFromWKB(literal(self, GeometryBase), self.srid))
 
 class DBSpatialElement(SpatialElement, expression.Function):
     """This class can be used to wrap a geometry returned by a 
@@ -96,14 +88,6 @@ class DBSpatialElement(SpatialElement, expression.Function):
     def __init__(self, desc):
         self.desc = desc
         expression.Function.__init__(self, "", desc)
-        
-    @property
-    def wkt(self):
-        return func.AsText(literal(self, GeometryBase))
-        
-    @property
-    def wkb(self):
-        return func.AsBinary(literal(self, GeometryBase))
 
 class PersistentSpatialElement(SpatialElement):
     """Represents a Geometry value loaded from the database."""
@@ -183,18 +167,8 @@ class SpatialComparator(ColumnProperty.ColumnComparator):
         "session.query(Lake).filter(Lake.lake_geom.gcontains(..)).all()" can be executed.
     """
     
-    def __init__(self, prop, mapper, adapter=None):
-        super(ColumnProperty.ColumnComparator, self).__init__(prop, mapper, adapter)
+    def __getattr__(self, name):
+        import functions
         
-        """At this point we have to find a Comparator class for our
-        specific database dialect, so that all functions for this 
-        database are available.
-        Once we have a dialect specific comparator, we can use it to "reclass"
-        the current instance. 
-        """
-        dialect = mapper.mapped_table.bind.dialect
-        
-        comparator_factory = DialectManager.get_spatial_dialect(dialect).get_comparator()
-        self.__class__ = comparator_factory
-
-     
+        return getattr(functions, name)(self)
+    

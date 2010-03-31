@@ -1,17 +1,10 @@
-from sqlalchemy import Column, select, func, literal
+from sqlalchemy import Column
 from sqlalchemy.orm import column_property
 from sqlalchemy.orm.interfaces import AttributeExtension
-from sqlalchemy.types import TypeEngine
 from sqlalchemy.sql import expression
-from sqlalchemy.dialects.postgresql.base import PGDialect
-from sqlalchemy.dialects.sqlite.base import SQLiteDialect
-from sqlalchemy.dialects.mysql.base import MySQLDialect
 from sqlalchemy.ext.compiler import compiles
-from sqlalchemy.sql.expression import ColumnClause
-from geoalchemy.postgis import PGPersistentSpatialElement, PGComparator
-from geoalchemy.spatialite import SQLitePersistentSpatialElement
-from geoalchemy.mysql import MySQLPersistentSpatialElement
-from geoalchemy.base import SpatialElement, WKTSpatialElement, WKBSpatialElement, GeometryBase, _to_gis, SpatialComparator
+
+from geoalchemy.base import WKBSpatialElement, GeometryBase, _to_gis, SpatialComparator
 from geoalchemy.dialect import DialectManager
 
 class Geometry(GeometryBase):
@@ -136,10 +129,15 @@ def GeometryColumn(*args, **kw):
     if kw.has_key("sfs"): 
         #todo: print warning no to use sfs flag, or just let an error raise?
         kw.pop("sfs")
+        
+    if kw.has_key("comparator"):
+        comparator = kw.pop("comparator")
+    else:
+        comparator = SpatialComparator
 
     return column_property(
         GeometryExtensionColumn(*args, **kw), 
         extension=SpatialAttribute(), 
-        comparator_factory=SpatialComparator
+        comparator_factory=comparator
     )
 

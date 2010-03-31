@@ -1,56 +1,103 @@
 # -*- coding: utf-8 -*-
-from sqlalchemy import Column, select, func, literal
-from sqlalchemy.orm import column_property
-from sqlalchemy.orm.interfaces import AttributeExtension
-from sqlalchemy.orm.properties import ColumnProperty
-from sqlalchemy.sql import expression
-from geoalchemy.base import SpatialElement, _to_gis, WKBSpatialElement, GeometryBase as Geometry, SpatialComparator, PersistentSpatialElement
-from geoalchemy.comparator import SQLMMComparator, SQLMMComparatorFunctions
+from sqlalchemy import select, func
+from geoalchemy.base import SpatialComparator, PersistentSpatialElement
 from geoalchemy.dialect import SpatialDialect 
+from geoalchemy import functions
 
-class PGComparatorFunctions(SQLMMComparatorFunctions):
-    """This class contains functions supported by PostGIS that are not part of SQL MM
-    """
-
-    # OGC Geometry Functions
-    @property
-    def svg(self):
-        return func.ST_AsSVG(self._geom_from_wkb())
-
-    @property
-    def kml(self):
-        return func.ST_AsKML(self._geom_from_wkb())
-
-    @property
-    def geojson(self):
-        return func.ST_AsGeoJson(self._geom_from_wkb())
-    
-    # override the __eq__() operator
-    def __eq__(self, other):
-        return self.__clause_element__().op('~=')(self._geom_from_wkb(other))
-
-    # add a custom operator
-    def intersects(self, other):
-        return self.__clause_element__().op('&&')(self._geom_from_wkb(other)) 
-
-class PGComparator(PGComparatorFunctions, SpatialComparator):
+class PGComparator(SpatialComparator):
     """Comparator class used for PostGIS
     """
+    def __getattr__(self, name):
+        try:
+            return SpatialComparator.__getattr__(self, name)
+        except AttributeError:
+            return getattr(pg_functions, name)(self)
+        
+    # override the __eq__() operator
+    def __eq__(self, other):
+        return functions.equals(self, other)
 
 
-class PGSpatialElement(PGComparatorFunctions, SpatialElement):
-    """Represents a geometry value."""
-    pass
-
-class PGPersistentSpatialElement(PGSpatialElement, PersistentSpatialElement):
+class PGPersistentSpatialElement(PersistentSpatialElement):
     """Represents a Geometry value as loaded from the database."""
 
     def __init__(self, desc):
         self.desc = desc
+        
+    def __getattr__(self, name):
+        try:
+            return PersistentSpatialElement.__getattr__(self, name)
+        except AttributeError:
+            return getattr(pg_functions, name)(self)
+
+
+# Functions only supported by PostGIS
+class pg_functions:
+    # AsSVG
+    class svg(functions._base_function):
+        pass
+    
+    # AsKML
+    class kml(functions._base_function):
+        pass
+
+    # AsGML
+    class gml(functions._base_function):
+        pass
+    
+    # AsGeoJSON: available since PostGIS version 1.3.4
+    class geojson(functions._base_function):
+        pass
 
 
 class PGSpatialDialect(SpatialDialect):
     """Implementation of SpatialDialect for PostGIS."""
+    
+    __functions = {
+                   functions.wkt: 'ST_AsText',
+                   functions.wkb: 'ST_AsBinary',
+                   functions.dimension : 'ST_Dimension',
+                   functions.srid : 'ST_SRID',
+                   functions.geometry_type : 'ST_GeometryType',
+                   functions.is_empty : 'ST_IsEmpty',
+                   functions.is_simple : 'ST_IsSimple',
+                   functions.is_closed : 'ST_IsClosed',
+                   functions.is_ring : 'ST_IsRing',
+                   functions.num_points : 'ST_NumPoints',
+                   functions.point_n : 'ST_PointN',
+                   functions.length : 'ST_Length',
+                   functions.area : 'ST_Area',
+                   functions.x : 'ST_X',
+                   functions.y : 'ST_Y',
+                   functions.centroid : 'ST_Centroid',
+                   functions.boundary : 'ST_Boundary',
+                   functions.buffer : 'ST_Buffer',
+                   functions.convex_hull : 'ST_ConvexHull',
+                   functions.envelope : 'ST_Envelope',
+                   functions.start_point : 'ST_StartPoint',
+                   functions.end_point : 'ST_EndPoint',
+                   functions.transform : 'ST_Transform',
+                   functions.equals : 'ST_Equals',
+                   functions.distance : 'ST_Distance',
+                   functions.within_distance : 'ST_DWithin',
+                   functions.disjoint : 'ST_Disjoint',
+                   functions.intersects : 'ST_Intersects',
+                   functions.touches : 'ST_Touches',
+                   functions.crosses : 'ST_Crosses',
+                   functions.within : 'ST_Within',
+                   functions.overlaps : 'ST_Overlaps',
+                   functions.gcontains : 'ST_Contains',
+                   functions.covers : 'ST_Covers',
+                   functions.covered_by : 'ST_CoveredBy',
+                   functions.intersection : 'ST_Intersection',
+                   pg_functions.svg : 'ST_AsSVG',
+                   pg_functions.kml : 'ST_AsKML',
+                   pg_functions.gml : 'ST_AsGML',
+                   pg_functions.geojson : 'ST_AsGeoJSON'
+                  }
+    
+    def _get_function_mapping(self):
+        return PGSpatialDialect.__functions
     
     def get_comparator(self):
         return PGComparator

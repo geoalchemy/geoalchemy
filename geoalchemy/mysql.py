@@ -25,7 +25,7 @@ class MySQLComparatorFunctions(SFSComparatorFunctions):
 
     @property
     def length(self):
-        return func.GLength(self._geom_from_wkb())
+        return func.GLength(self._parse_clause())
     
     def __str__(self):
         return self.desc

@@ -2,6 +2,7 @@ from sqlalchemy.dialects.postgresql.base import PGDialect
 from sqlalchemy.dialects.sqlite.base import SQLiteDialect
 from sqlalchemy.dialects.mysql.base import MySQLDialect
 
+from geoalchemy import functions
 
 class SpatialDialect(object):
     """This class bundles all required classes and methods to support 
@@ -10,6 +11,29 @@ class SpatialDialect(object):
     so that they can be used.
     
     """
+    
+    __functions = {
+                   functions.wkt: 'AsText',
+                   functions.wkb: 'AsBinary',
+                   functions.geometry_type : 'GeometryType'
+                  }
+    
+    def get_function_name(self, function_class):
+        if self._get_function_mapping() is not None:
+            if function_class in self._get_function_mapping():
+                if self._get_function_mapping()[function_class] is None:
+                    raise NotImplementedError("Operation '(%s)' is not supported." 
+                                                % (function_class.__class__.__name__)) 
+                else:
+                    return self._get_function_mapping()[function_class]
+        
+        return SpatialDialect.__functions[function_class]
+    
+    def _get_function_mapping(self):
+        """This method can be overridden in subclasses, to set a database specific name
+        for a function, or to add new functions, that are only supported by the database.
+        """
+        return None
     
     def get_comparator(self):
         """Returns the comparator class that contains all database operations

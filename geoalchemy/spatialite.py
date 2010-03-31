@@ -15,18 +15,18 @@ class SQLiteComparatorFunctions(SFSComparatorFunctions):
 
     @property
     def svg(self):
-        return func.AsSVG(self._geom_from_wkb())
+        return func.AsSVG(self._parse_clause())
 
     def fgf(self, precision=1):
-        return func.AsFGF(self._geom_from_wkb(), precision)
+        return func.AsFGF(self._parse_clause(), precision)
 
     @property
     def is_valid(self):
-        return func.IsValid(self._geom_from_wkb())
+        return func.IsValid(self._parse_clause())
 
     @property
     def length(self):
-        return func.GLength(self._geom_from_wkb())
+        return func.GLength(self._parse_clause())
 
     def __str__(self):
         return self.desc

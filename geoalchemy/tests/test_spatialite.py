@@ -1,16 +1,17 @@
 from unittest import TestCase
 from binascii import b2a_hex
 from sqlalchemy import (create_engine, MetaData, Column, Integer, String,
-        Numeric, func, literal, select)
-from sqlalchemy.orm import sessionmaker, column_property
-from sqlalchemy.exc import NotSupportedError
+        Numeric, func)
+from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 
 from pysqlite2 import dbapi2 as sqlite
-from geoalchemy import (Geometry, GeometryColumn, Point, Polygon,
+from geoalchemy import (GeometryColumn, Point, Polygon,
 		LineString, GeometryDDL, WKTSpatialElement, WKBSpatialElement, DBSpatialElement)
-from nose.tools import ok_, eq_, raises, assert_almost_equal
+from nose.tools import ok_, eq_, assert_almost_equal
 
+from geoalchemy.spatialite import SQLiteComparator, sqlite_functions
+from geoalchemy import functions
 
 engine = create_engine('sqlite://', module=sqlite, echo=True)
 connection = engine.raw_connection().connection
@@ -28,21 +29,21 @@ class Road(Base):
 
     road_id = Column(Integer, primary_key=True)
     road_name = Column(String)
-    road_geom = GeometryColumn(LineString(2, srid=4326))
+    road_geom = GeometryColumn(LineString(2, srid=4326), comparator = SQLiteComparator)
 
 class Lake(Base):
     __tablename__ = 'lakes'
 
     lake_id = Column(Integer, primary_key=True)
     lake_name = Column(String)
-    lake_geom = GeometryColumn(Polygon(2, srid=4326))
+    lake_geom = GeometryColumn(Polygon(2, srid=4326), comparator = SQLiteComparator)
 
 class Spot(Base):
     __tablename__ = 'spots'
 
     spot_id = Column(Integer, primary_key=True)
     spot_height = Column(Numeric)
-    spot_location = GeometryColumn(Point(2, srid=4326))
+    spot_location = GeometryColumn(Point(2, srid=4326), comparator = SQLiteComparator)
 
 # enable the DDL extension, which allows CREATE/DROP operations
 # to work correctly.  This is not needed if working with externally
@@ -97,7 +98,11 @@ class TestGeometry(TestCase):
         eq_(session.scalar(self.r.road_geom.wkt), 'LINESTRING(-88.674841 43.103503, -88.646417 42.998169, -88.607962 42.968073, -88.516003 42.936306, -88.439093 43.003185)')
         centroid_geom = DBSpatialElement(session.scalar(self.r.road_geom.centroid))
         eq_(session.scalar(centroid_geom.wkt), u'POINT(-88.576937 42.991563)')
-        
+        ok_(not session.query(Spot).filter(Spot.spot_location.wkt == 'POINT(0,0)').first())
+        ok_(session.query(Spot).get(1) is 
+            session.query(Spot).filter(Spot.spot_location == 'POINT(-88.5945861592357 42.9480095987261)').first())
+        eq_(session.scalar(WKTSpatialElement('POINT(-88.5769371859941 42.9915634871979)').wkt), u'POINT(-88.576937 42.991563)')
+
     def test_wkb(self):
         eq_(b2a_hex(session.scalar(self.r.road_geom.wkb)).upper(), '010200000005000000D7DB0998302B56C0876F04983F8D45404250F5E65E2956C068CE11FFC37F4540C8ED42D9E82656C0EFC45ED3E97B45407366F132062156C036C921DED877454078A18C171A1C56C053A5AF5B68804540')
         eq_(session.scalar(self.r.road_geom.wkb), self.r.road_geom.geom_wkb)
@@ -111,7 +116,7 @@ class TestGeometry(TestCase):
         eq_(session.scalar(self.r.road_geom.svg), 'M -88.674841 -43.103503 -88.646417 -42.998169 -88.607962 -42.968073 -88.516003 -42.936306 -88.439093 -43.003185 ')
 
     def test_fgf(self):
-        eq_(b2a_hex(session.scalar(self.r.road_geom.fgf())), '020000000100000005000000d7db0998302b56c0876f04983f8d454000000000000000004250f5e65e2956c068ce11ffc37f45400000000000000000c8ed42d9e82656c0efc45ed3e97b454000000000000000007366f132062156c036c921ded8774540000000000000000078a18c171a1c56c053a5af5b688045400000000000000000')
+        eq_(b2a_hex(session.scalar(self.r.road_geom.fgf(1))), '020000000100000005000000d7db0998302b56c0876f04983f8d454000000000000000004250f5e65e2956c068ce11ffc37f45400000000000000000c8ed42d9e82656c0efc45ed3e97b454000000000000000007366f132062156c036c921ded8774540000000000000000078a18c171a1c56c053a5af5b688045400000000000000000')
 
     def test_dimension(self):
         l = session.query(Lake).get(1)
@@ -123,6 +128,8 @@ class TestGeometry(TestCase):
 
     def test_srid(self):
         eq_(session.scalar(self.r.road_geom.srid), 4326)
+        ok_(session.query(Spot).filter(Spot.spot_location.srid == 4326).first() is not None)
+        eq_(session.scalar(functions.srid('POINT(-88.5945861592357 42.9480095987261)')), 4326)
 
     def test_geometry_type(self):
         l = session.query(Lake).get(1)
@@ -356,14 +363,7 @@ class TestGeometry(TestCase):
         ok_(r2 in equal_roads)
         ok_(r3 not in equal_roads)
         ok_(session.scalar(r2.road_geom.mbr_equal(r1.road_geom)))
-
-    @raises(NotImplementedError)
-    def test_mbr_distance(self):
-        r1 = session.query(Road).filter(Road.road_name==u'Jeff Rd').one()
-        r2 = session.query(Road).filter(Road.road_name==u'Geordie Rd').one()
-        r3 = session.query(Road).filter(Road.road_name==u'Peter Rd').one()
-        value = session.scalar(r1.road_geom.mbr_distance(r2.road_geom))
-        value = session.scalar(r1.road_geom.mbr_distance(r3.road_geom))
+        eq_(session.scalar(sqlite_functions.mbr_equal('POINT(-88.5945861592357 42.9480095987261)', 'POINT(-88.5945861592357 42.9480095987261)')), True)
 
     def test_mbr_disjoint(self):
         r1 = session.query(Road).filter(Road.road_name==u'Jeff Rd').one()

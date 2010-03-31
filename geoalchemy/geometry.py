@@ -126,10 +126,6 @@ def GeometryColumn(*args, **kw):
     the Column for inclusion in the mapped table.
     
     """
-    if kw.has_key("sfs"): 
-        #todo: print warning no to use sfs flag, or just let an error raise?
-        kw.pop("sfs")
-        
     if kw.has_key("comparator"):
         comparator = kw.pop("comparator")
     else:

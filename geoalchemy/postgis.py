@@ -12,10 +12,6 @@ class PGComparator(SpatialComparator):
             return SpatialComparator.__getattr__(self, name)
         except AttributeError:
             return getattr(pg_functions, name)(self)
-        
-    # override the __eq__() operator
-    def __eq__(self, other):
-        return functions.equals(self, other)
 
 
 class PGPersistentSpatialElement(PersistentSpatialElement):

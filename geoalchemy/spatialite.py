@@ -1,61 +1,68 @@
-from sqlalchemy import Column, select, func, literal
-from sqlalchemy.sql import expression
-from sqlalchemy.orm import column_property
-from sqlalchemy.orm.interfaces import AttributeExtension
-from sqlalchemy.orm.properties import ColumnProperty
-from sqlalchemy.exc import NotSupportedError
-from geoalchemy.base import SpatialElement, _to_gis, WKBSpatialElement, GeometryBase as Geometry, SpatialComparator, PersistentSpatialElement
-from geoalchemy.comparator import SFSComparator, SFSComparatorFunctions
+from sqlalchemy import select, func
+
+from geoalchemy.base import SpatialComparator, PersistentSpatialElement
 from geoalchemy.dialect import SpatialDialect 
+from geoalchemy import functions
+from geoalchemy.mysql import mysql_functions
 
 
-class SQLiteComparatorFunctions(SFSComparatorFunctions):
-    """This class defines functions for Spatialite that vary from SFS
-    """
-
-    @property
-    def svg(self):
-        return func.AsSVG(self._parse_clause())
-
-    def fgf(self, precision=1):
-        return func.AsFGF(self._parse_clause(), precision)
-
-    @property
-    def is_valid(self):
-        return func.IsValid(self._parse_clause())
-
-    @property
-    def length(self):
-        return func.GLength(self._parse_clause())
-
-    def __str__(self):
-        return self.desc
-
-    def __repr__(self):
-        return "<%s at 0x%x; %r>" % (self.__class__.__name__, id(self), self.desc)
-
-    # SFS functions that are not implemented by Spatialite
-    def mbr_distance(self, other):
-        raise NotImplementedError("At the moment Spatialite does not support the MBRDistance function.")
-
-class SQLiteComparator(SQLiteComparatorFunctions, SpatialComparator):
+class SQLiteComparator(SpatialComparator):
     """Comparator class used for Spatialite
     """
-    pass
+    def __getattr__(self, name):
+        try:
+            return SpatialComparator.__getattr__(self, name)
+        except AttributeError:
+            return getattr(sqlite_functions, name)(self)
 
-class SQLiteSpatialElement(SQLiteComparatorFunctions, SpatialElement):
-    """Represents a geometry value."""
-    pass
 
-class SQLitePersistentSpatialElement(SQLiteSpatialElement, PersistentSpatialElement):
+class SQLitePersistentSpatialElement(PersistentSpatialElement):
     """Represents a Geometry value as loaded from the database."""
     
     def __init__(self, desc):
         self.desc = desc
+        
+    def __getattr__(self, name):
+        try:
+            return PersistentSpatialElement.__getattr__(self, name)
+        except AttributeError:
+            return getattr(sqlite_functions, name)(self)
+
+
+# Functions only supported by SQLite
+class sqlite_functions(mysql_functions):
+    # AsSVG
+    class svg(functions._base_function):
+        pass
+    
+    # AsFGF
+    class fgf(functions._function_with_argument):
+        pass
+    
+    # IsValid
+    class is_valid(functions._base_function):
+        pass
 
 
 class SQLiteSpatialDialect(SpatialDialect):
     """Implementation of SpatialDialect for SQLite."""
+    
+    __functions = { 
+                   functions.length : 'GLength',
+                   sqlite_functions.svg : 'AsSVG',
+                   sqlite_functions.fgf : 'AsFGF',
+                   sqlite_functions.is_valid : 'IsValid',
+                   mysql_functions.mbr_equal : 'MBREqual',
+                   mysql_functions.mbr_disjoint : 'MBRDisjoint',
+                   mysql_functions.mbr_intersects : 'MBRIntersects',
+                   mysql_functions.mbr_touches : 'MBRTouches',
+                   mysql_functions.mbr_within : 'MBRWithin',
+                   mysql_functions.mbr_overlaps : 'MBROverlaps',
+                   mysql_functions.mbr_contains : 'MBRContains'
+                   }
+
+    def _get_function_mapping(self):
+        return SQLiteSpatialDialect.__functions
     
     def get_comparator(self):
         return SQLiteComparator

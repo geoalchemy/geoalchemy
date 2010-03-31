@@ -189,7 +189,7 @@ def __compile_relation_function_with_argument(element, compiler, **kw):
                                      _parse_clause(element.other_clause, compiler), element.argument))
 
 
-# Functions that implement OGC SFS or SQL/MM
+# Functions that implement OGC SFS or SQL/MM and that are supported by most databases
 
 # AsText
 class wkt(_base_function):

@@ -1,7 +1,9 @@
 from sqlalchemy.orm.properties import ColumnProperty
 from sqlalchemy.sql import expression
 from sqlalchemy.types import TypeEngine
+
 from utils import from_wkt
+import functions
 
 # Base classes for geoalchemy
 
@@ -168,7 +170,9 @@ class SpatialComparator(ColumnProperty.ColumnComparator):
     """
     
     def __getattr__(self, name):
-        import functions
-        
         return getattr(functions, name)(self)
+        
+    # override the __eq__() operator (allows to use '==' on geometries)
+    def __eq__(self, other): 
+        return functions.equals(self, other)
     

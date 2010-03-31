@@ -1,87 +1,86 @@
-from sqlalchemy import Column, select, func, literal
-from sqlalchemy.sql import expression
-from sqlalchemy.orm import column_property
-from sqlalchemy.orm.interfaces import AttributeExtension
-from sqlalchemy.orm.properties import ColumnProperty
-from sqlalchemy.exc import NotSupportedError
-from geoalchemy.base import SpatialElement, _to_gis, WKBSpatialElement, GeometryBase as Geometry, SpatialComparator, PersistentSpatialElement
-from geoalchemy.comparator import SFSComparator, SFSComparatorFunctions
+from geoalchemy.base import SpatialComparator, PersistentSpatialElement
 from geoalchemy.dialect import SpatialDialect 
-
-class MySQLComparatorFunctions(SFSComparatorFunctions):
-    """This class defines functions for MySQL that vary from SFS
-    """
-
-    @property
-    def svg(self):
-        raise NotImplementedError("At the moment MySQL does not support this operation.")
-
-    def fgf(self, precision=1):
-        raise NotImplementedError("At the moment MySQL does not support this operation.")
-
-    @property
-    def is_valid(self):
-        raise NotImplementedError("At the moment MySQL does not support this operation.")
-
-    @property
-    def length(self):
-        return func.GLength(self._parse_clause())
-    
-    def __str__(self):
-        return self.desc
-
-    def __repr__(self):
-        return "<%s at 0x%x; %r>" % (self.__class__.__name__, id(self), self.desc)
-    
-    # SFS functions that are not implemented by MySQL
-    @property
-    def is_simple(self):
-        raise NotImplementedError("Current versions of MySQL do not support this operation yet.")
-
-    @property
-    def boundary(self):
-        raise NotImplementedError("At the moment MySQL does not support this operation.")
-
-    @property
-    def is_ring(self):
-        raise NotImplementedError("At the moment MySQL does not support this operation.")
-    
-    @property
-    def centroid(self):
-        raise NotImplementedError("At the moment MySQL does not support this operation.")
-    
-    def distance(self, geom):
-        # see also: http://bugs.mysql.com/bug.php?id=13600
-        raise NotImplementedError("At the moment MySQL does not support the Distance function.")
-
-    def touches(self, geom):
-        raise NotImplementedError("At the moment MySQL only supports MBR relations.")
-
-    def crosses(self, geom):
-        raise NotImplementedError("At the moment MySQL only supports MBR relations.")    
-
-    def mbr_distance(self, geom):
-        raise NotImplementedError("At the moment MySQL does not support the Distance function.")
+from geoalchemy import functions
 
 
-class MySQLComparator(MySQLComparatorFunctions, SpatialComparator):
+class MySQLComparator(SpatialComparator):
     """Comparator class used for MySQL
     """
-    pass
+    def __getattr__(self, name):
+        try:
+            return SpatialComparator.__getattr__(self, name)
+        except AttributeError:
+            return getattr(mysql_functions, name)(self)
 
-class MySQLSpatialElement(MySQLComparatorFunctions, SpatialElement):
-    """Represents a geometry value."""
-    pass
 
-class MySQLPersistentSpatialElement(MySQLSpatialElement, PersistentSpatialElement):
+class MySQLPersistentSpatialElement(PersistentSpatialElement):
     """Represents a Geometry value as loaded from the database."""
     
     def __init__(self, desc):
         self.desc = desc
+        
+    def __getattr__(self, name):
+        try:
+            return PersistentSpatialElement.__getattr__(self, name)
+        except AttributeError:
+            return getattr(mysql_functions, name)(self)
+
+
+# Functions only supported by MySQL
+class mysql_functions:
+    # MBREqual
+    class mbr_equal(functions._relation_function):
+        pass
+    
+    # MBRDisjoint
+    class mbr_disjoint(functions._relation_function):
+        pass
+    
+    # MBRIntersects
+    class mbr_intersects(functions._relation_function):
+        pass
+    
+    # MBRTouches
+    class mbr_touches(functions._relation_function):
+        pass
+    
+    # MBRWithin
+    class mbr_within(functions._relation_function):
+        pass
+    
+    # MBROverlaps
+    class mbr_overlaps(functions._relation_function):
+        pass
+    
+    # MBRContains
+    class mbr_contains(functions._relation_function):
+        pass
 
 
 class MySQLSpatialDialect(SpatialDialect):
     """Implementation of SpatialDialect for MySQL."""
+    
+    __functions = {
+                   functions.length : 'GLength',
+                   functions.is_simple : None,
+                   functions.boundary : None,
+                   functions.is_ring : None,
+                   functions.centroid : None, 
+                   functions.distance : None, # see also: http://bugs.mysql.com/bug.php?id=13600
+                   functions.touches : None,
+                   functions.crosses : None,
+                   mysql_functions.mbr_equal : 'MBREqual',
+                   mysql_functions.mbr_disjoint : 'MBRDisjoint',
+                   mysql_functions.mbr_intersects : 'MBRIntersects',
+                   mysql_functions.mbr_touches : 'MBRTouches',
+                   mysql_functions.mbr_within : 'MBRWithin',
+                   mysql_functions.mbr_overlaps : 'MBROverlaps',
+                   mysql_functions.mbr_contains : 'MBRContains'
+                   
+                   }
+
+    def _get_function_mapping(self):
+        return MySQLSpatialDialect.__functions
     
     def get_comparator(self):
         return MySQLComparator

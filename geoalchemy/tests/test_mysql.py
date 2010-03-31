@@ -1,15 +1,16 @@
 from unittest import TestCase
 from binascii import b2a_hex
-from sqlalchemy import (create_engine, MetaData, Column, Integer, String,
-        Unicode, Numeric, func, literal, select)
-from sqlalchemy.orm import sessionmaker, column_property
-from sqlalchemy.exc import NotSupportedError
+from sqlalchemy import (create_engine, MetaData, Column, Integer,
+        Unicode, Numeric, func)
+from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 
-from geoalchemy import (Geometry, GeometryColumn, Point, Polygon,
+from geoalchemy import (GeometryColumn, Point, Polygon,
 		LineString, GeometryDDL, WKTSpatialElement, WKBSpatialElement, DBSpatialElement)
-from nose.tools import ok_, eq_, raises, assert_almost_equal
-
+from nose.tools import ok_, eq_, raises
+from sqlalchemy import and_
+from geoalchemy.mysql import MySQLComparator, mysql_functions
+from geoalchemy import functions 
 
 engine = create_engine('mysql://gis:gis@localhost/gis', echo=True)
 metadata = MetaData(engine)
@@ -21,21 +22,21 @@ class Road(Base):
 
     road_id = Column(Integer, primary_key=True)
     road_name = Column(Unicode(40))
-    road_geom = GeometryColumn(LineString(2, srid=4326))
+    road_geom = GeometryColumn(LineString(2, srid=4326), comparator=MySQLComparator)
 
 class Lake(Base):
     __tablename__ = 'lakes'
 
     lake_id = Column(Integer, primary_key=True)
     lake_name = Column(Unicode(40))
-    lake_geom = GeometryColumn(Polygon(2, srid=4326))
+    lake_geom = GeometryColumn(Polygon(2, srid=4326), comparator=MySQLComparator)
 
 class Spot(Base):
     __tablename__ = 'spots'
 
     spot_id = Column(Integer, primary_key=True)
     spot_height = Column(Numeric(precision=10, scale=2))
-    spot_location = GeometryColumn(Point(2, srid=4326))
+    spot_location = GeometryColumn(Point(2, srid=4326), comparator=MySQLComparator)
 
 # enable the DDL extension, which allows CREATE/DROP operations
 # to work correctly.  This is not needed if working with externally
@@ -81,15 +82,21 @@ class TestGeometry(TestCase):
     # Test Geometry Functions
 
     def test_wkt(self):
+        l = session.query(Lake).get(1)
         eq_(session.scalar(self.r.road_geom.wkt), 'LINESTRING(-88.674840936306 43.103503229299,-88.646417369427 42.998168834395,-88.607961955414 42.968073292994,-88.516003356688 42.93630577707,-88.439092528662 43.003184757962)')
-        centroid_geom = DBSpatialElement(session.scalar(self.r.road_geom.envelope))
-        eq_(session.scalar(centroid_geom.wkt), 'POLYGON((-88.674840936306 42.93630577707,-88.439092528662 42.93630577707,-88.439092528662 43.103503229299,-88.674840936306 43.103503229299,-88.674840936306 42.93630577707))')
+        eq_(session.scalar(l.lake_geom.wkt),'POLYGON((-88.796895076433 43.230573292994,-88.793551127388 43.15533443949,-88.716640299363 43.157006414013,-88.725000171975 43.233917242038,-88.796895076433 43.230573292994))')
+        ok_(not session.query(Spot).filter(Spot.spot_location.wkt == 'POINT(0,0)').first())
+        ok_(session.query(Spot).get(1) is 
+            session.query(Spot).filter(Spot.spot_location == 'POINT(-88.5945861592357 42.9480095987261)').first())
+        envelope_geom = DBSpatialElement(session.scalar(self.r.road_geom.envelope))
+        eq_(session.scalar(envelope_geom.wkt), 'POLYGON((-88.674840936306 42.93630577707,-88.439092528662 42.93630577707,-88.439092528662 43.103503229299,-88.674840936306 43.103503229299,-88.674840936306 42.93630577707))')
+        eq_(session.scalar(WKTSpatialElement('POINT(-88.5769371859941 42.9915634871979)').wkt), 'POINT(-88.576937185994 42.991563487198)')
 
     def test_wkb(self):
         eq_(b2a_hex(session.scalar(self.r.road_geom.wkb)).upper(), '010200000005000000D7DB0998302B56C0876F04983F8D45404250F5E65E2956C068CE11FFC37F4540C8ED42D9E82656C0EFC45ED3E97B45407366F132062156C036C921DED877454078A18C171A1C56C053A5AF5B68804540')
         eq_(session.scalar(self.r.road_geom.wkb), self.r.road_geom.geom_wkb)
-        centroid_geom = DBSpatialElement(session.scalar(self.r.road_geom.envelope))
-        eq_(b2a_hex(session.scalar(centroid_geom.wkb)).upper(), '01030000000100000005000000D7DB0998302B56C036C921DED877454078A18C171A1C56C036C921DED877454078A18C171A1C56C0876F04983F8D4540D7DB0998302B56C0876F04983F8D4540D7DB0998302B56C036C921DED8774540')
+        envelope_geom = DBSpatialElement(session.scalar(self.r.road_geom.envelope))
+        eq_(b2a_hex(session.scalar(envelope_geom.wkb)).upper(), '01030000000100000005000000D7DB0998302B56C036C921DED877454078A18C171A1C56C036C921DED877454078A18C171A1C56C0876F04983F8D4540D7DB0998302B56C0876F04983F8D4540D7DB0998302B56C036C921DED8774540')
         
     def test_coords(self):
         eq_(self.r.road_geom.coords(session), [[-88.674840936305998, 43.103503229299001], [-88.646417369426999, 42.998168834395003], [-88.607961955413998, 42.968073292993999], [-88.516003356688003, 42.936305777069997], [-88.439092528662002, 43.003184757962003]])
@@ -101,14 +108,6 @@ class TestGeometry(TestCase):
     def test_persistent(self):
         eq_(b2a_hex(session.scalar(self.r.road_geom.wkb)).upper(), '010200000005000000D7DB0998302B56C0876F04983F8D45404250F5E65E2956C068CE11FFC37F4540C8ED42D9E82656C0EFC45ED3E97B45407366F132062156C036C921DED877454078A18C171A1C56C053A5AF5B68804540')
 
-    @raises(NotImplementedError)
-    def test_svg(self):
-        value = session.scalar(self.r.road_geom.svg)
-
-    @raises(NotImplementedError)
-    def test_fgf(self):
-        value = b2a_hex(session.scalar(self.r.road_geom.fgf()))
-
     def test_dimension(self):
         l = session.query(Lake).get(1)
         r = session.query(Road).get(1)
@@ -116,9 +115,13 @@ class TestGeometry(TestCase):
         eq_(session.scalar(l.lake_geom.dimension), 2)
         eq_(session.scalar(r.road_geom.dimension), 1)
         eq_(session.scalar(s.spot_location.dimension), 0)
+        ok_(session.query(Spot).filter(Spot.spot_location.dimension == 0).first() is not None)
+        eq_(session.scalar(functions.dimension('POINT(-88.5945861592357 42.9480095987261)')), 0)
 
     def test_srid(self):
         eq_(session.scalar(self.r.road_geom.srid), 4326)
+        ok_(session.query(Spot).filter(Spot.spot_location.srid == 4326).first() is not None)
+        eq_(session.scalar(functions.srid('POINT(-88.5945861592357 42.9480095987261)')), 4326)
 
     def test_geometry_type(self):
         l = session.query(Lake).get(1)
@@ -127,27 +130,28 @@ class TestGeometry(TestCase):
         eq_(session.scalar(l.lake_geom.geometry_type), 'POLYGON')
         eq_(session.scalar(r.road_geom.geometry_type), 'LINESTRING')
         eq_(session.scalar(s.spot_location.geometry_type), 'POINT')
+        eq_(session.scalar(functions.geometry_type(r.road_geom)), 'LINESTRING')
+        ok_(session.query(Road).filter(Road.road_geom.geometry_type == 'LINESTRING').first())
 
     def test_is_empty(self):
         ok_(not session.scalar(self.r.road_geom.is_empty))
+        ok_(session.query(Spot).filter(Spot.spot_location.is_empty == False).first() is not None)
+        eq_(session.scalar(functions.is_empty('POINT(-88.5945861592357 42.9480095987261)')), False)
 
     @raises(NotImplementedError)
     def test_is_simple(self):
-        r = session.query(Road).get(1)
-        value = session.scalar(self.r.road_geom.is_simple)
-
-    @raises(NotImplementedError)
-    def test_is_valid(self):
-        value = session.scalar(self.r.road_geom.is_valid)
+        session.scalar(self.r.road_geom.is_simple)
 
     @raises(NotImplementedError)
     def test_boundary(self):
-        value = b2a_hex(session.scalar(self.r.road_geom.boundary))
+        b2a_hex(session.scalar(self.r.road_geom.boundary))
 
     def test_envelope(self):
         eq_(b2a_hex(session.scalar(self.r.road_geom.envelope)), 'e610000001030000000100000005000000d7db0998302b56c036c921ded877454078a18c171a1c56c036c921ded877454078a18c171a1c56c0876f04983f8d4540d7db0998302b56c0876f04983f8d4540d7db0998302b56c036c921ded8774540')
         env =  WKBSpatialElement(session.scalar(func.AsBinary(self.r.road_geom.envelope)))
         eq_(env.geom_type(session), 'Polygon')
+        eq_(session.scalar(functions.wkt(functions.envelope('POINT(-88.5945861592357 42.9480095987261)'))), 
+            'POLYGON((-88.594586159236 42.948009598726,-88.594586159236 42.948009598726,-88.594586159236 42.948009598726,-88.594586159236 42.948009598726,-88.594586159236 42.948009598726))')
         
     def test_x(self):
         l = session.query(Lake).get(1)
@@ -156,6 +160,9 @@ class TestGeometry(TestCase):
         ok_( not session.scalar(l.lake_geom.x))
         ok_( not session.scalar(r.road_geom.x))
         eq_(session.scalar(s.spot_location.x), -88.594586159236002)
+        s = session.query(Spot).filter(and_(Spot.spot_location.x < 0, Spot.spot_location.y > 42)).all()
+        ok_(s is not None)
+        eq_(session.scalar(functions.x('POINT(-88.3655256496815 43.1402866687898)')), -88.365525649681999)
 
     def test_y(self):
         l = session.query(Lake).get(1)
@@ -164,6 +171,9 @@ class TestGeometry(TestCase):
         ok_(not session.scalar(l.lake_geom.y))
         ok_(not session.scalar(r.road_geom.y))
         eq_(session.scalar(s.spot_location.y), 42.948009598726003)
+        s = session.query(Spot).filter(and_(Spot.spot_location.y < 0, Spot.spot_location.y > 42)).all()
+        ok_(s is not None)
+        eq_(session.scalar(functions.y('POINT(-88.3655256496815 43.1402866687898)')), 43.140286668789997)
 
     def test_start_point(self):
         l = session.query(Lake).get(1)
@@ -200,11 +210,7 @@ class TestGeometry(TestCase):
     @raises(NotImplementedError)
     def test_is_ring(self):
         l = session.query(Lake).get(1)
-        r = session.query(Road).get(1)
-        s = session.query(Spot).get(1)
-        value = (session.scalar(l.lake_geom.is_ring))
-        value = (not session.scalar(r.road_geom.is_ring))
-        value = (session.scalar(s.spot_location.is_ring))
+        session.scalar(l.lake_geom.is_ring)
 
     def test_num_points(self):
         l = session.query(Lake).get(1)
@@ -225,11 +231,7 @@ class TestGeometry(TestCase):
     @raises(NotImplementedError)
     def test_centroid(self):
         l = session.query(Lake).get(1)
-        r = session.query(Road).get(1)
-        s = session.query(Spot).get(1)
-        value = b2a_hex(session.scalar(l.lake_geom.centroid))
-        value = b2a_hex(session.scalar(r.road_geom.centroid))
-        value = b2a_hex(session.scalar(s.spot_location.centroid))
+        session.scalar(l.lake_geom.centroid)
 
     def test_area(self):
         l = session.query(Lake).get(1)
@@ -276,26 +278,14 @@ class TestGeometry(TestCase):
 
     @raises(NotImplementedError)
     def test_touches(self):
-        l1 = session.query(Lake).filter(Lake.lake_name==u'Lake White').one()
-        l2 = session.query(Lake).filter(Lake.lake_name==u'Lake Blue').one()
         r = session.query(Road).filter(Road.road_name==u'Geordie Rd').one()
-        touching_lakes = session.query(Lake).filter(Lake.lake_geom.touches(r.road_geom)).all()
-        value = (session.scalar(l1.lake_geom.touches(r.road_geom)))
-        value = (session.scalar(l2.lake_geom.touches(r.road_geom)))
-        value = (l1 not in touching_lakes)
-        value = (l2 in touching_lakes)
+        session.query(Lake).filter(Lake.lake_geom.touches(r.road_geom)).all()
 
     @raises(NotImplementedError)
     def test_crosses(self):
-        r1 = session.query(Road).filter(Road.road_name==u'Jeff Rd').one()
-        r2 = session.query(Road).filter(Road.road_name==u'Paul St').one()
         l = session.query(Lake).filter(Lake.lake_name==u'Lake White').one()
-        crossing_roads = session.query(Road).filter(Road.road_geom.crosses(l.lake_geom)).all()
-        value = ( session.scalar(r1.road_geom.crosses(l.lake_geom)))
-        value = ( session.scalar(r2.road_geom.crosses(l.lake_geom)))
-        value = ( r1 not in crossing_roads)
-        value = ( r2 in crossing_roads)
-
+        session.query(Road).filter(Road.road_geom.crosses(l.lake_geom)).all()
+        
     def test_within(self):
         l = session.query(Lake).filter(Lake.lake_name==u'Lake Blue').one()
         p1 = session.query(Spot).filter(Spot.spot_height==102.34).one()
@@ -351,14 +341,8 @@ class TestGeometry(TestCase):
         ok_(r2 in equal_roads)
         ok_(r3 not in equal_roads)
         ok_(session.scalar(r2.road_geom.mbr_equal(r1.road_geom)))
+        eq_(session.scalar(mysql_functions.mbr_equal('POINT(-88.5945861592357 42.9480095987261)', 'POINT(-88.5945861592357 42.9480095987261)')), True)
 
-    @raises(NotImplementedError)
-    def test_mbr_distance(self):
-        r1 = session.query(Road).filter(Road.road_name==u'Jeff Rd').one()
-        r2 = session.query(Road).filter(Road.road_name==u'Geordie Rd').one()
-        r3 = session.query(Road).filter(Road.road_name==u'Peter Rd').one()
-        value = session.scalar(r1.road_geom.mbr_distance(r2.road_geom))
-        value = session.scalar(r1.road_geom.mbr_distance(r3.road_geom))
 
     def test_mbr_disjoint(self):
         r1 = session.query(Road).filter(Road.road_name==u'Jeff Rd').one()
@@ -381,10 +365,10 @@ class TestGeometry(TestCase):
         l2 = session.query(Lake).filter(Lake.lake_name==u'Lake Blue').one()
         r = session.query(Road).filter(Road.road_name==u'Geordie Rd').one()
         touching_lakes = session.query(Lake).filter(Lake.lake_geom.mbr_touches(r.road_geom)).all()
-        value = (session.scalar(l1.lake_geom.mbr_touches(r.road_geom)))
-        value = (session.scalar(l2.lake_geom.mbr_touches(r.road_geom)))
-        value = (l1 not in touching_lakes)
-        value = (l2 in touching_lakes)
+        ok_(l1 not in touching_lakes)
+        ok_(l2 not in touching_lakes)
+        eq_(session.scalar(l1.lake_geom.mbr_touches(r.road_geom)), 0L)
+        eq_(session.scalar(l2.lake_geom.mbr_touches(r.road_geom)), 0L)
 
     def test_mbr_within(self):
         l = session.query(Lake).filter(Lake.lake_name==u'Lake Blue').one()

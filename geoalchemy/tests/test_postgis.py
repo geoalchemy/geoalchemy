@@ -1,13 +1,13 @@
 from unittest import TestCase
 from binascii import b2a_hex
 from sqlalchemy import (create_engine, MetaData, Column, Integer, String,
-        Numeric, func, literal, select)
-from sqlalchemy.orm import sessionmaker, column_property
+        Numeric, func)
+from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import and_
 
 from geoalchemy import (Geometry, GeometryCollection, GeometryColumn,
-        GeometryDDL, WKTSpatialElement, WKBSpatialElement, DBSpatialElement)
+        GeometryDDL, WKTSpatialElement, DBSpatialElement)
 from nose.tools import eq_, ok_
 
 from geoalchemy import functions 

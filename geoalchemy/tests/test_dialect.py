@@ -1,12 +1,12 @@
 from unittest import TestCase
-from nose.tools import ok_, eq_, raises, assert_almost_equal
+from nose.tools import ok_, raises
 
 from sqlalchemy.dialects.sqlite.base import SQLiteDialect
 from sqlalchemy.dialects.mysql.base import MySQLDialect
 from sqlalchemy.dialects.oracle.base import OracleDialect
 from sqlalchemy.dialects.postgresql.psycopg2 import PGDialect_psycopg2
 
-from geoalchemy.dialect import DialectManager, SpatialDialect
+from geoalchemy.dialect import DialectManager
 from geoalchemy.postgis import PGSpatialDialect
 from geoalchemy.mysql import MySQLSpatialDialect
 from geoalchemy.spatialite import SQLiteSpatialDialect

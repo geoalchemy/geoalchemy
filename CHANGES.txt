@@ -5,6 +5,21 @@ GeoAlchemy Change Log
 ---
 
 * Ported to SQLAlchemy 0.6
+* When fetching objects of mapped classes, the geometry column
+	is queried in WKB.
+* The WKB value of a geometry column can be accessed directly,
+	without making a new database query, using the attribute 
+	geom_wkb (for example: s.the_geom.geom_wkb).
+* Introduced DBSpatialElement that can be used to wrap the
+	result of a database function, that returned a new geometry, so
+	that new queries can be executed on the result.
+	>>> buffer_geom = DBSpatialElement(session.scalar(r.geom.buffer(10.0)))
+	>>> session.scalar(buffer_geom.wkt)
+* Removed 'SFS' flag for GeometryColumn.
+* When using database specific functions on geometry columns 
+	(Spot.geom.kml, but not s.geom.kml!), a comparator has to be set
+	manually when defining the mapping.
+* Updated documentation and examples.
 
 0.1.1
 -----

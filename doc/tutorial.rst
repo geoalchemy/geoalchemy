@@ -18,6 +18,27 @@ spatially enabled database called `gis` as per instructions given
 `here <http://postgis.refractions.net/docs/ch02.html#id2532099>`_. Also
 create a new user and grant it permissions on this database.
 
+On Ubuntu the following steps have to executed to create the database.
+
+.. code-block:: bash
+
+	sudo su postgres
+	createdb -E UNICODE gis
+	createlang plpgsql gis
+	psql -d gis -f /usr/share/postgresql-8.3-postgis/lwpostgis.sql
+	psql -d gis -f /usr/share/postgresql-8.3-postgis/spatial_ref_sys.sql
+	
+	#Create a new user (if a user named 'gis' does not exist already)
+	createuser -P gis
+	
+	#Grant permissions to user 'gis' on the new database
+	psql gis
+	grant all on database gis to "gis";
+	grant all on spatial_ref_sys to "gis";
+	grant all on geometry_columns to "gis";
+	\q
+	
+
 Initializing SQLAlchemy
 -----------------------
 
@@ -32,7 +53,7 @@ either bound or unbound. In this example we will create a bound session.
     from sqlalchemy import *
     from sqlalchemy.orm import *
 
-    engine = create_engine('postgres://gis:password@localhost/gis', echo=True)
+    engine = create_engine('postgresql://gis:password@localhost/gis', echo=True)
     Session = sessionmaker(bind=engine)
     session = Session()
 
@@ -104,6 +125,46 @@ Finally we have used `GeometryDDL`, a DDL Extension for geometry data types
 that support special DDLs required for creation of geometry fields in the
 database.
 
+The above declaration is completely database independent, it could also be used for MySQL or Spatialite.
+Queries written with GeoAlchemy are generic too. GeoAlchemy translates these generic expressions into 
+the function names that are known by the database, that is currently in use.
+If you want to use a database specific function on a geometry column, like `AsKML` in PostGIS, you will have to set a comparator
+when defining your mapping. For the above example the mapping for `Spot` then would look like this:
+
+.. code-block:: python
+
+    from geoalchemy.postgis import PGComparator
+
+    class Spot(Base):
+        __tablename__ = 'spots'
+        id = Column(Integer, primary_key=True)
+        name = Column(Unicode, nullable=False)
+        height = Column(Integer)
+        created = Column(DateTime, default=datetime.now())
+        geom = GeometryColumn(Point(2), comparator=PGComparator)
+        
+	# [..]
+
+
+
+Now you can also use PostGIS specific functions on geometry columns. 
+
+.. code-block:: python
+
+	>>> s = session.query(Spot).filter(Spot.geom.kml == '<Point><coordinates>-81.4,38.08</coordinates></Point>').first()
+	>>> session.scalar(s.geom.wkt)
+	'POINT(-81.4 38.08)'
+
+Note that you do not have to set a comparator, when you want to execute a database specific function 
+on a geometry attribute of an object (*s.geom.kml*) or when you are directly using a function (*pg_functions.kml('POINT(..)')*).
+You only have to set a comparator, when you are using a function on a geometry column (*Spot.geom.kml*).
+
+The following comparators and database specific function declarations are available:
+
+* PostGIS: *geoalchemy.postgis.PGComparator* and *geoalchemy.postgis.pg_functions*
+* MySQL: *geoalchemy.mysql.MySQLComparator* and *geoalchemy.mysql.mysql_functions*
+* Spatialite: *geoalchemy.spatialite.SQLiteComparator* and *geoalchemy.spatialite.sqlite_functions*
+
 Creating Database Tables
 ------------------------
 
@@ -127,26 +188,27 @@ specified using the Well Known Text (WKT) format using GeoAlchemy
 
 .. code-block:: python
 
-    wkt = "POINT(-81.40 38.08)"
-    spot1 = Spot(name="Gas Station", height=240.8, geom=WKTSpatialElement(wkt))
-    wkt = "POINT(-81.42 37.65)"
-    spot2 = Spot(name="Restaurant", height=233.6, geom=WKTSpatialElement(wkt)
-    
-    wkt = "LINESTRING(-80.3 38.2, -81.03 38.04, -81.2 37.89)"
-    road1 = Road(name="Peter St", width=6, geom=WKTSpatialElement(wkt))
-    wkt = "LINESTRING(-79.8 38.5, -80.03 38.2, -80.2 37.89)"
-    road2 = Road(name="George Ave", width=8, geom=WKTSpatialElement(wkt))
-    
-    wkt = "POLYGON((-81.3 37.2, -80.63 38.04, -80.02 37.49, -81.3 37.2))"
-    lake1 = Lake(name="Lake Juliet", depth=36, geom=WKTSpatialElement(wkt))
-    wkt = "POLYGON((-79.8 38.5, -80.03 38.2, -80.02 37.89, -79.92 37.75, -79.8 38.5))"
-    lake2 = Lake(name="Lake Blue", depth=58, geom=WKTSpatialElement(wkt))
+	wkt_spot1 = "POINT(-81.40 38.08)"
+	spot1 = Spot(name="Gas Station", height=240.8, geom=WKTSpatialElement(wkt_spot1))
+	wkt_spot2 = "POINT(-81.42 37.65)"
+	spot2 = Spot(name="Restaurant", height=233.6, geom=WKTSpatialElement(wkt_spot2))
+	
+	wkt_road1 = "LINESTRING(-80.3 38.2, -81.03 38.04, -81.2 37.89)"
+	road1 = Road(name="Peter St", width=6.0, geom=WKTSpatialElement(wkt_road1))
+	wkt_road2 = "LINESTRING(-79.8 38.5, -80.03 38.2, -80.2 37.89)"
+	road2 = Road(name="George Ave", width=8.0, geom=WKTSpatialElement(wkt_road2))
+	
+	wkt_lake1 = "POLYGON((-81.3 37.2, -80.63 38.04, -80.02 37.49, -81.3 37.2))"
+	lake1 = Lake(name="Lake Juliet", depth=36.0, geom=WKTSpatialElement(wkt_lake1))
+	wkt_lake2 = "POLYGON((-79.8 38.5, -80.03 38.2, -80.02 37.89, -79.92 37.75, -79.8 38.5))"
+	lake2 = Lake(name="Lake Blue", depth=58.0, geom=WKTSpatialElement(wkt_lake2))
     
     session.add_all([spot1, spot2, road1, road2, lake1, lake2])
     session.commit()
 
 Scripts for creating sample gis objects as shown above are available
-in the examples directory. You could run those scripts to create the
+in the `examples directory
+<http://bitbucket.org/sanjiv/geoalchemy/src/tip/examples/>`_. You could run those scripts to create the
 database tables and the gis objects. Running them with -i option to
 the interpreter will drop you at the interactive interpreter
 promt. You can then follow the rest of the tutorial on the
@@ -246,7 +308,24 @@ Spatial relations for filtering features
     0L
     >>> session.scalar(r.geom.touches(l.geom))
     False
+    >>> box = 'POLYGON((-82 38, -80 38, -80 39, -82 39, -82 38))'
+    >>> session.query(Spot).filter(Spot.geom.within(box)).count()
+    1L
 
+Using the generic functions from *geoalchemy.functions* or the database specific functions from 
+*geoalchemy.postgis.pg_functions*, *geoalchemy.mysql.mysql_functions* and *geoalchemy.spatialite.sqlite_functions*,
+more complex queries can be made.
+
+.. code-block:: python
+	
+	>>> from geoalchemy import functions
+	>>> session.query(Spot).filter(Spot.geom.within(functions.buffer(functions.centroid(box), 10, 2))).count()
+	2L
+	>>> from geoalchemy.postgis import pg_functions
+	>>> point = 'POINT(-82 38)'
+	>>> session.scalar(pg_functions.gml(functions.transform(point, 2249)))
+	'<gml:Point srsName="EPSG:2249"><gml:coordinates>-2369733.76351267,1553066.7062767</gml:coordinates></gml:Point>'
+	
 
 Notes for Spatialite
 --------------------

@@ -5,7 +5,7 @@ from datetime import datetime
 from geoalchemy import *
 
 # Setup the database engine and session
-engine = create_engine('postgres://gis:gis@localhost/gis', echo=True)
+engine = create_engine('postgresql://gis:gis@localhost/gis', echo=True)
 session = sessionmaker(bind=engine)()
 
 # Setup the metadata and declarative extension

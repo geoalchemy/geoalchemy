@@ -69,6 +69,7 @@ class MySQLSpatialDialect(SpatialDialect):
                    functions.distance : None, # see also: http://bugs.mysql.com/bug.php?id=13600
                    functions.touches : None,
                    functions.crosses : None,
+                   functions.transform : None,
                    mysql_functions.mbr_equal : 'MBREqual',
                    mysql_functions.mbr_disjoint : 'MBRDisjoint',
                    mysql_functions.mbr_intersects : 'MBRIntersects',

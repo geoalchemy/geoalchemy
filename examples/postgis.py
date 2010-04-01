@@ -4,7 +4,7 @@ from sqlalchemy.ext.declarative import declarative_base
 
 from geoalchemy import *
 
-engine = create_engine('postgres://gis:gis@localhost/gis', echo=True)
+engine = create_engine('postgresql://gis:gis@localhost/gis', echo=True)
 metadata = MetaData(engine)
 session = sessionmaker(bind=engine)()
 Base = declarative_base(metadata=metadata)

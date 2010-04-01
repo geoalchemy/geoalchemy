@@ -190,6 +190,11 @@ class TestGeometry(TestCase):
         ok_(not session.scalar(l.lake_geom.end_point))
         eq_(b2a_hex(session.scalar(r.road_geom.end_point)), 'e61000000101000000ccceb1c5641756c02c42dfe9f4914540')
         ok_(not session.scalar(s.spot_location.end_point))
+    
+    @raises(NotImplementedError)
+    def test_transform(self):
+        spot = session.query(Spot).get(1)
+        session.scalar(spot.spot_location.transform(2249))
 
     def test_length(self):
         l = session.query(Lake).get(1)

@@ -8,7 +8,7 @@ under the mentorship of `Mark Ramm-Christensen <http://compoundthinking.com/blog
 
 Requirements
 ------------
-Requires SQLAlchemy >= 0.5. Supported on python 2.5 and python 2.6.
+Requires SQLAlchemy >= 0.6. Supported on python 2.5 and python 2.6.
 Should also work with python 2.4 but has not been tested. It also
 requires a supported spatial database.
 
@@ -21,10 +21,10 @@ are supported.
 
 Support
 -------
-GeoAlchemy is at an early stage of development. It does not yet have a
-mailing list of its own but support should be available on the SQLAlchemy
-Mailing List or IRC Channel. Also, feel free to email the author directly
-to send bugreports, feature requests, patches, etc.
+GeoAlchemy is at an early stage of development. Its mailing list is available on
+`Google Groups <http://groups.google.com/group/geoalchemy>`_. The source code can be 
+found on `BitBucket <http://bitbucket.org/sanjiv/geoalchemy/>`_. Also, feel free to email 
+the author directly to send bugreports, feature requests, patches, etc.
 
 
 Installation
@@ -40,7 +40,7 @@ Or, download the package, change into geoalchemy dir and type::
 
 Documentation
 -------------
-Documentation is available online at `http://geoalchemy.org`.
+Documentation is available online at http://geoalchemy.org.
 You can also generate full documentation using sphinx by doing `make html`
 in the `doc` dir and pointing the browser to `doc/_build/index.html`.
 

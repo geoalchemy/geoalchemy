@@ -18,21 +18,21 @@ class Road(Base):
 
     road_id = Column(Integer, autoincrement=True, primary_key=True)
     road_name = Column(Unicode(40))
-    road_geom = GeometryColumn(LineString(2), nullable=False, sfs=True)
+    road_geom = GeometryColumn(LineString(2), nullable=False)
 
 class Lake(Base):
     __tablename__ = 'lakes'
 
     lake_id = Column(Integer, autoincrement=True, primary_key=True)
     lake_name = Column(Unicode(40))
-    lake_geom = GeometryColumn(Polygon(2), sfs=True, nullable=False)
+    lake_geom = GeometryColumn(Polygon(2), nullable=False)
 
 class Spot(Base):
     __tablename__ = 'spots'
 
     spot_id = Column(Integer, autoincrement=True, primary_key=True)
     spot_height = Column(Numeric)
-    spot_location = GeometryColumn(Point(2), sfs=True, nullable=False)
+    spot_location = GeometryColumn(Point(2), nullable=False)
 
 # enable the DDL extension, which allows CREATE/DROP operations
 # to work correctly.  This is not needed if working with externally

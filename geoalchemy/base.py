@@ -17,8 +17,6 @@ class SpatialElement(object):
         return "<%s at 0x%x; %r>" % (self.__class__.__name__, id(self), self.desc)
     
     def __getattr__(self, name):
-        import functions
-        
         return getattr(functions, name)(self)
 #
     def __get_wkt(self, session):

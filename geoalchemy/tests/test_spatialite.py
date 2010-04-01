@@ -63,6 +63,7 @@ class TestGeometry(TestCase):
         session.commit()
         session.execute("SELECT InitSpatialMetaData()")
         session.execute("INSERT INTO spatial_ref_sys (srid, auth_name, auth_srid, ref_sys_name, proj4text) VALUES (4326, 'epsg', 4326, 'WGS 84', '+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs')")
+        session.execute("INSERT INTO spatial_ref_sys (srid, auth_name, auth_srid, ref_sys_name, proj4text) VALUES (2249, 'epsg', 2249, 'NAD83 / Massachusetts Mainland (ftUS)', '+proj=lcc +lat_1=42.68333333333333 +lat_2=41.71666666666667 +lat_0=41 +lon_0=-71.5 +x_0=200000.0001016002 +y_0=750000 +ellps=GRS80 +datum=NAD83 +to_meter=0.3048006096012192 +no_defs')")
         metadata.create_all()
 
         # Add objects.  We can use strings...
@@ -191,7 +192,17 @@ class TestGeometry(TestCase):
         assert_almost_equal(session.scalar(func.Y(r.road_geom.end_point)), 43.1402866687898)
         #eq_(b2a_hex(session.scalar(r.road_geom.end_point)), '0001ffffffffccceb1c5641756c02c42dfe9f4914540ccceb1c5641756c02c42dfe9f49145407c01000000ccceb1c5641756c02c42dfe9f4914540fe')
         ok_(not session.scalar(s.spot_location.end_point))
-
+        
+    def test_transform(self):
+        spot = session.query(Spot).get(1)
+        eq_(session.scalar(functions.wkt(spot.spot_location.transform(2249))), 
+            u'POINT(-3890517.610956 3627658.674651)')
+        ok_(session.query(Spot).filter(sqlite_functions.mbr_contains(
+                                                functions.buffer(Spot.spot_location.transform(2249), 10),
+                                                WKTSpatialElement('POINT(-3890517.610956 3627658.674651)', 2249))).first() is not None)
+        eq_(session.scalar(functions.wkt(functions.transform(WKTSpatialElement('POLYGON((743238 2967416,743238 2967450,743265 2967450,743265.625 2967416,743238 2967416))', 2249), 4326))), 
+            u'POLYGON((-71.177685 42.39029, -71.177684 42.390383, -71.177584 42.390383, -71.177583 42.390289, -71.177685 42.39029))')
+        
     def test_length(self):
         l = session.query(Lake).get(1)
         r = session.query(Road).get(1)

@@ -3,6 +3,7 @@ from sqlalchemy import select, func
 from geoalchemy.base import SpatialComparator, PersistentSpatialElement
 from geoalchemy.dialect import SpatialDialect 
 from geoalchemy import functions
+from sqlalchemy.sql import and_
 
 class PGComparator(SpatialComparator):
     """Comparator class used for PostGIS
@@ -44,6 +45,21 @@ class pg_functions:
     # AsGeoJSON: available since PostGIS version 1.3.4
     class geojson(functions._base_function):
         pass
+    
+    # Expand
+    class expand(functions._function_with_argument):
+        pass
+    
+    @staticmethod
+    def _within_distance(compiler, geom1, geom2, distance):
+        """ST_DWithin in early versions of PostGIS 1.3 does not work when
+        distance = 0. So we are directly using the (correct) internal definition.
+        Note that the definition changed in version 1.3.4, see also:
+        http://postgis.refractions.net/docs/ST_DWithin.html
+        """
+        return and_(func.ST_Intersects(geom1, func.ST_Expand(geom2, distance)),
+                    func.ST_Intersects(geom2, func.ST_Expand(geom1, distance)),
+                    func.ST_Distance(geom1, geom2) <= distance)
 
 
 class PGSpatialDialect(SpatialDialect):
@@ -89,7 +105,9 @@ class PGSpatialDialect(SpatialDialect):
                    pg_functions.svg : 'ST_AsSVG',
                    pg_functions.kml : 'ST_AsKML',
                    pg_functions.gml : 'ST_AsGML',
-                   pg_functions.geojson : 'ST_AsGeoJSON'
+                   pg_functions.geojson : 'ST_AsGeoJSON',
+                   pg_functions.expand : 'ST_Expand',
+                   functions._within_distance : pg_functions._within_distance
                   }
     
     def _get_function_mapping(self):

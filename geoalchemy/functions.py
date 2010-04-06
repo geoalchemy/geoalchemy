@@ -291,7 +291,7 @@ class equals(_relation_function):
 class distance(_relation_function):
     pass
 
-# WithinDistance
+# DWithin
 class within_distance(_relation_function_with_argument):
     pass
 
@@ -334,4 +334,16 @@ class covered_by(_relation_function):
 # Intersection
 class intersection(_relation_function):
     pass
-        
+
+# like DWithin, but MBR may be used (for MySQL)
+class _within_distance(_relation_function_with_argument):
+    pass
+
+@compiles(_within_distance)
+def __compile__within_distance(element, compiler, **kw):
+    from geoalchemy.dialect import DialectManager 
+    database_dialect = DialectManager.get_spatial_dialect(compiler.dialect)
+    function = database_dialect.get_function_name(element.__class__)
+    
+    return compiler.process(function(compiler, _parse_clause(element.clause, compiler), 
+                                     _parse_clause(element.other_clause, compiler), element.argument))

@@ -1,6 +1,7 @@
 from geoalchemy.base import SpatialComparator, PersistentSpatialElement
 from geoalchemy.dialect import SpatialDialect 
 from geoalchemy import functions
+from sqlalchemy import func
 
 
 class MySQLComparator(SpatialComparator):
@@ -55,6 +56,36 @@ class mysql_functions:
     # MBRContains
     class mbr_contains(functions._relation_function):
         pass
+    
+    @staticmethod
+    def _within_distance(compiler, geom1, geom2, distance):
+        """MySQL does not support the function distance, so we are doing
+        a kind of "mbr_within_distance".
+        The MBR of 'geom2' is expanded with the amount of 'distance' by
+        manually changing the coordinates. Then we test if 'geom1' intersects
+        this expanded MBR.
+        """
+        mbr = func.ExteriorRing(func.Envelope(geom2))
+        
+        lower_left = func.StartPoint(mbr)
+        upper_right = func.PointN(mbr, 3)
+        
+        xmin = func.X(lower_left)
+        ymin = func.Y(lower_left)
+        xmax = func.X(upper_right)
+        ymax = func.Y(upper_right)
+        
+        return func.Intersects(
+                geom1,
+                func.GeomFromText(
+                    func.Concat('Polygon((',
+                           xmin - distance, ' ', ymin - distance, ',',
+                           xmax + distance, ' ', ymin - distance, ',',
+                           xmax + distance, ' ', ymax + distance, ',',
+                           xmin - distance, ' ', ymax + distance, ',',
+                           xmin - distance, ' ', ymin - distance, '))'), func.srid(geom2)
+                    )                                              
+                )
 
 
 class MySQLSpatialDialect(SpatialDialect):
@@ -70,13 +101,15 @@ class MySQLSpatialDialect(SpatialDialect):
                    functions.touches : None,
                    functions.crosses : None,
                    functions.transform : None,
+                   functions.within_distance : None,
                    mysql_functions.mbr_equal : 'MBREqual',
                    mysql_functions.mbr_disjoint : 'MBRDisjoint',
                    mysql_functions.mbr_intersects : 'MBRIntersects',
                    mysql_functions.mbr_touches : 'MBRTouches',
                    mysql_functions.mbr_within : 'MBRWithin',
                    mysql_functions.mbr_overlaps : 'MBROverlaps',
-                   mysql_functions.mbr_contains : 'MBRContains'
+                   mysql_functions.mbr_contains : 'MBRContains',
+                   functions._within_distance : mysql_functions._within_distance
                    
                    }
 

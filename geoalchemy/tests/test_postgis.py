@@ -326,7 +326,6 @@ class TestGeometry(TestCase):
         ok_(session.query(Spot).filter(Spot.spot_location.distance(WKTSpatialElement('POINT(-88.5945861592357 42.9480095987261)')) < 10).first() is not None)
         eq_(session.scalar(functions.distance('POINT(-88.5945861592357 42.9480095987261)', 'POINT(-88.5945861592357 42.9480095987261)')), 0)
 
-
     def test_within_distance(self):
         r1 = session.query(Road).filter(Road.road_name=='Jeff Rd').one()
         r2 = session.query(Road).filter(Road.road_name=='Graeme Ave').one()
@@ -458,3 +457,14 @@ class TestGeometry(TestCase):
         r = session.query(Road).filter(Road.road_name=='Paul St').one()
         eq_(session.scalar(func.ST_AsText(session.scalar(l.lake_geom.intersection(r.road_geom)))), 'LINESTRING(-88.1430673666454 42.6255500261493,-88.1140839697546 42.6230657349872)')
         ok_(session.query(Lake).filter(Lake.lake_geom.intersection(r.road_geom) == WKTSpatialElement('LINESTRING(-88.1430673666454 42.6255500261493,-88.1140839697546 42.6230657349872)')).first() is not None)
+
+    def test__within_distance(self):
+        r1 = session.query(Road).filter(Road.road_name=='Jeff Rd').one()
+        r2 = session.query(Road).filter(Road.road_name=='Graeme Ave').one()
+        r3 = session.query(Road).filter(Road.road_name=='Geordie Rd').one()
+        roads_within_distance = session.query(Road).filter(
+            Road.road_geom._within_distance(r1.road_geom, 0.20)).all()
+        ok_(r2 in roads_within_distance)
+        ok_(session.scalar(r2.road_geom._within_distance(r1.road_geom, 0.20)))
+        ok_(r3 not in roads_within_distance)
+        eq_(session.scalar(functions._within_distance('POINT(-88.9139332929936 42.5082802993631)', 'POINT(-88.9139332929936 35.5082802993631)', 10)), True)

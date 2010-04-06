@@ -42,12 +42,17 @@ class sqlite_functions(mysql_functions):
     # IsValid
     class is_valid(functions._base_function):
         pass
+    
+    @staticmethod
+    def _within_distance(compiler, geom1, geom2, distance):
+        return func.Distance(geom1, geom2) <= distance
 
 
 class SQLiteSpatialDialect(SpatialDialect):
     """Implementation of SpatialDialect for SQLite."""
     
     __functions = { 
+                   functions.within_distance : None,
                    functions.length : 'GLength',
                    sqlite_functions.svg : 'AsSVG',
                    sqlite_functions.fgf : 'AsFGF',
@@ -58,7 +63,8 @@ class SQLiteSpatialDialect(SpatialDialect):
                    mysql_functions.mbr_touches : 'MBRTouches',
                    mysql_functions.mbr_within : 'MBRWithin',
                    mysql_functions.mbr_overlaps : 'MBROverlaps',
-                   mysql_functions.mbr_contains : 'MBRContains'
+                   mysql_functions.mbr_contains : 'MBRContains',
+                   functions._within_distance : sqlite_functions._within_distance
                    }
 
     def _get_function_mapping(self):

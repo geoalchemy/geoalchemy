@@ -57,9 +57,9 @@ class pg_functions:
         Note that the definition changed in version 1.3.4, see also:
         http://postgis.refractions.net/docs/ST_DWithin.html
         """
-        return and_(func.ST_Intersects(geom1, func.ST_Expand(geom2, distance)),
-                    func.ST_Intersects(geom2, func.ST_Expand(geom1, distance)),
-                    func.ST_Distance(geom1, geom2) <= distance)
+        return and_(func.ST_Expand(geom2, distance).op('&&')(geom1),
+                        func.ST_Expand(geom1, distance).op('&&')(geom2),
+                        func.ST_Distance(geom1, geom2) <= distance)
 
 
 class PGSpatialDialect(SpatialDialect):

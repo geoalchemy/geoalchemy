@@ -468,3 +468,4 @@ class TestGeometry(TestCase):
         ok_(session.scalar(r2.road_geom._within_distance(r1.road_geom, 0.20)))
         ok_(r3 not in roads_within_distance)
         eq_(session.scalar(functions._within_distance('POINT(-88.9139332929936 42.5082802993631)', 'POINT(-88.9139332929936 35.5082802993631)', 10)), True)
+        ok_(session.scalar(functions._within_distance('Point(0 0)', 'Point(0 0)', 0)))

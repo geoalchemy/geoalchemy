@@ -239,11 +239,11 @@ class TestGeometry(TestCase):
         l = session.query(Lake).get(1)  
         r = session.query(Road).get(1)
         s = session.query(Spot).get(1)
-        ok_(not session.scalar(l.lake_geom.point_n()))
+        ok_(not session.scalar(l.lake_geom.point_n(1)))
         assert_almost_equal(session.scalar(func.X(r.road_geom.point_n(5))), -88.3655256496815)
         assert_almost_equal(session.scalar(func.Y(r.road_geom.point_n(5))), 43.1402866687898)
         #eq_(b2a_hex(session.scalar(r.road_geom.point_n(5))), '0001ffffffffccceb1c5641756c02c42dfe9f4914540ccceb1c5641756c02c42dfe9f49145407c01000000ccceb1c5641756c02c42dfe9f4914540fe')
-        ok_(not session.scalar(s.spot_location.point_n()))
+        ok_(not session.scalar(s.spot_location.point_n(1)))
 
     def test_centroid(self):
         l = session.query(Lake).get(1)

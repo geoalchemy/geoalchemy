@@ -47,7 +47,7 @@ class pg_functions:
         pass
     
     # Expand
-    class expand(functions._function_with_argument):
+    class expand(functions._base_function):
         pass
     
     @staticmethod

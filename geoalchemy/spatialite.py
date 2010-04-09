@@ -38,7 +38,7 @@ class sqlite_functions(mysql_functions):
         pass
     
     # AsFGF
-    class fgf(functions._function_with_argument):
+    class fgf(functions._base_function):
         pass
     
     # IsValid

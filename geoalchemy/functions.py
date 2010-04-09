@@ -9,7 +9,7 @@ def _parse_clause(clause, compiler):
     the column clause (column name) is returned.
         
     """
-    from geoalchemy.base import SpatialElement, WKTSpatialElement, WKBSpatialElement, DBSpatialElement, GeometryBase, _to_gis
+    from geoalchemy.base import SpatialElement, WKTSpatialElement, WKBSpatialElement, DBSpatialElement, GeometryBase
     
     if hasattr(clause, '__clause_element__'):
         # for example a column name
@@ -29,7 +29,7 @@ def _parse_clause(clause, compiler):
         wkt = WKTSpatialElement(clause)
         return func.GeomFromText(literal(wkt, GeometryBase), wkt.srid)
         
-    return literal(_to_gis(clause), GeometryBase)
+    return literal(clause)
 
 
 def __get_function(element, compiler):
@@ -43,151 +43,33 @@ def __get_function(element, compiler):
     # getattr(func, function_name) is like calling func.(the value of function_name)
     return getattr(func, function_name)
     
-# Functions without additional argument
 class _base_function(Function):
-    """Represents a database function that can be called without additional argument.
-    For example: AsText(geometry)
-        session.scalar(s.geom.wkt)
-        session.scalar(functions.wkt(..))
+    """Represents a database function.
+    
+    When the function is used on a geometry column (r.geom.point_n(2) or Road.geom.point_n(2)),
+    an additional argument is set using __call__.
+    When the function is called directly (functions.point_n(..., 2)),
+    the argument is set using the constructor.
     """
     
-    def __init__(self, clause, *clauses, **kw):
-        self.clause = clause
+    def __init__(self, *arguments):
+        self.arguments = arguments
         
-        Function.__init__(self, self.__class__.__name__, *clauses, **kw)
+        Function.__init__(self, self.__class__.__name__)
         
-    def __call__(self):
+    def __call__(self, *arguments):
+        if len(arguments) > 0:
+            self.arguments =  self.arguments + arguments
+            
         return self
-    
+
 @compiles(_base_function)
 def __compile_base_function(element, compiler, **kw):
     function = __get_function(element, compiler)
     
-    return compiler.process(function(_parse_clause(element.clause, compiler)))
-
-
-# Functions with one additional argument
-class _function_with_argument(_base_function):
-    """Represents a database function that must be called with one additional argument.
-    When the function is used on a geometry column (r.geom.point_n(2) or Road.geom.point_n(2)),
-    the argument is set using __call__.
-    When the function is called directly (functions.point_n(..., 2)),
-    the argument is set using the constructor.
+    params = [_parse_clause(argument, compiler) for argument in element.arguments]
     
-    For example: PointN(geometry, n)
-        session.scalar(s.geom.point_n(2))
-        session.scalar(functions.point_n(..., 2))
-    """
-    def __init__(self, clause=None, argument=None, *clauses, **kw):
-        self.argument = argument
-        
-        _base_function.__init__(self, clause, self.__class__.__name__, *clauses, **kw)
-        
-    def __call__(self, argument=None):
-        if argument is not None:
-            # __call__ may also be called inside the SQLAlchemy compiler,
-            # therefore only set the argument, if it is not None.
-            self.argument = argument
-        return self 
-    
-@compiles(_function_with_argument)
-def __compile_function_with_argument(element, compiler, **kw):
-    function = __get_function(element, compiler)
-    
-    return compiler.process(function(_parse_clause(element.clause, compiler), element.argument))
-
-
-# Functions with two additional arguments
-class _function_with_two_arguments(_base_function):
-    """Same as _function_with_argument but with two arguments.
-    
-    For example: Buffer(geometry, m, n)
-        session.scalar(s.geom.buffer(10, 2))
-        session.scalar(functions.buffer(..., 10, 2))
-    """
-    def __init__(self, clause=None, argument_one=None, argument_two=None, *clauses, **kw):
-        self.argument_one = argument_one
-        self.argument_two = argument_two
-        
-        _base_function.__init__(self, clause, self.__class__.__name__, *clauses, **kw)
-        
-    def __call__(self, argument_one=None, argument_two=None):
-        if argument_one is not None:
-            self.argument_one = argument_one
-        
-        if argument_two is not None:
-            self.argument_two = argument_two
-            
-        return self 
-    
-@compiles(_function_with_two_arguments)
-def __compile_function_with_two_arguments(element, compiler, **kw):
-    function = __get_function(element, compiler)
-    
-    if element.argument_one is not None and element.argument_two is not None:
-        return compiler.process(function(_parse_clause(element.clause, compiler), element.argument_one, element.argument_two))
-    elif element.argument_one is not None:
-        return compiler.process(function(_parse_clause(element.clause, compiler), element.argument_one))
-    else:
-        return compiler.process(function(_parse_clause(element.clause, compiler)))
-
-
-# Functions that accept two geometries
-class _relation_function(_base_function):
-    """Represents a function that accepts two geometries.
-    
-    For example: Touches(geometry_a, geometry_b)
-        session.scalar(s.geom.touches(...))
-        session.scalar(functions.touches(..., ...))
-    """
-    def __init__(self, clause=None, other_clause=None, *clauses, **kw):
-        self.other_clause = other_clause
-        
-        _base_function.__init__(self, clause, self.__class__.__name__, *clauses, **kw)
-        
-    def __call__(self, other_clause=None):
-        if other_clause is not None:
-            self.other_clause = other_clause
-        return self      
-
-@compiles(_relation_function)
-def __compile_relation_function(element, compiler, **kw):
-    function = __get_function(element, compiler)
-    
-    return compiler.process(function(_parse_clause(element.clause, compiler), 
-                                     _parse_clause(element.other_clause, compiler)))
-
-
-# Functions that accept two geometries and one additional argument
-class _relation_function_with_argument(_base_function):
-    """Same as _relation_function but with one additional argument.
-    
-    For example: DWithin(geometry_a, geometry_b, n)
-        session.scalar(s.geom.within_distance(..., 10))
-        session.scalar(functions.within_distance(..., ..., 10))
-    """
-    def __init__(self, clause=None, other_clause=None, argument=None, *clauses, **kw):
-        self.other_clause = other_clause
-        self.argument = argument
-        
-        _base_function.__init__(self, clause, self.__class__.__name__, *clauses, **kw)
-        
-    def __call__(self, other_clause=None, argument=None):
-        if other_clause is not None:
-            self.other_clause = other_clause
-        
-        if argument is not None:
-            self.argument = argument
-            
-        return self      
-
-@compiles(_relation_function_with_argument)
-def __compile_relation_function_with_argument(element, compiler, **kw):
-    function = __get_function(element, compiler)
-    
-    return compiler.process(function(_parse_clause(element.clause, compiler), 
-                                     _parse_clause(element.other_clause, compiler), element.argument))
-
+    return compiler.process(function(*params))
 
 # Functions that implement OGC SFS or SQL/MM and that are supported by most databases
 
@@ -232,7 +114,7 @@ class num_points(_base_function):
     pass
 
 # PointN
-class point_n(_function_with_argument):
+class point_n(_base_function):
     pass
 
 # Length
@@ -260,7 +142,7 @@ class boundary(_base_function):
     pass
 
 # Buffer
-class buffer(_function_with_two_arguments):
+class buffer(_base_function):
     pass
 
 # ConvexHull
@@ -280,63 +162,63 @@ class end_point(_base_function):
     pass
 
 # Transform
-class transform(_function_with_argument):
+class transform(_base_function):
     pass
 
 # Equals
-class equals(_relation_function):
+class equals(_base_function):
     pass
 
 # Distance
-class distance(_relation_function):
+class distance(_base_function):
     pass
 
 # DWithin
-class within_distance(_relation_function_with_argument):
+class within_distance(_base_function):
     pass
 
 # Disjoint
-class disjoint(_relation_function):
+class disjoint(_base_function):
     pass
 
 # Intersects
-class intersects(_relation_function):
+class intersects(_base_function):
     pass
 
 # Touches
-class touches(_relation_function):
+class touches(_base_function):
     pass
 
 # Crosses
-class crosses(_relation_function):
+class crosses(_base_function):
     pass
 
 # Within
-class within(_relation_function):
+class within(_base_function):
     pass
 
 # Overlaps
-class overlaps(_relation_function):
+class overlaps(_base_function):
     pass
 
 # Contains
-class gcontains(_relation_function):
+class gcontains(_base_function):
     pass
 
 # Covers
-class covers(_relation_function):
+class covers(_base_function):
     pass
 
 # CoveredBy
-class covered_by(_relation_function):
+class covered_by(_base_function):
     pass
 
 # Intersection
-class intersection(_relation_function):
+class intersection(_base_function):
     pass
 
 # like DWithin, but MBR may be used (for MySQL)
-class _within_distance(_relation_function_with_argument):
+class _within_distance(_base_function):
     pass
 
 @compiles(_within_distance)
@@ -345,5 +227,5 @@ def __compile__within_distance(element, compiler, **kw):
     database_dialect = DialectManager.get_spatial_dialect(compiler.dialect)
     function = database_dialect.get_function_name(element.__class__)
     
-    return compiler.process(function(compiler, _parse_clause(element.clause, compiler), 
-                                     _parse_clause(element.other_clause, compiler), element.argument))
+    return compiler.process(function(compiler, _parse_clause(element.arguments[0], compiler), 
+                                     _parse_clause(element.arguments[1], compiler), element.arguments[2]))

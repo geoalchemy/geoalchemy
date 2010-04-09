@@ -229,9 +229,9 @@ class TestGeometry(TestCase):
         l = session.query(Lake).get(1)
         r = session.query(Road).get(1)
         s = session.query(Spot).get(1)
-        ok_(not session.scalar(l.lake_geom.point_n()))
+        ok_(not session.scalar(l.lake_geom.point_n(1)))
         eq_(b2a_hex(session.scalar(r.road_geom.point_n(5))), 'e61000000101000000ccceb1c5641756c02c42dfe9f4914540')
-        ok_(not session.scalar(s.spot_location.point_n()))
+        ok_(not session.scalar(s.spot_location.point_n(1)))
 
     @raises(NotImplementedError)
     def test_centroid(self):

@@ -30,31 +30,31 @@ class MySQLPersistentSpatialElement(PersistentSpatialElement):
 # Functions only supported by MySQL
 class mysql_functions:
     # MBREqual
-    class mbr_equal(functions._relation_function):
+    class mbr_equal(functions._base_function):
         pass
     
     # MBRDisjoint
-    class mbr_disjoint(functions._relation_function):
+    class mbr_disjoint(functions._base_function):
         pass
     
     # MBRIntersects
-    class mbr_intersects(functions._relation_function):
+    class mbr_intersects(functions._base_function):
         pass
     
     # MBRTouches
-    class mbr_touches(functions._relation_function):
+    class mbr_touches(functions._base_function):
         pass
     
     # MBRWithin
-    class mbr_within(functions._relation_function):
+    class mbr_within(functions._base_function):
         pass
     
     # MBROverlaps
-    class mbr_overlaps(functions._relation_function):
+    class mbr_overlaps(functions._base_function):
         pass
     
     # MBRContains
-    class mbr_contains(functions._relation_function):
+    class mbr_contains(functions._base_function):
         pass
     
     @staticmethod

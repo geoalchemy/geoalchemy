@@ -57,8 +57,8 @@ class SpatialDialect(object):
         if self._get_function_mapping() is not None:
             if function_class in self._get_function_mapping():
                 if self._get_function_mapping()[function_class] is None:
-                    raise NotImplementedError("Operation '(%s)' is not supported." 
-                                                % (function_class.__class__.__name__)) 
+                    raise NotImplementedError("Operation '%s' is not supported for '%s'" 
+                                                % (function_class.__name__, self.__class__.__name__)) 
                 else:
                     return self._get_function_mapping()[function_class]
         

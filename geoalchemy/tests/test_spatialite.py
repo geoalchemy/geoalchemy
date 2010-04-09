@@ -36,7 +36,7 @@ class Lake(Base):
 
     lake_id = Column(Integer, primary_key=True)
     lake_name = Column(String)
-    lake_geom = GeometryColumn(Polygon(2, srid=4326), comparator = SQLiteComparator)
+    lake_geom = GeometryColumn(Polygon(2, srid=4326, spatial_index=False), comparator = SQLiteComparator)
 
 class Spot(Base):
     __tablename__ = 'spots'
@@ -444,3 +444,6 @@ class TestGeometry(TestCase):
         ok_(session.scalar(r2.road_geom._within_distance(r1.road_geom, 0.20)))
         ok_(r3 not in roads_within_distance)
         eq_(session.scalar(functions._within_distance('POINT(-88.9139332929936 42.5082802993631)', 'POINT(-88.9139332929936 35.5082802993631)', 10)), True)
+        lakes_within_distance = session.query(Lake).filter(
+            Lake.lake_geom._within_distance(r1.road_geom, 0.20)).all()
+        eq_(len(lakes_within_distance), 1)

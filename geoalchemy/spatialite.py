@@ -99,8 +99,9 @@ class SQLiteSpatialDialect(SpatialDialect):
         return SQLitePersistentSpatialElement(wkb_element)
     
     def handle_ddl_before_drop(self, bind, table, column):
-        bind.execute(select([func.DisableSpatialIndex(table.name, column.name)]).execution_options(autocommit=True))
-        bind.execute("DROP TABLE idx_%s_%s" % (table.name, column.name));
+        if column.type.spatial_index:
+            bind.execute(select([func.DisableSpatialIndex(table.name, column.name)]).execution_options(autocommit=True))
+            bind.execute("DROP TABLE idx_%s_%s" % (table.name, column.name));
         
         bind.execute(select([func.DiscardGeometryColumn(table.name, column.name)]).execution_options(autocommit=True))
     

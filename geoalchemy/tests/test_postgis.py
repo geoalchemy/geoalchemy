@@ -5,13 +5,14 @@ from sqlalchemy import (create_engine, MetaData, Column, Integer, String,
 from sqlalchemy.orm import sessionmaker, mapper
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import and_
+from sqlalchemy.exceptions import IntegrityError
 
 from geoalchemy import (Geometry, GeometryCollection, GeometryColumn,
         GeometryDDL, WKTSpatialElement, DBSpatialElement, GeometryExtensionColumn,
         functions)
 from geoalchemy.postgis import PGComparator, pg_functions
 
-from nose.tools import eq_, ok_
+from nose.tools import eq_, ok_, raises
 
 
 
@@ -25,7 +26,7 @@ class Road(Base):
 
     road_id = Column(Integer, primary_key=True)
     road_name = Column(String)
-    road_geom = GeometryColumn(Geometry(2), comparator=PGComparator)
+    road_geom = GeometryColumn(Geometry(2), comparator=PGComparator, nullable=False)
 
 class Lake(Base):
     __tablename__ = 'lakes'
@@ -482,3 +483,12 @@ class TestGeometry(TestCase):
         eq_(session.scalar(functions._within_distance('POINT(-88.9139332929936 42.5082802993631)', 'POINT(-88.9139332929936 35.5082802993631)', 10)), True)
         ok_(session.scalar(functions._within_distance('Point(0 0)', 'Point(0 0)', 0)))
     
+    @raises(IntegrityError)
+    def test_constraint_nullable(self):
+        spot_null = Spot(spot_height=420.40, spot_location=None)
+        session.add(spot_null)
+        session.commit();
+        ok_(True)
+        road_null = Road(road_name='Jeff Rd', road_geom=None)
+        session.add(road_null)
+        session.commit();

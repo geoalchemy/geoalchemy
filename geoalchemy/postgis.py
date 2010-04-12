@@ -133,3 +133,7 @@ class PGSpatialDialect(SpatialDialect):
             bind.execute("CREATE INDEX idx_%s_%s ON %s.%s USING GIST (%s GIST_GEOMETRY_OPS)" % 
                             (table.name, column.name, (table.schema or 'public'), table.name, column.name))
             
+        if not column.nullable:
+            bind.execute("ALTER TABLE %s.%s ALTER COLUMN %s SET not null" % 
+                            ((table.schema or 'public'), table.name, column.name))
+            

@@ -126,11 +126,15 @@ class MySQLSpatialDialect(SpatialDialect):
         return MySQLPersistentSpatialElement(wkb_element)
     
     def handle_ddl_after_create(self, bind, table, column):
-        if column.type.spatial_index:
+        if column.type.spatial_index or not column.nullable:
+            # MySQL requires NOT NULL for spatial indexed columns
             bind.execute("ALTER TABLE %s ADD %s %s NOT NULL" % 
                             (table.name, column.name, column.type.name))
-            bind.execute("CREATE SPATIAL INDEX idx_%s_%s ON %s(%s)" % 
-                            (table.name, column.name, table.name, column.name))
         else:
             bind.execute("ALTER TABLE %s ADD %s %s" % 
                             (table.name, column.name, column.type.name))
+        
+        if column.type.spatial_index:
+            bind.execute("CREATE SPATIAL INDEX idx_%s_%s ON %s(%s)" % 
+                            (table.name, column.name, table.name, column.name))
+            

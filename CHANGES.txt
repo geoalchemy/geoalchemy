@@ -21,6 +21,7 @@ GeoAlchemy Change Log
 	manually when defining the mapping.
 * Updated documentation and examples.
 * Use spatial index for Spatialite.
+* Set NOT NULL constraints in database (nullable=False).
 
 0.1.1
 -----

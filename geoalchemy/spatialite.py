@@ -105,14 +105,13 @@ class SQLiteSpatialDialect(SpatialDialect):
         
         bind.execute(select([func.DiscardGeometryColumn(table.name, column.name)]).execution_options(autocommit=True))
     
-    
-
     def handle_ddl_after_create(self, bind, table, column):
         bind.execute(select([func.AddGeometryColumn(table.name, 
                                                     column.name, 
                                                     column.type.srid, 
                                                     column.type.name, 
-                                                    column.type.dimension)]).execution_options(autocommit=True))
+                                                    column.type.dimension,
+                                                    0 if column.nullable else 1)]).execution_options(autocommit=True))
         if column.type.spatial_index:
-            bind.execute("SELECT CreateSpatialIndex('%s', '%s')" % (table.name, column.name));
+            bind.execute("SELECT CreateSpatialIndex('%s', '%s')" % (table.name, column.name))
             bind.execute("VACUUM %s" % table.name)

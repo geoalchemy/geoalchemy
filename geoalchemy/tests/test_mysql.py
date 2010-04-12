@@ -10,6 +10,8 @@ from geoalchemy import (GeometryColumn, Point, Polygon, LineString,
         WKBSpatialElement, functions)
 from nose.tools import ok_, eq_, raises
 from sqlalchemy import and_
+from sqlalchemy.exceptions import OperationalError
+
 from geoalchemy.mysql import MySQLComparator, mysql_functions
 
 engine = create_engine('mysql://gis:gis@localhost/gis', echo=True)
@@ -22,7 +24,7 @@ class Road(Base):
 
     road_id = Column(Integer, primary_key=True)
     road_name = Column(Unicode(40))
-    road_geom = GeometryColumn(LineString(2, srid=4326), comparator=MySQLComparator)
+    road_geom = GeometryColumn(LineString(2, srid=4326, spatial_index=False), comparator=MySQLComparator, nullable=False)
 
 class Lake(Base):
     __tablename__ = 'lakes'
@@ -428,4 +430,9 @@ class TestGeometry(TestCase):
         ok_(r3 in roads_within_distance) 
         eq_(session.scalar(functions._within_distance('POINT(-88.9139332929936 42.5082802993631)', 'POINT(-88.9139332929936 35.5082802993631)', 10)), True)
 
+    @raises(OperationalError)
+    def test_constraint_nullable(self):
+        road_null = Road(road_name=u'Jeff Rd', road_geom=None)
+        session.add(road_null)
+        session.commit();
 

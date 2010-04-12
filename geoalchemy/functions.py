@@ -1,4 +1,4 @@
-from sqlalchemy.sql.expression import Function
+from sqlalchemy.sql.expression import Function, ClauseElement
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy import func, literal
 
@@ -6,7 +6,7 @@ from sqlalchemy import func, literal
 def _parse_clause(clause, compiler):
     """This method is used to translate a clause element (geometries, functions, ..).
     According to the type of the clause, a conversion to the database geometry type is added or
-    the column clause (column name) is returned.
+    the column clause (column name) or the cascaded clause element is returned.
         
     """
     from geoalchemy.base import SpatialElement, WKTSpatialElement, WKBSpatialElement, DBSpatialElement, GeometryBase
@@ -14,8 +14,8 @@ def _parse_clause(clause, compiler):
     if hasattr(clause, '__clause_element__'):
         # for example a column name
         return clause.__clause_element__()
-    elif isinstance(clause, Function):
-        # for cascaded functions
+    elif isinstance(clause, ClauseElement):
+        # for cascaded clause elements, like other functions
         return clause
     elif isinstance(clause, SpatialElement):
         if isinstance(clause, WKTSpatialElement):
@@ -28,7 +28,8 @@ def _parse_clause(clause, compiler):
     elif isinstance(clause, basestring):
         wkt = WKTSpatialElement(clause)
         return func.GeomFromText(literal(wkt, GeometryBase), wkt.srid)
-        
+    
+    # for raw parameters    
     return literal(clause)
 
 
@@ -47,9 +48,10 @@ class _base_function(Function):
     """Represents a database function.
     
     When the function is used on a geometry column (r.geom.point_n(2) or Road.geom.point_n(2)),
-    an additional argument is set using __call__.
+    an additional argument is set using __call__. The column or geometry the function is called on 
+    is stored inside the constructor.
     When the function is called directly (functions.point_n(..., 2)),
-    the argument is set using the constructor.
+    all arguments are set using the constructor.
     """
     
     def __init__(self, *arguments):

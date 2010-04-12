@@ -20,6 +20,7 @@ GeoAlchemy Change Log
 	(Spot.geom.kml, but not s.geom.kml!), a comparator has to be set
 	manually when defining the mapping.
 * Updated documentation and examples.
+* Use spatial index for Spatialite.
 
 0.1.1
 -----

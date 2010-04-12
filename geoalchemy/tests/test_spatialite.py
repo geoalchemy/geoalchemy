@@ -1,17 +1,17 @@
 from unittest import TestCase
 from binascii import b2a_hex
 from sqlalchemy import (create_engine, MetaData, Column, Integer, String,
-        Numeric, func)
-from sqlalchemy.orm import sessionmaker
+        Numeric, func, Table)
+from sqlalchemy.orm import sessionmaker, mapper
 from sqlalchemy.ext.declarative import declarative_base
 
 from pysqlite2 import dbapi2 as sqlite
 from geoalchemy import (GeometryColumn, Point, Polygon,
-		LineString, GeometryDDL, WKTSpatialElement, WKBSpatialElement, DBSpatialElement)
+		LineString, GeometryDDL, WKTSpatialElement, WKBSpatialElement, 
+        DBSpatialElement, GeometryExtensionColumn, functions)
 from nose.tools import ok_, eq_, assert_almost_equal
 
 from geoalchemy.spatialite import SQLiteComparator, sqlite_functions
-from geoalchemy import functions
 
 engine = create_engine('sqlite://', module=sqlite, echo=True)
 connection = engine.raw_connection().connection
@@ -38,19 +38,28 @@ class Lake(Base):
     lake_name = Column(String)
     lake_geom = GeometryColumn(Polygon(2, srid=4326, spatial_index=False), comparator = SQLiteComparator)
 
-class Spot(Base):
-    __tablename__ = 'spots'
+spots_table = Table('spots', metadata,
+                    Column('spot_id', Integer, primary_key=True),
+                    Column('spot_height', Numeric()),
+                    GeometryExtensionColumn('spot_location', Point(2, srid=4326)))
 
-    spot_id = Column(Integer, primary_key=True)
-    spot_height = Column(Numeric)
-    spot_location = GeometryColumn(Point(2, srid=4326), comparator = SQLiteComparator)
+class Spot(object):
+    def __init__(self, spot_id=None, spot_height=None, spot_location=None):
+        self.spot_id = spot_id
+        self.spot_height = spot_height
+        self.spot_location = spot_location
+
+        
+mapper(Spot, spots_table, properties={
+            'spot_location': GeometryColumn(spots_table.c.spot_location, 
+                                            comparator=SQLiteComparator)}) 
 
 # enable the DDL extension, which allows CREATE/DROP operations
 # to work correctly.  This is not needed if working with externally
 # defined tables.    
 GeometryDDL(Road.__table__)
 GeometryDDL(Lake.__table__)
-GeometryDDL(Spot.__table__)
+GeometryDDL(spots_table)
 
 class TestGeometry(TestCase):
 

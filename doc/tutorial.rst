@@ -70,7 +70,9 @@ In SQLAlchemy, models can be defined either by declaring the model
 classes and database tables separately and then mapping the classes to
 the tables using mapper configuration, or they can be defined
 declaratively using the new declarative extension. In this example we
-use the SQLAlchemy declarative extension to define the model. We also
+use the SQLAlchemy declarative extension to define the model. Notes on how to use
+GeoAlchemy with a non-declarative mapping can be found `here
+<#notes-on-non-declarative-mapping>`_. We also
 create a metadata object that holds the schema information of all
 database objects and will thus be useful for creating the objects in
 the database.
@@ -380,3 +382,52 @@ database. Details are given in `spatialite documentation
     sqlite3> SELECT InitSpatialMetaData();
     sqlite3> INSERT INTO spatial_ref_sys (srid, auth_name, auth_srid, ref_sys_name, proj4text) VALUES (4326, 'epsg', 4326, 'WGS 84', '+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs');
 
+
+Notes on non-declarative mapping
+--------------------------------
+
+In some cases it may be favored to define the database tables and the model classes separately. GeoAlchemy also
+supports this way of non-declarative mapping. The following example demonstrates how a mapping can
+be set up.
+
+.. code-block:: python
+
+	from sqlalchemy import *
+	from sqlalchemy.orm import *
+	from geoalchemy import *
+	from geoalchemy.postgis import PGComparator
+	
+	engine = create_engine('postgresql://gis:gis@localhost/gis', echo=True)
+	metadata = MetaData(engine)
+	session = sessionmaker(bind=engine)()
+	
+	# define table
+	spots_table = Table('spots', metadata,
+	                    Column('spot_id', Integer, primary_key=True),
+	                    Column('spot_height', Numeric),
+	                    GeometryExtensionColumn('spot_location', Geometry(2)))
+	
+	# define class
+	class Spot(object):
+	    def __init__(self, spot_id=None, spot_height=None, spot_location=None):
+	        self.spot_id = spot_id
+	        self.spot_height = spot_height
+	        self.spot_location = spot_location
+	
+	# set up the mapping between table and class       
+	mapper(Spot, spots_table, properties={
+	            'spot_location': GeometryColumn(spots_table.c.spot_location, 
+	                                            comparator=PGComparator)}) 
+	
+	# enable the DDL extension   
+	GeometryDDL(spots_table)
+	
+	# create table
+	metadata.create_all()
+
+	# add object
+	session.add(Spot(spot_height=420.40, spot_location='POINT(-88.5945861592357 42.9480095987261)'))
+	session.commit()
+	
+	s = session.query(Spot).get(1)
+	print session.scalar(s.spot_location.wkt)

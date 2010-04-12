@@ -1,16 +1,16 @@
 from unittest import TestCase
 from binascii import b2a_hex
 from sqlalchemy import (create_engine, MetaData, Column, Integer,
-        Unicode, Numeric, func)
-from sqlalchemy.orm import sessionmaker
+        Unicode, Numeric, func, Table)
+from sqlalchemy.orm import sessionmaker, mapper
 from sqlalchemy.ext.declarative import declarative_base
 
-from geoalchemy import (GeometryColumn, Point, Polygon,
-		LineString, GeometryDDL, WKTSpatialElement, WKBSpatialElement, DBSpatialElement)
+from geoalchemy import (GeometryColumn, Point, Polygon, LineString,
+        GeometryDDL, WKTSpatialElement, DBSpatialElement, GeometryExtensionColumn,
+        WKBSpatialElement, functions)
 from nose.tools import ok_, eq_, raises
 from sqlalchemy import and_
 from geoalchemy.mysql import MySQLComparator, mysql_functions
-from geoalchemy import functions 
 
 engine = create_engine('mysql://gis:gis@localhost/gis', echo=True)
 metadata = MetaData(engine)
@@ -30,20 +30,29 @@ class Lake(Base):
     lake_id = Column(Integer, primary_key=True)
     lake_name = Column(Unicode(40))
     lake_geom = GeometryColumn(Polygon(2, srid=4326), comparator=MySQLComparator)
+    
+spots_table = Table('spots', metadata,
+                    Column('spot_id', Integer, primary_key=True),
+                    Column('spot_height', Numeric(precision=10, scale=2)),
+                    GeometryExtensionColumn('spot_location', Point(2, srid=4326)))
 
-class Spot(Base):
-    __tablename__ = 'spots'
+class Spot(object):
+    def __init__(self, spot_id=None, spot_height=None, spot_location=None):
+        self.spot_id = spot_id
+        self.spot_height = spot_height
+        self.spot_location = spot_location
 
-    spot_id = Column(Integer, primary_key=True)
-    spot_height = Column(Numeric(precision=10, scale=2))
-    spot_location = GeometryColumn(Point(2, srid=4326), comparator=MySQLComparator)
+        
+mapper(Spot, spots_table, properties={
+            'spot_location': GeometryColumn(spots_table.c.spot_location, 
+                                            comparator=MySQLComparator)}) 
 
 # enable the DDL extension, which allows CREATE/DROP operations
 # to work correctly.  This is not needed if working with externally
 # defined tables.    
 GeometryDDL(Road.__table__)
 GeometryDDL(Lake.__table__)
-GeometryDDL(Spot.__table__)
+GeometryDDL(spots_table)
 
 class TestGeometry(TestCase):
 

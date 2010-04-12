@@ -1,17 +1,19 @@
 from unittest import TestCase
 from binascii import b2a_hex
 from sqlalchemy import (create_engine, MetaData, Column, Integer, String,
-        Numeric, func)
-from sqlalchemy.orm import sessionmaker
+        Numeric, func, Table)
+from sqlalchemy.orm import sessionmaker, mapper
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import and_
 
 from geoalchemy import (Geometry, GeometryCollection, GeometryColumn,
-        GeometryDDL, WKTSpatialElement, DBSpatialElement)
+        GeometryDDL, WKTSpatialElement, DBSpatialElement, GeometryExtensionColumn,
+        functions)
+from geoalchemy.postgis import PGComparator, pg_functions
+
 from nose.tools import eq_, ok_
 
-from geoalchemy import functions 
-from geoalchemy.postgis import PGComparator, pg_functions
+
 
 engine = create_engine('postgresql://gis:gis@localhost/gis', echo=True)
 metadata = MetaData(engine)
@@ -32,13 +34,22 @@ class Lake(Base):
     lake_name = Column(String)
     lake_geom = GeometryColumn(Geometry(2), comparator=PGComparator)
 
-class Spot(Base):
-    __tablename__ = 'spots'
+spots_table = Table('spots', metadata,
+                    Column('spot_id', Integer, primary_key=True),
+                    Column('spot_height', Numeric),
+                    GeometryExtensionColumn('spot_location', Geometry(2)))
 
-    spot_id = Column(Integer, primary_key=True)
-    spot_height = Column(Numeric)
-    spot_location = GeometryColumn(Geometry(2), comparator=PGComparator)
+class Spot(object):
+    def __init__(self, spot_id=None, spot_height=None, spot_location=None):
+        self.spot_id = spot_id
+        self.spot_height = spot_height
+        self.spot_location = spot_location
 
+        
+mapper(Spot, spots_table, properties={
+            'spot_location': GeometryColumn(spots_table.c.spot_location, 
+                                            comparator=PGComparator)}) 
+                         
 class Shape(Base):
     __tablename__ = 'shapes'
 
@@ -51,7 +62,7 @@ class Shape(Base):
 # defined tables.    
 GeometryDDL(Road.__table__)
 GeometryDDL(Lake.__table__)
-GeometryDDL(Spot.__table__)
+GeometryDDL(spots_table)
 GeometryDDL(Shape.__table__)
 
 class TestGeometry(TestCase):
@@ -81,7 +92,7 @@ class TestGeometry(TestCase):
             Shape(shape_name='Jogging Track', shape_geom='GEOMETRYCOLLECTION(LINESTRING(-88.2652071783439 42.5584395350319,-88.1598727834395 42.6269904904459,-88.1013536751592 42.621974566879,-88.0244428471338 42.6437102356688,-88.0110670509554 42.6771497261147))'),
             Shape(shape_name='Play Ground', shape_geom='GEOMETRYCOLLECTION(POLYGON((-88.7968950764331 43.2305732929936,-88.7935511273885 43.1553344394904,-88.716640299363 43.1570064140127,-88.7250001719745 43.2339172420382,-88.7968950764331 43.2305732929936)))'),
         ])
-
+ 
         # or use an explicit WKTSpatialElement (similar to saying func.GeomFromText())
         self.r = Road(road_name='Dave Cres', road_geom=WKTSpatialElement('LINESTRING(-88.6748409363057 43.1035032292994,-88.6464173694267 42.9981688343949,-88.607961955414 42.9680732929936,-88.5160033566879 42.9363057770701,-88.4390925286624 43.0031847579618)', 4326))
         session.add(self.r)
@@ -133,6 +144,7 @@ class TestGeometry(TestCase):
         eq_(session.scalar(self.r.road_geom.svg), 'M -88.674840936305699 -43.103503229299399 -88.6464173694267 -42.998168834394903 -88.607961955413998 -42.968073292993601 -88.516003356687904 -42.936305777070103 -88.4390925286624 -43.003184757961797')
         ok_(self.r is session.query(Road).filter(Road.road_geom.svg == 'M -88.674840936305699 -43.103503229299399 -88.6464173694267 -42.998168834394903 -88.607961955413998 -42.968073292993601 -88.516003356687904 -42.936305777070103 -88.4390925286624 -43.003184757961797').first())
         eq_(session.scalar(pg_functions.svg('POINT(-88.9055734203822 43.0048567324841)')), u'cx="-88.905573420382197" cy="-43.0048567324841"')
+        ok_(session.query(Spot).filter(Spot.spot_location.svg == 'cx="-88.905573420382197" cy="-43.0048567324841"').first())
 
     def test_gml(self):
         eq_(session.scalar(self.r.road_geom.gml), '<gml:LineString srsName="EPSG:4326"><gml:coordinates>-88.6748409363057,43.1035032292994 -88.6464173694267,42.9981688343949 -88.607961955414,42.9680732929936 -88.5160033566879,42.9363057770701 -88.4390925286624,43.0031847579618</gml:coordinates></gml:LineString>')
@@ -469,3 +481,4 @@ class TestGeometry(TestCase):
         ok_(r3 not in roads_within_distance)
         eq_(session.scalar(functions._within_distance('POINT(-88.9139332929936 42.5082802993631)', 'POINT(-88.9139332929936 35.5082802993631)', 10)), True)
         ok_(session.scalar(functions._within_distance('Point(0 0)', 'Point(0 0)', 0)))
+    

@@ -77,6 +77,10 @@ class GeometryDDL(object):
     def __call__(self, event, table, bind):
         spatial_dialect = DialectManager.get_spatial_dialect(bind.dialect)
         if event in ('before-create', 'before-drop'):
+            """Remove geometry column from column list (table._columns), so that it 
+            does not show up in the create statement ("create table tab (..)"). 
+            Afterwards (on event 'after-create') restore the column list from self._stack.
+            """
             regular_cols = [c for c in table.c if not isinstance(c.type, Geometry)]
             gis_cols = set(table.c).difference(regular_cols)
             self._stack.append(table.c)
@@ -125,14 +129,25 @@ def GeometryColumn(*args, **kw):
     are passed through to Column.  The declarative module extracts
     the Column for inclusion in the mapped table.
     
+    This method can also be used for non-declarative mappings to 
+    set the properties for a geometry column when defining the mapping.
+    
     """
     if kw.has_key("comparator"):
         comparator = kw.pop("comparator")
     else:
         comparator = SpatialComparator
-
+    
+    if isinstance(args[0], GeometryExtensionColumn):
+        # if used for non-declarative, use the column of the table definition
+        column = args[0]
+        args = args[1:]
+    else:
+        # if used for declarative, create a new column
+        column = GeometryExtensionColumn(*args, **kw) 
+    
     return column_property(
-        GeometryExtensionColumn(*args, **kw), 
+        column, 
         extension=SpatialAttribute(), 
         comparator_factory=comparator
     )

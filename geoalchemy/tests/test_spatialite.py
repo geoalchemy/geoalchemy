@@ -63,6 +63,11 @@ GeometryDDL(Lake.__table__)
 GeometryDDL(spots_table)
 
 class TestGeometry(TestCase):
+    """Tests for Spatialite
+    
+    Note that WKT is used for comparisons, because Spatialite may return
+    differing WKB values on different systems.
+    """
 
     def setUp(self):
 
@@ -115,13 +120,16 @@ class TestGeometry(TestCase):
         eq_(session.scalar(WKTSpatialElement('POINT(-88.5769371859941 42.9915634871979)').wkt), u'POINT(-88.576937 42.991563)')
 
     def test_wkb(self):
-        eq_(b2a_hex(session.scalar(self.r.road_geom.wkb)).upper(), '010200000005000000D7DB0998302B56C0876F04983F8D45404250F5E65E2956C068CE11FFC37F4540C8ED42D9E82656C0EFC45ED3E97B45407366F132062156C036C921DED877454078A18C171A1C56C053A5AF5B68804540')
+        eq_(session.scalar(functions.wkt(func.GeomFromWKB(self.r.road_geom.wkb, 4326))), 
+            u'LINESTRING(-88.674841 43.103503, -88.646417 42.998169, -88.607962 42.968073, -88.516003 42.936306, -88.439093 43.003185)')
         eq_(session.scalar(self.r.road_geom.wkb), self.r.road_geom.geom_wkb)
         centroid_geom = DBSpatialElement(session.scalar(self.r.road_geom.centroid))
-        eq_(b2a_hex(session.scalar(centroid_geom.wkb)).upper(), '0101000000366CF289EC2456C01BB6668DEB7E4540')
+        eq_(session.scalar(functions.wkt(func.GeomFromWKB(centroid_geom.wkb, 4326))), 
+            u'POINT(-88.576937 42.991563)')
 
     def test_persistent(self):
-        eq_(b2a_hex(session.scalar(self.r.road_geom.wkb)).upper(), '010200000005000000D7DB0998302B56C0876F04983F8D45404250F5E65E2956C068CE11FFC37F4540C8ED42D9E82656C0EFC45ED3E97B45407366F132062156C036C921DED877454078A18C171A1C56C053A5AF5B68804540')
+        eq_(session.scalar(functions.wkt(func.GeomFromWKB(self.r.road_geom.wkb, 4326))), 
+            u'LINESTRING(-88.674841 43.103503, -88.646417 42.998169, -88.607962 42.968073, -88.516003 42.936306, -88.439093 43.003185)')
 
     def test_svg(self):
         eq_(session.scalar(self.r.road_geom.svg), 'M -88.674841 -43.103503 -88.646417 -42.998169 -88.607962 -42.968073 -88.516003 -42.936306 -88.439093 -43.003185 ')
@@ -160,10 +168,11 @@ class TestGeometry(TestCase):
         assert session.scalar(self.r.road_geom.is_valid)
 
     def test_boundary(self):
-        eq_(b2a_hex(session.scalar(self.r.road_geom.boundary)), '0001e6100000d7db0998302b56c053a5af5b6880454078a18c171a1c56c0876f04983f8d45407c04000000020000006901000000d7db0998302b56c0876f04983f8d4540690100000078a18c171a1c56c053a5af5b68804540fe')
+        eq_(session.scalar(functions.wkt(self.r.road_geom.boundary)), u'MULTIPOINT(-88.674841 43.103503, -88.439093 43.003185)')
 
     def test_envelope(self):
-        eq_(b2a_hex(session.scalar(self.r.road_geom.envelope)), '0001ffffffffd7db0998302b56c036c921ded877454078a18c171a1c56c0876f04983f8d45407c030000000100000005000000d7db0998302b56c036c921ded877454078a18c171a1c56c036c921ded877454078a18c171a1c56c0876f04983f8d4540d7db0998302b56c0876f04983f8d4540d7db0998302b56c036c921ded8774540fe')
+        eq_(session.scalar(functions.wkt(self.r.road_geom.envelope)), 
+            u'POLYGON((-88.674841 42.936306, -88.439093 42.936306, -88.439093 43.103503, -88.674841 43.103503, -88.674841 42.936306))')
         env =  WKBSpatialElement(session.scalar(func.AsBinary(self.r.road_geom.envelope)))
         eq_(env.geom_type(session), 'Polygon')
         

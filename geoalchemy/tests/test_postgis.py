@@ -12,7 +12,7 @@ from geoalchemy import (Geometry, GeometryCollection, GeometryColumn,
         functions)
 from geoalchemy.postgis import PGComparator, pg_functions
 
-from nose.tools import eq_, ok_, raises
+from nose.tools import eq_, ok_, raises, assert_almost_equal
 
 
 
@@ -67,6 +67,11 @@ GeometryDDL(spots_table)
 GeometryDDL(Shape.__table__)
 
 class TestGeometry(TestCase):
+    """Tests for PostGIS
+    
+    Note that WKT is used for comparisons, because PostGIS returns
+    differing WKB values on different systems.
+    """
 
     def setUp(self):
 
@@ -134,13 +139,14 @@ class TestGeometry(TestCase):
         eq_(s.spot_location.coords(session), [-88.905573420382197, 43.0048567324841])
 
     def test_wkb(self):
-        eq_(b2a_hex(session.scalar(self.r.road_geom.wkb)).upper(), '010200000005000000D7DB0998302B56C0876F04983F8D45404250F5E65E2956C068CE11FFC37F4540C8ED42D9E82656C0EFC45ED3E97B45407366F132062156C036C921DED877454078A18C171A1C56C053A5AF5B68804540')
+        print session.scalar(functions.wkt(self.r.road_geom.wkb))
+        eq_(session.scalar(functions.wkt(func.GeomFromWKB(self.r.road_geom.wkb, 4326))), 
+            u'LINESTRING(-88.6748409363057 43.1035032292994,-88.6464173694267 42.9981688343949,-88.607961955414 42.9680732929936,-88.5160033566879 42.9363057770701,-88.4390925286624 43.0031847579618)')
         eq_(session.scalar(self.r.road_geom.wkb), self.r.road_geom.geom_wkb)
         ok_(not session.query(Spot).filter(Spot.spot_location.wkb == '101').first())
         centroid_geom = DBSpatialElement(session.scalar(self.r.road_geom.centroid))
-        eq_(b2a_hex(session.scalar(centroid_geom.wkb)).upper(), '0101000000366CF289EC2456C01BB6668DEB7E4540')
+        eq_(session.scalar(functions.wkt(func.GeomFromWKB(centroid_geom.wkb, 4326))), u'POINT(-88.5769371859941 42.9915634871979)')
 
-        
     def test_svg(self):
         eq_(session.scalar(self.r.road_geom.svg), 'M -88.674840936305699 -43.103503229299399 -88.6464173694267 -42.998168834394903 -88.607961955413998 -42.968073292993601 -88.516003356687904 -42.936305777070103 -88.4390925286624 -43.003184757961797')
         ok_(self.r is session.query(Road).filter(Road.road_geom.svg == 'M -88.674840936305699 -43.103503229299399 -88.6464173694267 -42.998168834394903 -88.607961955413998 -42.968073292993601 -88.516003356687904 -42.936305777070103 -88.4390925286624 -43.003184757961797').first())
@@ -222,7 +228,8 @@ class TestGeometry(TestCase):
                            , u'POINT(77.29 29.07)')
 
     def test_persistent(self):
-        assert b2a_hex(session.scalar(self.r.road_geom.wkb)).upper() == '010200000005000000D7DB0998302B56C0876F04983F8D45404250F5E65E2956C068CE11FFC37F4540C8ED42D9E82656C0EFC45ED3E97B45407366F132062156C036C921DED877454078A18C171A1C56C053A5AF5B68804540'
+        eq_(session.scalar(functions.wkt(func.GeomFromWKB(self.r.road_geom.wkb, 4326))), 
+            u'LINESTRING(-88.6748409363057 43.1035032292994,-88.6464173694267 42.9981688343949,-88.607961955414 42.9680732929936,-88.5160033566879 42.9363057770701,-88.4390925286624 43.0031847579618)')
 
     def test_eq(self):
         r1 = session.query(Road).filter(Road.road_name=='Graeme Ave').one()
@@ -260,36 +267,39 @@ class TestGeometry(TestCase):
     def test_centroid(self):
         r = session.query(Road).filter(Road.road_name=='Graeme Ave').one()
         l = session.query(Lake).filter(Lake.lake_name=='Lake Blue').one()
-        eq_(session.scalar(r.road_geom.centroid), '0101000020E6100000AF1BBA22B22556C0476A43EB8B784540')
-        eq_(session.scalar(l.lake_geom.centroid), '0101000020E610000057FA7719F93A56C0751FE87F73824540')
+        eq_(session.scalar(functions.wkt(r.road_geom.centroid)), u'POINT(-88.5889975373709 42.941769988935)')
+        eq_(session.scalar(functions.wkt(l.lake_geom.centroid)), u'POINT(-88.9214538261088 43.0191497691548)')
         ok_(session.query(Spot).filter(Spot.spot_location.centroid == WKTSpatialElement('POINT(-88.5945861592357 42.9480095987261)')).first() is not None)
         eq_(session.scalar(functions.wkt(functions.centroid('MULTIPOINT ( -1 0, -1 2, -1 3, -1 4, -1 7, 0 1, 0 3, 1 1, 2 0, 6 0, 7 8, 9 8, 10 6 )'))), 
             u'POINT(2.30769230769231 3.30769230769231)')
 
     def test_boundary(self):
         r = session.query(Road).filter(Road.road_name=='Graeme Ave').one()
-        eq_(session.scalar(r.road_geom.boundary), '0104000020E610000002000000010100000056E48FAD0E2356C029629D13755945400101000000463291E9D62556C0A9C2F5F4F2974540')
+        eq_(session.scalar(functions.wkt(r.road_geom.boundary)), u'MULTIPOINT(-88.5477708726115 42.6988853949045,-88.5912422101911 43.187101955414)')
         ok_(session.query(Road).filter(Road.road_geom.boundary == WKTSpatialElement('MULTIPOINT(-88.9139332929936 42.5082802993631,-88.3655256496815 43.1402866687898)')).first() is not None)
         eq_(session.scalar(functions.wkt(functions.boundary('POLYGON((1 1,0 0, -1 1, 1 1))'))), 
             u'LINESTRING(1 1,0 0,-1 1,1 1)')
        
     def test_buffer(self):
         r = session.query(Road).filter(Road.road_name=='Graeme Ave').one()
-        (session.scalar(r.road_geom.buffer(10.0, 8)), '0103000020E61000000100000026000000C8C5532DF39658C0C5FF3AED1E5F44403E9604D900A658C005FBFD3A20C44540A1B1F04593A558C08C2E402052D345405941958F21A258C0313C8506212246404D7132CE61A158C016145079C12E464058A282B6758658C075D18E9ED52347402D796C0D265458C0D694C711B309484072F437C8610C58C0DC3F2E6D84D74840E35C1FF0EAB157C0CC3D37DE60854940CD355F803B4857C08294AAF5990C4A406FAAA13263D356C0851BC962FD674A40FE4F3E8ADF5756C06576DB1208944A408F0964A76FDA55C0B64038BE088F4A40E1AAC494E55F55C0CEA2D88E30594A40304928DBF6EC54C07850AC3C91F44940AEF3742D0E8654C0034743B208654940B574F0F41F2F54C0E61712021BB048405AC9366983EB53C0BAC99122BCDC4740D885A7B2D1BD53C0FEB216870BF3464068589E5ACCA753C01CFE4F3604FC454077E6A37247A853C08DD49353BDCB45407E38C4CA4FA353C066435C778A7D45403C322F9E15AC53C02B50932E3B83444094343AEA1ACD53C0DA41DD70279143408183E5D31A0554C0E7B146C89CB042403AB1646FEE5154C0BC468D3B3CEA4140C8D60BECA1B054C03AFBDC69A545414035D4F89F911D55C090D1E18A2BC940409A08B9D58D9455C077A4053597794040B773B0FB031156C07A0A064EF759404054ED14A02B8E56C0F4FDDBF4826B40407DF4EF7E350757C0A402F28C8DAD4040763C3BD37A7757C07EA048608D1D41400CF29719ABDA57C0F0FB469734B74140CD177082F62C58C00B4795909B744240A2ACED71336B58C0E5416FF87A4E43402FC3DB9CFD9258C0B1AAEF63733C4440C8C5532DF39658C0C5FF3AED1E5F4440')
+        eq_(session.scalar(functions.wkt(r.road_geom.buffer(10.0, 8))), 
+            u'POLYGON((-98.3585923498241 40.743131307419,-98.5938017411035 43.5322335949077,-98.5871138430143 43.6509437859905,-98.5332983930179 44.2666328573763,-98.5215945713619 44.3652793541916,-98.1009346271252 46.2799566457133,-97.3148225364027 48.0757772659796,-96.1934681459841 49.6837288356616,-94.7799644762304 51.0420186776861,-93.1286316804682 52.0984484751616,-91.3029295519607 52.812420223424,-89.3730187996407 53.1564963885874,-87.4130648114135 53.1174543165848,-85.4983875198918 52.6967943723481,-83.7025668996255 51.9106822816256,-82.0946153299435 50.789327891207,-80.736325487919 49.3758242214533,-79.6798956904435 47.7244914256912,-78.9659239421811 45.8987892971836,-78.6218477770177 43.9688785448636,-78.6293608284558 43.5917152854755,-78.5517451206415 42.9807881546501,-78.6888194523717 41.0252435893347,-79.204767758218 39.1340161400182,-80.079762434134 37.3797846169653,-81.2801779254268 35.8299631538225,-82.7598829379668 34.5441105202685,-84.4620132379503 33.5716413118963,-86.3211569125146 32.9499269750167,-88.2658681128658 32.7028596429345,-90.2214126781813 32.8399339746647,-92.1126401274978 33.355882280511,-93.8668716505507 34.230876956427,-95.4166931136935 35.4312924477198,-96.7025457472475 36.9109974602598,-97.6750149556197 38.6131277602433,-98.2967292924993 40.4722714348076,-98.3585923498241 40.743131307419))')
         ok_(session.query(Spot).filter(functions.within('POINT(-88.5945861592357 42.9480095987261)', Spot.spot_location.buffer(10))).first() is not None)
         eq_(session.scalar(functions.wkt(functions.buffer('POINT(-88.5945861592357 42.9480095987261)', 10, 2))),
             u'POLYGON((-78.5945861592357 42.9480095987261,-81.5235183473702 35.8769417868606,-88.5945861592357 32.9480095987261,-95.6656539711012 35.8769417868606,-98.5945861592357 42.9480095987261,-95.6656539711012 50.0190774105915,-88.5945861592357 52.9480095987261,-81.5235183473703 50.0190774105916,-78.5945861592357 42.9480095987261))')
         
     def test_convex_hull(self):
         r = session.query(Road).filter(Road.road_name=='Graeme Ave').one()
-        eq_(session.scalar(r.road_geom.convex_hull), '0103000020E6100000010000000500000056E48FAD0E2356C029629D1375594540EFE6073E042756C03DB7E89C207C45405202F4AA962656C0C4EA2A82528B4540463291E9D62556C0A9C2F5F4F297454056E48FAD0E2356C029629D1375594540')
+        eq_(session.scalar(functions.wkt(r.road_geom.convex_hull)), 
+            u'POLYGON((-88.5477708726115 42.6988853949045,-88.6096339299363 42.9697452675159,-88.6029460318471 43.0884554585987,-88.5912422101911 43.187101955414,-88.5477708726115 42.6988853949045))')
         ok_(session.query(Spot).filter(Spot.spot_location.convex_hull == WKTSpatialElement('POINT(-88.5945861592357 42.9480095987261)')).first() is not None)
         eq_(session.scalar(functions.wkt(functions.convex_hull('POINT(-88.5945861592357 42.9480095987261)'))), 
             u'POINT(-88.5945861592357 42.9480095987261)')
 
     def test_envelope(self):
         r = session.query(Road).filter(Road.road_name=='Graeme Ave').one()
-        eq_(session.scalar(r.road_geom.envelope), '0103000020E6100000010000000500000000000040042756C0000000007559454000000040042756C000000000F3974540000000A00E2356C000000000F3974540000000A00E2356C0000000007559454000000040042756C00000000075594540')
+        eq_(session.scalar(functions.wkt(r.road_geom.envelope)), 
+            u'POLYGON((-88.6096343994141 42.6988830566406,-88.6096343994141 43.1871032714844,-88.5477676391602 43.1871032714844,-88.5477676391602 42.6988830566406,-88.6096343994141 42.6988830566406))')
         eq_(session.scalar(functions.geometry_type(self.r.road_geom.envelope)), 'ST_Polygon')
         ok_(session.query(Spot).filter(Spot.spot_location.envelope == WKTSpatialElement('POINT(-88.5945861592357 42.9480095987261)')).first() is not None)
         eq_(session.scalar(functions.wkt(functions.envelope('POINT(-88.5945861592357 42.9480095987261)'))), 
@@ -297,22 +307,25 @@ class TestGeometry(TestCase):
         
     def test_start_point(self):
         r = session.query(Road).filter(Road.road_name=='Graeme Ave').one()
-        eq_(session.scalar(r.road_geom.start_point), '0101000020E610000056E48FAD0E2356C029629D1375594540')
+        eq_(session.scalar(functions.wkt(r.road_geom.start_point)), 
+            u'POINT(-88.5477708726115 42.6988853949045)')
         ok_(session.query(Road).filter(Road.road_geom.start_point == WKTSpatialElement('POINT(-88.9139332929936 42.5082802993631)')).first() is not None)
         eq_(session.scalar(functions.wkt(functions.start_point('LINESTRING(0 1, 0 2)'))), 
             u'POINT(0 1)')
         
     def test_end_point(self):
         r = session.query(Road).filter(Road.road_name=='Graeme Ave').one()
-        eq_(session.scalar(r.road_geom.end_point), '0101000020E6100000463291E9D62556C0A9C2F5F4F2974540')
+        eq_(session.scalar(functions.wkt(r.road_geom.end_point)), 
+            u'POINT(-88.5912422101911 43.187101955414)')
         ok_(session.query(Road).filter(Road.road_geom.end_point == WKTSpatialElement('POINT(-88.3655256496815 43.1402866687898)')).first() is not None)
         eq_(session.scalar(functions.wkt(functions.end_point('LINESTRING(0 1, 0 2)'))), 
             u'POINT(0 2)')
         
     def test_transform(self):
         spot = session.query(Spot).get(1)
-        eq_(session.scalar(spot.spot_location.transform(2249)), 
-            '0101000020C9080000C5CD33CEAAAE4DC110F55A5645AD4B41')
+        # compare the coordinates using a tolerance, because they may vary on different systems
+        assert_almost_equal(session.scalar(functions.x(spot.spot_location.transform(2249))), -3890517.6109559298)
+        assert_almost_equal(session.scalar(functions.y(spot.spot_location.transform(2249))), 3627658.6746507999)
         ok_(session.query(Spot).filter(Spot.spot_location.transform(2249) == WKTSpatialElement('POINT(-3890517.61095593 3627658.6746508)', 2249)).first() is not None)
         eq_(session.scalar(functions.wkt(functions.transform(WKTSpatialElement('POLYGON((743238 2967416,743238 2967450,743265 2967450,743265.625 2967416,743238 2967416))', 2249), 4326))), 
             u'POLYGON((-71.1776848522251 42.3902896512902,-71.1776843766326 42.3903829478009,-71.1775844305465 42.3903826677917,-71.1775825927231 42.3902893647987,-71.1776848522251 42.3902896512902))')

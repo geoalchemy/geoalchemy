@@ -1,11 +1,9 @@
 from sqlalchemy import select, func
-from sqlalchemy.sql import and_, text, table, column 
 
 from geoalchemy.base import SpatialComparator, PersistentSpatialElement
 from geoalchemy.dialect import SpatialDialect 
-from geoalchemy.functions import functions, _base_function
+from geoalchemy.functions import functions, BaseFunction
 from geoalchemy.mysql import mysql_functions
-from geoalchemy.geometry import GeometryExtensionColumn
 
 
 class SQLiteComparator(SpatialComparator):
@@ -36,40 +34,16 @@ class sqlite_functions(mysql_functions):
     """
     
     # AsSVG
-    class svg(_base_function):
+    class svg(BaseFunction):
         pass
     
     # AsFGF
-    class fgf(_base_function):
+    class fgf(BaseFunction):
         pass
     
     # IsValid
-    class is_valid(_base_function):
+    class is_valid(BaseFunction):
         pass
-    
-    @staticmethod
-    def _within_distance(compiler, geom1, geom2, distance):
-        if isinstance(geom1, GeometryExtensionColumn) and geom1.type.spatial_index and SQLiteSpatialDialect.supports_rtree(compiler.dialect):
-            """If querying on a geometry column that also has a spatial index,
-            then make use of this index.
-            
-            see: http://www.gaia-gis.it/spatialite/spatialite-tutorial-2.3.1.html#t8 and
-            http://groups.google.com/group/spatialite-users/browse_thread/thread/34609c7a711ac92d/7688ced3f909039c?lnk=gst&q=index#f6dbc235471574db
-            """
-            return and_(
-                        func.Distance(geom1, geom2) <= distance,
-                        table(geom1.table.fullname, column("rowid")).c.rowid.in_(
-                            select([table("idx_%s_%s" % (geom1.table.fullname, geom1.key), column("pkid")).c.pkid]).where(
-                                and_(text('xmin') >= func.MbrMinX(geom2) - distance,
-                                and_(text('xmax') <= func.MbrMaxX(geom2) + distance,
-                                and_(text('ymin') >= func.MbrMinY(geom2) - distance,
-                                     text('ymax') <= func.MbrMaxY(geom2) + distance)))
-                                )
-                            )
-                        )
-            
-        else:
-            return func.Distance(geom1, geom2) <= distance
 
 
 class SQLiteSpatialDialect(SpatialDialect):
@@ -87,8 +61,7 @@ class SQLiteSpatialDialect(SpatialDialect):
                    mysql_functions.mbr_touches : 'MBRTouches',
                    mysql_functions.mbr_within : 'MBRWithin',
                    mysql_functions.mbr_overlaps : 'MBROverlaps',
-                   mysql_functions.mbr_contains : 'MBRContains',
-                   functions._within_distance : sqlite_functions._within_distance
+                   mysql_functions.mbr_contains : 'MBRContains'
                    }
 
     def _get_function_mapping(self):

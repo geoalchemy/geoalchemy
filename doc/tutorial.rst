@@ -320,7 +320,7 @@ more complex queries can be made.
 
 .. code-block:: python
 	
-	>>> from geoalchemy import functions
+	>>> from geoalchemy.functions import functions
 	>>> session.query(Spot).filter(Spot.geom.within(functions.buffer(functions.centroid(box), 10, 2))).count()
 	2L
 	>>> from geoalchemy.postgis import pg_functions

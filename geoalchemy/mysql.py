@@ -1,7 +1,6 @@
 from geoalchemy.base import SpatialComparator, PersistentSpatialElement
 from geoalchemy.dialect import SpatialDialect 
-from geoalchemy.functions import functions, _base_function
-from sqlalchemy import func
+from geoalchemy.functions import functions, BaseFunction
 
 
 class MySQLComparator(SpatialComparator):
@@ -32,62 +31,32 @@ class mysql_functions(functions):
     """
     
     # MBREqual
-    class mbr_equal(_base_function):
+    class mbr_equal(BaseFunction):
         pass
     
     # MBRDisjoint
-    class mbr_disjoint(_base_function):
+    class mbr_disjoint(BaseFunction):
         pass
     
     # MBRIntersects
-    class mbr_intersects(_base_function):
+    class mbr_intersects(BaseFunction):
         pass
     
     # MBRTouches
-    class mbr_touches(_base_function):
+    class mbr_touches(BaseFunction):
         pass
     
     # MBRWithin
-    class mbr_within(_base_function):
+    class mbr_within(BaseFunction):
         pass
     
     # MBROverlaps
-    class mbr_overlaps(_base_function):
+    class mbr_overlaps(BaseFunction):
         pass
     
     # MBRContains
-    class mbr_contains(_base_function):
+    class mbr_contains(BaseFunction):
         pass
-    
-    @staticmethod
-    def _within_distance(compiler, geom1, geom2, distance):
-        """MySQL does not support the function distance, so we are doing
-        a kind of "mbr_within_distance".
-        The MBR of 'geom2' is expanded with the amount of 'distance' by
-        manually changing the coordinates. Then we test if 'geom1' intersects
-        this expanded MBR.
-        """
-        mbr = func.ExteriorRing(func.Envelope(geom2))
-        
-        lower_left = func.StartPoint(mbr)
-        upper_right = func.PointN(mbr, 3)
-        
-        xmin = func.X(lower_left)
-        ymin = func.Y(lower_left)
-        xmax = func.X(upper_right)
-        ymax = func.Y(upper_right)
-        
-        return func.Intersects(
-                geom1,
-                func.GeomFromText(
-                    func.Concat('Polygon((',
-                           xmin - distance, ' ', ymin - distance, ',',
-                           xmax + distance, ' ', ymin - distance, ',',
-                           xmax + distance, ' ', ymax + distance, ',',
-                           xmin - distance, ' ', ymax + distance, ',',
-                           xmin - distance, ' ', ymin - distance, '))'), func.srid(geom2)
-                    )                                              
-                )
 
 
 class MySQLSpatialDialect(SpatialDialect):
@@ -113,8 +82,7 @@ class MySQLSpatialDialect(SpatialDialect):
                    mysql_functions.mbr_touches : 'MBRTouches',
                    mysql_functions.mbr_within : 'MBRWithin',
                    mysql_functions.mbr_overlaps : 'MBROverlaps',
-                   mysql_functions.mbr_contains : 'MBRContains',
-                   functions._within_distance : mysql_functions._within_distance
+                   mysql_functions.mbr_contains : 'MBRContains'
                    
                    }
 

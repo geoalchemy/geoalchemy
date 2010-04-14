@@ -1,7 +1,6 @@
 from sqlalchemy.dialects.postgresql.base import PGDialect
 from sqlalchemy.dialects.sqlite.base import SQLiteDialect
 from sqlalchemy.dialects.mysql.base import MySQLDialect
-from sqlalchemy import func
 from geoalchemy.functions import functions
 
 class SpatialDialect(object):
@@ -48,9 +47,7 @@ class SpatialDialect(object):
                    functions.gcontains : 'Contains',
                    functions.covers : 'Covers',
                    functions.covered_by : 'CoveredBy',
-                   functions.intersection : 'Intersections',
-                   functions._within_distance : lambda compiler, geom1, geom2, distance: 
-                                            func.DWithin(geom1, geom2, distance)
+                   functions.intersection : 'Intersections'
                   }
     
     def get_function_name(self, function_class):

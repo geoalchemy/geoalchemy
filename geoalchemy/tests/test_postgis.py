@@ -1,5 +1,4 @@
 from unittest import TestCase
-from binascii import b2a_hex
 from sqlalchemy import (create_engine, MetaData, Column, Integer, String,
         Numeric, func, Table)
 from sqlalchemy.orm import sessionmaker, mapper
@@ -481,19 +480,7 @@ class TestGeometry(TestCase):
         r = session.query(Road).filter(Road.road_name=='Paul St').one()
         eq_(session.scalar(func.ST_AsText(session.scalar(l.lake_geom.intersection(r.road_geom)))), 'LINESTRING(-88.1430673666454 42.6255500261493,-88.1140839697546 42.6230657349872)')
         ok_(session.query(Lake).filter(Lake.lake_geom.intersection(r.road_geom) == WKTSpatialElement('LINESTRING(-88.1430673666454 42.6255500261493,-88.1140839697546 42.6230657349872)')).first() is not None)
-
-    def test__within_distance(self):
-        r1 = session.query(Road).filter(Road.road_name=='Jeff Rd').one()
-        r2 = session.query(Road).filter(Road.road_name=='Graeme Ave').one()
-        r3 = session.query(Road).filter(Road.road_name=='Geordie Rd').one()
-        roads_within_distance = session.query(Road).filter(
-            Road.road_geom._within_distance(r1.road_geom, 0.20)).all()
-        ok_(r2 in roads_within_distance)
-        ok_(session.scalar(r2.road_geom._within_distance(r1.road_geom, 0.20)))
-        ok_(r3 not in roads_within_distance)
-        eq_(session.scalar(functions._within_distance('POINT(-88.9139332929936 42.5082802993631)', 'POINT(-88.9139332929936 35.5082802993631)', 10)), True)
-        ok_(session.scalar(functions._within_distance('Point(0 0)', 'Point(0 0)', 0)))
-    
+ 
     @raises(IntegrityError)
     def test_constraint_nullable(self):
         spot_null = Spot(spot_height=420.40, spot_location=None)

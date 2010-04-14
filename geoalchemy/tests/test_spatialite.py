@@ -452,22 +452,7 @@ class TestGeometry(TestCase):
         ok_(not session.scalar(l.lake_geom.mbr_contains(p2.spot_location)))
         ok_(l in containing_lakes)
         ok_(l1 not in containing_lakes)
-
-
-    def test__within_distance(self):
-        r1 = session.query(Road).filter(Road.road_name=='Jeff Rd').one()
-        r2 = session.query(Road).filter(Road.road_name=='Graeme Ave').one()
-        r3 = session.query(Road).filter(Road.road_name=='Geordie Rd').one()
-        roads_within_distance = session.query(Road).filter(
-            Road.road_geom._within_distance(r1.road_geom, 0.20)).all()
-        ok_(r2 in roads_within_distance)
-        ok_(session.scalar(r2.road_geom._within_distance(r1.road_geom, 0.20)))
-        ok_(r3 not in roads_within_distance)
-        eq_(session.scalar(functions._within_distance('POINT(-88.9139332929936 42.5082802993631)', 'POINT(-88.9139332929936 35.5082802993631)', 10)), True)
-        lakes_within_distance = session.query(Lake).filter(
-            Lake.lake_geom._within_distance(r1.road_geom, 0.20)).all()
-        eq_(len(lakes_within_distance), 1)
-        
+   
     @raises(IntegrityError)
     def test_constraint_nullable(self):
         spot_null = Spot(spot_height=420.40, spot_location=None)

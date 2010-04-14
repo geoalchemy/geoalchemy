@@ -47,7 +47,7 @@ class sqlite_functions(mysql_functions):
     
     @staticmethod
     def _within_distance(compiler, geom1, geom2, distance):
-        if isinstance(geom1, GeometryExtensionColumn) and geom1.type.spatial_index:
+        if isinstance(geom1, GeometryExtensionColumn) and geom1.type.spatial_index and SQLiteSpatialDialect.supports_rtree(compiler.dialect):
             """If querying on a geometry column that also has a spatial index,
             then make use of this index.
             
@@ -99,7 +99,7 @@ class SQLiteSpatialDialect(SpatialDialect):
         return SQLitePersistentSpatialElement(wkb_element)
     
     def handle_ddl_before_drop(self, bind, table, column):
-        if column.type.spatial_index:
+        if column.type.spatial_index and SQLiteSpatialDialect.supports_rtree(bind.dialect):
             bind.execute(select([func.DisableSpatialIndex(table.name, column.name)]).execution_options(autocommit=True))
             bind.execute("DROP TABLE idx_%s_%s" % (table.name, column.name));
         
@@ -112,6 +112,12 @@ class SQLiteSpatialDialect(SpatialDialect):
                                                     column.type.name, 
                                                     column.type.dimension,
                                                     0 if column.nullable else 1)]).execution_options(autocommit=True))
-        if column.type.spatial_index:
+        if column.type.spatial_index and SQLiteSpatialDialect.supports_rtree(bind.dialect):
             bind.execute("SELECT CreateSpatialIndex('%s', '%s')" % (table.name, column.name))
             bind.execute("VACUUM %s" % table.name)
+    
+    @staticmethod  
+    def supports_rtree(dialect):
+        # R-Tree index is only supported since SQLite version 3.6.0
+        return dialect.server_version_info[0] > 3 or (dialect.server_version_info[0] == 3 and 
+                                                      dialect.server_version_info[1] <= 6)

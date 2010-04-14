@@ -120,4 +120,4 @@ class SQLiteSpatialDialect(SpatialDialect):
     def supports_rtree(dialect):
         # R-Tree index is only supported since SQLite version 3.6.0
         return dialect.server_version_info[0] > 3 or (dialect.server_version_info[0] == 3 and 
-                                                      dialect.server_version_info[1] <= 6)
+                                                      dialect.server_version_info[1] >= 6)

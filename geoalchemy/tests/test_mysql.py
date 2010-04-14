@@ -8,7 +8,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from geoalchemy import (GeometryColumn, Point, Polygon, LineString,
         GeometryDDL, WKTSpatialElement, DBSpatialElement, GeometryExtensionColumn,
         WKBSpatialElement, functions)
-from nose.tools import ok_, eq_, raises
+from nose.tools import ok_, eq_, raises, assert_almost_equal
 from sqlalchemy import and_
 from sqlalchemy.exceptions import OperationalError
 
@@ -253,7 +253,7 @@ class TestGeometry(TestCase):
         l = session.query(Lake).get(1)
         r = session.query(Road).get(1)
         s = session.query(Spot).get(1)
-        eq_(session.scalar(l.lake_geom.area), 0.0056748625704923002)
+        assert_almost_equal(session.scalar(l.lake_geom.area), 0.0056748625704923002)
         ok_(not session.scalar(r.road_geom.area))
         ok_(not session.scalar(s.spot_location.area))
 
@@ -419,9 +419,9 @@ class TestGeometry(TestCase):
 
 
     def test__within_distance(self):
-        r1 = session.query(Road).filter(Road.road_name=='Jeff Rd').one()
-        r2 = session.query(Road).filter(Road.road_name=='Graeme Ave').one()
-        r3 = session.query(Road).filter(Road.road_name=='Geordie Rd').one()
+        r1 = session.query(Road).filter(Road.road_name==u'Jeff Rd').one()
+        r2 = session.query(Road).filter(Road.road_name==u'Graeme Ave').one()
+        r3 = session.query(Road).filter(Road.road_name==u'Geordie Rd').one()
         roads_within_distance = session.query(Road).filter(
             Road.road_geom._within_distance(r1.road_geom, 0.20)).all()
         ok_(r2 in roads_within_distance)

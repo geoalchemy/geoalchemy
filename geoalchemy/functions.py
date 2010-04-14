@@ -73,157 +73,159 @@ def __compile_base_function(element, compiler, **kw):
     
     return compiler.process(function(*params))
 
-# Functions that implement OGC SFS or SQL/MM and that are supported by most databases
+class functions:
+    """Functions that implement OGC SFS or SQL/MM and that are supported by most databases
+    """
+    
+    # AsText
+    class wkt(_base_function):
+        pass
+    
+    # AsBinary
+    class wkb(_base_function):
+        pass
+    
+    # Dimension
+    class dimension(_base_function):
+        pass
+    
+    # SRID
+    class srid(_base_function):
+        pass
+    
+    # GeometryType
+    class geometry_type(_base_function):
+        pass
+    
+    # IsEmpty
+    class is_empty(_base_function):
+        pass
+    
+    # IsSimple
+    class is_simple(_base_function):
+        pass
+    
+    # IsClosed
+    class is_closed(_base_function):
+        pass
+    
+    # IsRing
+    class is_ring(_base_function):
+        pass
+    
+    # NumPoints
+    class num_points(_base_function):
+        pass
+    
+    # PointN
+    class point_n(_base_function):
+        pass
+    
+    # Length
+    class length(_base_function):
+        pass
+    
+    # Area
+    class area(_base_function):
+        pass
+    
+    # X
+    class x(_base_function):
+        pass
+    
+    # Y
+    class y(_base_function):
+        pass
+    
+    # Centroid
+    class centroid(_base_function):
+        pass
+    
+    # Boundary
+    class boundary(_base_function):
+        pass
+    
+    # Buffer
+    class buffer(_base_function):
+        pass
+    
+    # ConvexHull
+    class convex_hull(_base_function):
+        pass
+    
+    # Envelope
+    class envelope(_base_function):
+        pass
+    
+    # StartPoint
+    class start_point(_base_function):
+        pass
+    
+    # EndPoint
+    class end_point(_base_function):
+        pass
+    
+    # Transform
+    class transform(_base_function):
+        pass
+    
+    # Equals
+    class equals(_base_function):
+        pass
+    
+    # Distance
+    class distance(_base_function):
+        pass
+    
+    # DWithin
+    class within_distance(_base_function):
+        pass
+    
+    # Disjoint
+    class disjoint(_base_function):
+        pass
+    
+    # Intersects
+    class intersects(_base_function):
+        pass
+    
+    # Touches
+    class touches(_base_function):
+        pass
+    
+    # Crosses
+    class crosses(_base_function):
+        pass
+    
+    # Within
+    class within(_base_function):
+        pass
+    
+    # Overlaps
+    class overlaps(_base_function):
+        pass
+    
+    # Contains
+    class gcontains(_base_function):
+        pass
+    
+    # Covers
+    class covers(_base_function):
+        pass
+    
+    # CoveredBy
+    class covered_by(_base_function):
+        pass
+    
+    # Intersection
+    class intersection(_base_function):
+        pass
+    
+    # like DWithin, but MBR may be used (for MySQL)
+    class _within_distance(_base_function):
+        pass
 
-# AsText
-class wkt(_base_function):
-    pass
-
-# AsBinary
-class wkb(_base_function):
-    pass
-
-# Dimension
-class dimension(_base_function):
-    pass
-
-# SRID
-class srid(_base_function):
-    pass
-
-# GeometryType
-class geometry_type(_base_function):
-    pass
-
-# IsEmpty
-class is_empty(_base_function):
-    pass
-
-# IsSimple
-class is_simple(_base_function):
-    pass
-
-# IsClosed
-class is_closed(_base_function):
-    pass
-
-# IsRing
-class is_ring(_base_function):
-    pass
-
-# NumPoints
-class num_points(_base_function):
-    pass
-
-# PointN
-class point_n(_base_function):
-    pass
-
-# Length
-class length(_base_function):
-    pass
-
-# Area
-class area(_base_function):
-    pass
-
-# X
-class x(_base_function):
-    pass
-
-# Y
-class y(_base_function):
-    pass
-
-# Centroid
-class centroid(_base_function):
-    pass
-
-# Boundary
-class boundary(_base_function):
-    pass
-
-# Buffer
-class buffer(_base_function):
-    pass
-
-# ConvexHull
-class convex_hull(_base_function):
-    pass
-
-# Envelope
-class envelope(_base_function):
-    pass
-
-# StartPoint
-class start_point(_base_function):
-    pass
-
-# EndPoint
-class end_point(_base_function):
-    pass
-
-# Transform
-class transform(_base_function):
-    pass
-
-# Equals
-class equals(_base_function):
-    pass
-
-# Distance
-class distance(_base_function):
-    pass
-
-# DWithin
-class within_distance(_base_function):
-    pass
-
-# Disjoint
-class disjoint(_base_function):
-    pass
-
-# Intersects
-class intersects(_base_function):
-    pass
-
-# Touches
-class touches(_base_function):
-    pass
-
-# Crosses
-class crosses(_base_function):
-    pass
-
-# Within
-class within(_base_function):
-    pass
-
-# Overlaps
-class overlaps(_base_function):
-    pass
-
-# Contains
-class gcontains(_base_function):
-    pass
-
-# Covers
-class covers(_base_function):
-    pass
-
-# CoveredBy
-class covered_by(_base_function):
-    pass
-
-# Intersection
-class intersection(_base_function):
-    pass
-
-# like DWithin, but MBR may be used (for MySQL)
-class _within_distance(_base_function):
-    pass
-
-@compiles(_within_distance)
+@compiles(functions._within_distance)
 def __compile__within_distance(element, compiler, **kw):
     from geoalchemy.dialect import DialectManager 
     database_dialect = DialectManager.get_spatial_dialect(compiler.dialect)

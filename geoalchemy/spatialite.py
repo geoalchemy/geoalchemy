@@ -3,7 +3,7 @@ from sqlalchemy.sql import and_, text, table, column
 
 from geoalchemy.base import SpatialComparator, PersistentSpatialElement
 from geoalchemy.dialect import SpatialDialect 
-from geoalchemy import functions
+from geoalchemy.functions import functions, _base_function
 from geoalchemy.mysql import mysql_functions
 from geoalchemy.geometry import GeometryExtensionColumn
 
@@ -31,18 +31,20 @@ class SQLitePersistentSpatialElement(PersistentSpatialElement):
             return getattr(sqlite_functions, name)(self)
 
 
-# Functions only supported by SQLite
 class sqlite_functions(mysql_functions):
+    """Functions only supported by SQLite
+    """
+    
     # AsSVG
-    class svg(functions._base_function):
+    class svg(_base_function):
         pass
     
     # AsFGF
-    class fgf(functions._base_function):
+    class fgf(_base_function):
         pass
     
     # IsValid
-    class is_valid(functions._base_function):
+    class is_valid(_base_function):
         pass
     
     @staticmethod

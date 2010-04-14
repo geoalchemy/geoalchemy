@@ -1,6 +1,6 @@
 from geoalchemy.base import SpatialComparator, PersistentSpatialElement
 from geoalchemy.dialect import SpatialDialect 
-from geoalchemy import functions
+from geoalchemy.functions import functions, _base_function
 from sqlalchemy import func
 
 
@@ -27,34 +27,36 @@ class MySQLPersistentSpatialElement(PersistentSpatialElement):
             return getattr(mysql_functions, name)(self)
 
 
-# Functions only supported by MySQL
-class mysql_functions:
+class mysql_functions(functions):
+    """Functions only supported by MySQL
+    """
+    
     # MBREqual
-    class mbr_equal(functions._base_function):
+    class mbr_equal(_base_function):
         pass
     
     # MBRDisjoint
-    class mbr_disjoint(functions._base_function):
+    class mbr_disjoint(_base_function):
         pass
     
     # MBRIntersects
-    class mbr_intersects(functions._base_function):
+    class mbr_intersects(_base_function):
         pass
     
     # MBRTouches
-    class mbr_touches(functions._base_function):
+    class mbr_touches(_base_function):
         pass
     
     # MBRWithin
-    class mbr_within(functions._base_function):
+    class mbr_within(_base_function):
         pass
     
     # MBROverlaps
-    class mbr_overlaps(functions._base_function):
+    class mbr_overlaps(_base_function):
         pass
     
     # MBRContains
-    class mbr_contains(functions._base_function):
+    class mbr_contains(_base_function):
         pass
     
     @staticmethod

@@ -3,7 +3,7 @@ from sqlalchemy.sql import expression
 from sqlalchemy.types import TypeEngine
 
 from utils import from_wkt
-import functions
+from functions import functions
 
 # Base classes for geoalchemy
 

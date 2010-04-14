@@ -7,7 +7,8 @@ from sqlalchemy.ext.declarative import declarative_base
 
 from geoalchemy import (GeometryColumn, Point, Polygon, LineString,
         GeometryDDL, WKTSpatialElement, DBSpatialElement, GeometryExtensionColumn,
-        WKBSpatialElement, functions)
+        WKBSpatialElement)
+from geoalchemy.functions import functions
 from nose.tools import ok_, eq_, raises, assert_almost_equal
 from sqlalchemy import and_
 from sqlalchemy.exceptions import OperationalError

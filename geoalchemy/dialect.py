@@ -2,7 +2,7 @@ from sqlalchemy.dialects.postgresql.base import PGDialect
 from sqlalchemy.dialects.sqlite.base import SQLiteDialect
 from sqlalchemy.dialects.mysql.base import MySQLDialect
 from sqlalchemy import func
-from geoalchemy import functions
+from geoalchemy.functions import functions
 
 class SpatialDialect(object):
     """This class bundles all required classes and methods to support 

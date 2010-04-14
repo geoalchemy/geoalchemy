@@ -2,7 +2,7 @@
 from sqlalchemy import select, func
 from geoalchemy.base import SpatialComparator, PersistentSpatialElement
 from geoalchemy.dialect import SpatialDialect 
-from geoalchemy import functions
+from geoalchemy.functions import functions, _base_function
 from sqlalchemy.sql import and_
 
 class PGComparator(SpatialComparator):
@@ -28,26 +28,28 @@ class PGPersistentSpatialElement(PersistentSpatialElement):
             return getattr(pg_functions, name)(self)
 
 
-# Functions only supported by PostGIS
-class pg_functions:
+class pg_functions(functions):
+    """Functions only supported by PostGIS
+    """
+    
     # AsSVG
-    class svg(functions._base_function):
+    class svg(_base_function):
         pass
     
     # AsKML
-    class kml(functions._base_function):
+    class kml(_base_function):
         pass
 
     # AsGML
-    class gml(functions._base_function):
+    class gml(_base_function):
         pass
     
     # AsGeoJSON: available since PostGIS version 1.3.4
-    class geojson(functions._base_function):
+    class geojson(_base_function):
         pass
     
     # Expand
-    class expand(functions._base_function):
+    class expand(_base_function):
         pass
     
     @staticmethod

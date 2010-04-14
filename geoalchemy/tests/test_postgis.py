@@ -8,8 +8,8 @@ from sqlalchemy import and_
 from sqlalchemy.exceptions import IntegrityError
 
 from geoalchemy import (Geometry, GeometryCollection, GeometryColumn,
-        GeometryDDL, WKTSpatialElement, DBSpatialElement, GeometryExtensionColumn,
-        functions)
+        GeometryDDL, WKTSpatialElement, DBSpatialElement, GeometryExtensionColumn)
+from geoalchemy.functions import functions
 from geoalchemy.postgis import PGComparator, pg_functions
 
 from nose.tools import eq_, ok_, raises, assert_almost_equal

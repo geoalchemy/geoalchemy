@@ -9,7 +9,8 @@ from sqlalchemy.exceptions import IntegrityError
 from pysqlite2 import dbapi2 as sqlite
 from geoalchemy import (GeometryColumn, Point, Polygon,
 		LineString, GeometryDDL, WKTSpatialElement, WKBSpatialElement, 
-        DBSpatialElement, GeometryExtensionColumn, functions)
+        DBSpatialElement, GeometryExtensionColumn)
+from geoalchemy.functions import functions
 from nose.tools import ok_, eq_, assert_almost_equal, raises
 
 from geoalchemy.spatialite import SQLiteComparator, sqlite_functions

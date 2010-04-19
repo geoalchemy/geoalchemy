@@ -78,147 +78,147 @@ class functions:
     """Functions that implement OGC SFS or SQL/MM and that are supported by most databases
     """
     
-    # AsText
     class wkt(BaseFunction):
+        """AsText(g)"""
         pass
     
-    # AsBinary
     class wkb(BaseFunction):
+        """AsBinary(g)"""
         pass
     
-    # Dimension
     class dimension(BaseFunction):
+        """Dimension(g)"""
         pass
     
-    # SRID
     class srid(BaseFunction):
+        """SRID(g)"""
         pass
     
-    # GeometryType
     class geometry_type(BaseFunction):
+        """GeometryType(g)"""
         pass
     
-    # IsEmpty
     class is_empty(BaseFunction):
+        """IsEmpty(g)"""
         pass
     
-    # IsSimple
     class is_simple(BaseFunction):
+        """IsSimple(g)"""
         pass
     
-    # IsClosed
     class is_closed(BaseFunction):
+        """IsClosed(g)"""
         pass
     
-    # IsRing
     class is_ring(BaseFunction):
+        """IsRing(g)"""
         pass
     
-    # NumPoints
     class num_points(BaseFunction):
+        """NumPoints(g)"""
         pass
     
-    # PointN
     class point_n(BaseFunction):
+        """PointN(g, n)"""
         pass
     
-    # Length
     class length(BaseFunction):
+        """Length(g)"""
         pass
     
-    # Area
     class area(BaseFunction):
+        """Area(g)"""
         pass
     
-    # X
     class x(BaseFunction):
+        """X(g)"""
         pass
     
-    # Y
     class y(BaseFunction):
+        """Y(g)"""
         pass
     
-    # Centroid
     class centroid(BaseFunction):
+        """Centroid(g)"""
         pass
     
-    # Boundary
     class boundary(BaseFunction):
+        """Boundary"""
         pass
     
-    # Buffer
     class buffer(BaseFunction):
+        """Buffer(g, n)"""
         pass
     
-    # ConvexHull
     class convex_hull(BaseFunction):
+        """ConvexHull(g)"""
         pass
     
-    # Envelope
     class envelope(BaseFunction):
+        """Envelope(g)"""
         pass
     
-    # StartPoint
     class start_point(BaseFunction):
+        """StartPoint(g)"""
         pass
     
-    # EndPoint
     class end_point(BaseFunction):
+        """EndPoint(g)"""
         pass
     
-    # Transform
     class transform(BaseFunction):
+        """Transform(g, srid)"""
         pass
-    
-    # Equals
+
     class equals(BaseFunction):
+        """Equals(g1, g2)"""
         pass
     
-    # Distance
     class distance(BaseFunction):
+        """Distance(g1, g2)"""
         pass
     
-    # DWithin
     class within_distance(BaseFunction):
+        """DWithin(g1, g2, d)"""
         pass
     
-    # Disjoint
     class disjoint(BaseFunction):
+        """Disjoint(g1, g2)"""
         pass
     
-    # Intersects
     class intersects(BaseFunction):
+        """Intersects(g1, g2)"""
         pass
     
-    # Touches
     class touches(BaseFunction):
+        """Touches(g1, g2)"""
         pass
     
-    # Crosses
     class crosses(BaseFunction):
+        """Crosses(g1, g2)"""
         pass
     
-    # Within
     class within(BaseFunction):
+        """Within(g1, g2)"""
         pass
     
-    # Overlaps
     class overlaps(BaseFunction):
+        """Overlaps(g1, g2)"""
         pass
     
-    # Contains
     class gcontains(BaseFunction):
+        """Contains(g1, g2)"""
         pass
     
-    # Covers
     class covers(BaseFunction):
+        """Covers(g1, g2)"""
         pass
     
-    # CoveredBy
     class covered_by(BaseFunction):
+        """CoveredBy(g1, g2)"""
         pass
     
-    # Intersection
     class intersection(BaseFunction):
+        """Intersection(g1, g2)"""
         pass
     

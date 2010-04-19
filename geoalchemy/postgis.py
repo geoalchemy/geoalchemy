@@ -31,24 +31,24 @@ class pg_functions(functions):
     """Functions only supported by PostGIS
     """
     
-    # AsSVG
     class svg(BaseFunction):
+        """AsSVG(g)"""
         pass
     
-    # AsKML
     class kml(BaseFunction):
+        """AsKML(g)"""
         pass
 
-    # AsGML
     class gml(BaseFunction):
+        """AsGML(g)"""
         pass
     
-    # AsGeoJSON: available since PostGIS version 1.3.4
     class geojson(BaseFunction):
+        """AsGeoJSON(g): available since PostGIS version 1.3.4"""
         pass
     
-    # Expand
     class expand(BaseFunction):
+        """Expand(g)"""
         pass
 
 

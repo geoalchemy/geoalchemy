@@ -334,8 +334,8 @@ Notes for Spatialite
 
 Although Python2.5 and its higher versions include sqlite support,
 while using spatialite in python we have to use the db-api module
-provided by pysqlite2.  So we have to install pysqlite2
-separately. Also, by default the pysqlite2 disables extension
+provided by `pysqlite2 <http://code.google.com/p/pysqlite/>`_.  So we have to 
+install pysqlite2 separately. Also, by default the pysqlite2 disables extension
 loading. In order to enable extension loading, we have to build it
 ourselves. Download the pysqlite tarball, open the file setup.cfg and
 comment out the line that reads:

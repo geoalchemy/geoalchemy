@@ -19,7 +19,7 @@ Contents:
    tutorial.rst
    featureserver.rst
    testing.rst
-   reference.rst
+   reference/index
 
 Indices and tables
 ==================

@@ -33,16 +33,16 @@ class sqlite_functions(mysql_functions):
     """Functions only supported by SQLite
     """
     
-    # AsSVG
     class svg(BaseFunction):
+        """AsSVG(g)"""
         pass
     
-    # AsFGF
     class fgf(BaseFunction):
+        """AsFGF(g)"""
         pass
     
-    # IsValid
     class is_valid(BaseFunction):
+        """IsValid(g)"""
         pass
 
 

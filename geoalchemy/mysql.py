@@ -30,32 +30,32 @@ class mysql_functions(functions):
     """Functions only supported by MySQL
     """
     
-    # MBREqual
     class mbr_equal(BaseFunction):
+        """MBREqual(g1, g2)"""
         pass
     
-    # MBRDisjoint
     class mbr_disjoint(BaseFunction):
+        """MBRDisjoint(g1, g2)"""
         pass
     
-    # MBRIntersects
     class mbr_intersects(BaseFunction):
+        """MBRIntersects(g1, g2)"""
         pass
     
-    # MBRTouches
     class mbr_touches(BaseFunction):
+        """MBRTouches(g1, g2)"""
         pass
     
-    # MBRWithin
     class mbr_within(BaseFunction):
+        """MBRWithin(g1, g2)"""
         pass
     
-    # MBROverlaps
     class mbr_overlaps(BaseFunction):
+        """MBROverlaps(g1, g2)"""
         pass
     
-    # MBRContains
     class mbr_contains(BaseFunction):
+        """MBRContains(g1, g2)"""
         pass
 
 

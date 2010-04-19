@@ -22,6 +22,7 @@ GeoAlchemy Change Log
 * Updated documentation and examples.
 * Use spatial index for Spatialite.
 * Set NOT NULL constraints in database (nullable=False).
+* GeometryBase: changed default value of dimension to 2.
 
 0.1.1
 -----

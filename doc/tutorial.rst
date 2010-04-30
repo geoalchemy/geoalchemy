@@ -14,8 +14,8 @@ Setting up PostGIS
 This tutorial requires a working PostGIS installation. The PostGIS
 Documentation has extensive `installation instructions
 <http://postgis.refractions.net/docs/ch02.html#PGInstall>`_. Create a
-spatially enabled database called `gis` as per instructions given
-`here <http://postgis.refractions.net/docs/ch02.html#id2532099>`_. Also
+spatially enabled database called `gis` as per instructions given in the
+`PostGIS documentation <http://postgis.refractions.net/docs/ch02.html#id2532099>`_. Also
 create a new user and grant it permissions on this database.
 
 On Ubuntu the following steps have to executed to create the database.
@@ -71,7 +71,7 @@ classes and database tables separately and then mapping the classes to
 the tables using mapper configuration, or they can be defined
 declaratively using the new declarative extension. In this example we
 use the SQLAlchemy declarative extension to define the model. Notes on how to use
-GeoAlchemy with a non-declarative mapping can be found `here
+GeoAlchemy with a non-declarative mapping are stated `below
 <#notes-on-non-declarative-mapping>`_. We also
 create a metadata object that holds the schema information of all
 database objects and will thus be useful for creating the objects in
@@ -206,6 +206,16 @@ specified using the Well Known Text (WKT) format using GeoAlchemy
 	lake2 = Lake(name="Lake Blue", depth=58.0, geom=WKTSpatialElement(wkt_lake2))
     
     session.add_all([spot1, spot2, road1, road2, lake1, lake2])
+    session.commit()
+
+If you want to insert a geometry that has a different spatial reference system than your
+geometry column, a transformation is added automatically.
+
+.. code-block:: python
+
+    geom_spot3 = WKTSpatialElement('POINT(30250865 -610981)', 2249)
+    spot3 = Spot(name="Park", height=53.2, geom=geom_spot3)
+    session.add(spot3)
     session.commit()
 
 Scripts for creating sample gis objects as shown above are available

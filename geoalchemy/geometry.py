@@ -108,7 +108,15 @@ class SpatialAttribute(AttributeExtension):
     """
     
     def set(self, state, value, oldvalue, initiator):
-        return _to_gis(value)
+        return _to_gis(value, self.__get_srid(initiator))
+ 
+    def __get_srid(self, initiator):
+        """Returns the SRID used for the geometry column that is connected
+        to this SpatialAttribute instance."""
+        try:
+            return initiator.parent_token.columns[0].type.srid
+        except Exception:
+            return None
  
 class GeometryExtensionColumn(Column):
     pass

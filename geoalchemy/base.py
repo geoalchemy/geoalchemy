@@ -141,23 +141,36 @@ class GeometryBase(TypeEngine):
 
 # ORM integration
 
-def _to_gis(value):
+def _to_gis(value, srid_db):
     """Interpret a value as a GIS-compatible construct."""
 
     if hasattr(value, '__clause_element__'):
         return value.__clause_element__()
-    elif isinstance(value, expression.ClauseElement):
-        return value
     elif isinstance(value, SpatialElement):
         if isinstance(value.desc, (WKBSpatialElement, WKTSpatialElement)):
-            return value.desc
-        return value
+            return _check_srid(value.desc, srid_db)
+        return _check_srid(value, srid_db)
     elif isinstance(value, basestring):
-        return WKTSpatialElement(value)
+        return _check_srid(WKTSpatialElement(value), srid_db)
+    elif isinstance(value, expression.ClauseElement):
+        return value
     elif value is None:
         return None
     else:
         raise Exception("Invalid type")
+    
+def _check_srid(spatial_element, srid_db):
+    """Check if the SRID of the spatial element which we are about to insert
+    into the database equals the SRID used for the geometry column.
+    If not, a transformation is added.
+    """
+    if srid_db is None or not hasattr(spatial_element, 'srid'):
+        return spatial_element
+    
+    if spatial_element.srid == srid_db:
+        return spatial_element
+    else:
+        return functions.transform(spatial_element, srid_db)
 
 class SpatialComparator(ColumnProperty.ColumnComparator):
     """Intercepts standard Column operators on mapped class attributes

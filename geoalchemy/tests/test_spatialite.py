@@ -132,6 +132,13 @@ class TestGeometry(TestCase):
         eq_(session.scalar(functions.wkt(func.GeomFromWKB(self.r.road_geom.wkb, 4326))), 
             u'LINESTRING(-88.674841 43.103503, -88.646417 42.998169, -88.607962 42.968073, -88.516003 42.936306, -88.439093 43.003185)')
 
+        geom = WKTSpatialElement('POINT(30250865.9714116 -610981.481754275)', 2249)
+        spot = Spot(spot_height=102.34, spot_location=geom)
+        session.add(spot)
+        session.commit();
+        assert_almost_equal(session.scalar(spot.spot_location.x), 0)
+        assert_almost_equal(session.scalar(spot.spot_location.y), 0)
+
     def test_svg(self):
         eq_(session.scalar(self.r.road_geom.svg), 'M -88.674841 -43.103503 -88.646417 -42.998169 -88.607962 -42.968073 -88.516003 -42.936306 -88.439093 -43.003185 ')
 

@@ -68,3 +68,8 @@ lake2 = Lake(name="Lake Blue", depth=58.0, geom=WKTSpatialElement(wkt_lake2))
 session.add_all([spot1, spot2, road1, road2, lake1, lake2])
 session.commit()
 
+# Insert a geometry with a different SRID
+geom_spot3 = WKTSpatialElement('POINT(30250865 -610981)', 2249)
+spot3 = Spot(name="Park", height=53.2, geom=geom_spot3)
+session.add(spot3)
+session.commit()

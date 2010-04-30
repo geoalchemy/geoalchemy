@@ -229,7 +229,14 @@ class TestGeometry(TestCase):
     def test_persistent(self):
         eq_(session.scalar(functions.wkt(func.GeomFromWKB(self.r.road_geom.wkb, 4326))), 
             u'LINESTRING(-88.6748409363057 43.1035032292994,-88.6464173694267 42.9981688343949,-88.607961955414 42.9680732929936,-88.5160033566879 42.9363057770701,-88.4390925286624 43.0031847579618)')
-
+        
+        geom = WKTSpatialElement('POINT(30250865.9714116 -610981.481754275)', 2249)
+        spot = Spot(spot_height=102.34, spot_location=geom)
+        session.add(spot)
+        session.commit();
+        assert_almost_equal(session.scalar(spot.spot_location.x), 0)
+        assert_almost_equal(session.scalar(spot.spot_location.y), 0)
+        
     def test_eq(self):
         r1 = session.query(Road).filter(Road.road_name=='Graeme Ave').one()
         r2 = session.query(Road).filter(Road.road_geom == 'LINESTRING(-88.5477708726115 42.6988853949045,-88.6096339299363 42.9697452675159,-88.6029460318471 43.0884554585987,-88.5912422101911 43.187101955414)').one()

@@ -124,7 +124,7 @@ class GeometryExtensionColumn(Column):
 @compiles(GeometryExtensionColumn)
 def compile_column(element, compiler, **kw):
     if kw.has_key("within_columns_clause") and kw["within_columns_clause"] == True:
-        return "AsBinary(%s)" % element.name
+        return "AsBinary(%s)" % element
         
     return element.name
      

@@ -470,3 +470,9 @@ class TestGeometry(TestCase):
         session.add(road_null)
         session.commit();
         
+    def test_query_column_name(self):
+        # test for bug: http://groups.google.com/group/geoalchemy/browse_thread/thread/6b731dd1673784f9
+        from sqlalchemy.orm.query import Query
+        query = Query(Road.road_geom).__str__()
+        ok_('AsBinary(roads.road_geom)' in query, 'table name is part of the column expression')
+        

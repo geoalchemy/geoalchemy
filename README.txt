@@ -70,3 +70,16 @@ License
 
 GeoAlchemy is released under the MIT License.
 
+Contributors
+------------
+
+The contributors to this project (in alphabetical order are):
+
+    Eric Lemoine
+    Frank Broniewski
+    Michael Bayer
+    Mike Gilligan
+    Sanjiv Singh
+    Stefano Costa
+    Tobias Sauerwein
+

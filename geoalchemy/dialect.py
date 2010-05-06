@@ -1,7 +1,9 @@
 from sqlalchemy.dialects.postgresql.base import PGDialect
 from sqlalchemy.dialects.sqlite.base import SQLiteDialect
 from sqlalchemy.dialects.mysql.base import MySQLDialect
+from sqlalchemy.dialects.oracle.base import OracleDialect
 from geoalchemy.functions import functions
+from geoalchemy.base import WKTSpatialElement, WKBSpatialElement
 
 class SpatialDialect(object):
     """This class bundles all required classes and methods to support 
@@ -13,7 +15,9 @@ class SpatialDialect(object):
     
     __functions = {
                    functions.wkt: 'AsText',
+                   WKTSpatialElement : 'GeomFromText',
                    functions.wkb: 'AsBinary',
+                   WKBSpatialElement : 'GeomFromWKB',
                    functions.dimension : 'Dimension',
                    functions.srid : 'SRID',
                    functions.geometry_type : 'GeometryType',
@@ -120,11 +124,13 @@ class DialectManager(object):
         from geoalchemy.postgis import PGSpatialDialect
         from geoalchemy.mysql import MySQLSpatialDialect
         from geoalchemy.spatialite import SQLiteSpatialDialect
+        from geoalchemy.oracle import OracleSpatialDialect
             
         DialectManager.__dialects_mapping = {
                 PGDialect: PGSpatialDialect,
                 SQLiteDialect: SQLiteSpatialDialect,
-                MySQLDialect: MySQLSpatialDialect
+                MySQLDialect: MySQLSpatialDialect,
+                OracleDialect: OracleSpatialDialect
                 }
 
     @staticmethod

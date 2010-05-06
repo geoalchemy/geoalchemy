@@ -1,6 +1,8 @@
 from sqlalchemy.orm.properties import ColumnProperty
 from sqlalchemy.sql import expression
 from sqlalchemy.types import TypeEngine
+from sqlalchemy.ext.compiler import compiles
+from sqlalchemy import func
 
 from utils import from_wkt
 from functions import functions
@@ -52,12 +54,24 @@ class WKTSpatialElement(SpatialElement, expression.Function):
         assert isinstance(desc, basestring)
         self.desc = desc
         self.srid = srid
-        expression.Function.__init__(self, "GeomFromText", desc, srid)
+        
+        expression.Function.__init__(self, "")
+#        expression.Function.__init__(self, "GeomFromText", desc, srid)
+#        expression.Function.__init__(self, 'MDSYS.SDO_GEOMETRY', desc, srid)
+#        expression.Function.__init__(self, 'SDO_GEOMETRY', desc, srid)
+        #MDSYS.SDO_GEOMETRY('POINT (-104.9842 39.7392)', 8307)
 
     @property
     def geom_wkt(self):
         # directly return WKT value
         return self.desc
+
+@compiles(WKTSpatialElement)
+def __compile_wktspatialelement(element, compiler, **kw):
+    from geoalchemy.functions import __get_function
+    function = __get_function(element, compiler)
+    
+    return compiler.process(function(element.desc, element.srid))
 
 class WKBSpatialElement(SpatialElement, expression.Function):
     """Represents a Geometry value as expressed in the OGC Well
@@ -72,8 +86,16 @@ class WKBSpatialElement(SpatialElement, expression.Function):
         assert isinstance(desc, (basestring, buffer))
         self.desc = desc
         self.srid = srid
-        expression.Function.__init__(self, "GeomFromWKB", desc, srid)
-        
+        expression.Function.__init__(self, "")
+#        expression.Function.__init__(self, "GeomFromWKB", desc, srid)
+
+@compiles(WKBSpatialElement)
+def __compile_wkbspatialelement(element, compiler, **kw):
+    from geoalchemy.functions import __get_function
+    function = __get_function(element, compiler)
+    
+    return compiler.process(function(element.desc, element.srid))
+
 
 class DBSpatialElement(SpatialElement, expression.Function):
     """This class can be used to wrap a geometry returned by a 
@@ -116,6 +138,7 @@ class GeometryBase(TypeEngine):
         self.dimension = dimension
         self.srid = srid
         self.spatial_index = spatial_index
+        self.kwargs = kwargs
         super(GeometryBase, self).__init__(**kwargs)
     
     def bind_processor(self, dialect):

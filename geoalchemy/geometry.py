@@ -126,7 +126,7 @@ def compile_column(element, compiler, **kw):
     if kw.has_key("within_columns_clause") and kw["within_columns_clause"] == True:
         return "AsBinary(%s)" % element
         
-    return element.name
+    return element.__str__()
      
             
 def GeometryColumn(*args, **kw):

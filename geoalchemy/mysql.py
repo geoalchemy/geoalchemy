@@ -1,4 +1,5 @@
-from geoalchemy.base import SpatialComparator, PersistentSpatialElement
+from geoalchemy.base import SpatialComparator, PersistentSpatialElement,\
+    WKBSpatialElement
 from geoalchemy.dialect import SpatialDialect 
 from geoalchemy.functions import functions, BaseFunction
 
@@ -92,8 +93,8 @@ class MySQLSpatialDialect(SpatialDialect):
     def get_comparator(self):
         return MySQLComparator
     
-    def process_result(self, wkb_element):
-        return MySQLPersistentSpatialElement(wkb_element)
+    def process_result(self, value, column_srid):
+        return MySQLPersistentSpatialElement(WKBSpatialElement(value, column_srid))
     
     def handle_ddl_after_create(self, bind, table, column):
         if column.type.spatial_index or not column.nullable:

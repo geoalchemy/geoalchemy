@@ -129,6 +129,7 @@ class TestGeometry(TestCase):
         centroid_geom = DBSpatialElement(session.scalar(self.r.road_geom.centroid))
         eq_(session.scalar(centroid_geom.wkt), u'POINT(-88.5769371859941 42.9915634871979)')
         eq_(session.scalar(WKTSpatialElement('POINT(-88.5769371859941 42.9915634871979)').wkt), u'POINT(-88.5769371859941 42.9915634871979)')
+        eq_(session.query(Spot.spot_location.wkt).filter(Spot.spot_id == 1).first(), (u'POINT(-88.5945861592357 42.9480095987261)',))
 
     def test_coords(self):
         eq_(self.r.road_geom.coords(session), [[-88.6748409363057,43.1035032292994],[-88.6464173694267,42.9981688343949],[-88.607961955414,42.9680732929936],[-88.5160033566879,42.9363057770701],[-88.4390925286624,43.0031847579618]])

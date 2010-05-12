@@ -61,13 +61,13 @@ class OracleSpatialDialect(SpatialDialect):
     """Implementation of SpatialDialect for Oracle."""
     
     __functions = {
-                   functions.wkt: 'ST_AsText',
-                   WKTSpatialElement : 'SDO_GEOMETRY',
-                   functions.wkb: 'ST_AsBinary',
+                   functions.wkt: ['TO_CHAR', 'SDO_UTIL.TO_WKTGEOMETRY'],
+                   WKTSpatialElement : 'MDSYS.SDO_GEOMETRY',
+                   functions.wkb: 'SDO_UTIL.TO_WKBGEOMETRY',
                    WKBSpatialElement : 'SDO_GEOMETRY',
-                   functions.dimension : 'ST_Dimension',
+                   functions.dimension : 'Get_Dims',
                    functions.srid : 'ST_SRID',
-                   functions.geometry_type : 'ST_GeometryType',
+                   functions.geometry_type : 'Get_GType',
                    functions.is_empty : 'ST_IsEmpty',
                    functions.is_simple : 'ST_IsSimple',
                    functions.is_closed : 'ST_IsClosed',
@@ -78,7 +78,7 @@ class OracleSpatialDialect(SpatialDialect):
                    functions.area : 'ST_Area',
                    functions.x : 'ST_X',
                    functions.y : 'ST_Y',
-                   functions.centroid : 'ST_Centroid',
+                   functions.centroid : 'SDO_GEOM.SDO_CENTROID',
                    functions.boundary : 'ST_Boundary',
                    functions.buffer : 'ST_Buffer',
                    functions.convex_hull : 'ST_ConvexHull',
@@ -86,7 +86,7 @@ class OracleSpatialDialect(SpatialDialect):
                    functions.start_point : 'ST_StartPoint',
                    functions.end_point : 'ST_EndPoint',
                    functions.transform : 'ST_Transform',
-                   functions.equals : 'ST_Equals',
+                   functions.equals : lambda params : (func.SDO_EQUAL(*params) == 'TRUE'),
                    functions.distance : 'ST_Distance',
                    functions.within_distance : 'ST_DWithin',
                    functions.disjoint : 'ST_Disjoint',
@@ -106,15 +106,43 @@ class OracleSpatialDialect(SpatialDialect):
                    oracle_functions.expand : 'ST_Expand'
                   }
     
+    __member_functions = (
+                          functions.dimension,
+                          functions.geometry_type
+                        
+                    )
+    
     def _get_function_mapping(self):
         return OracleSpatialDialect.__functions
+    
+    def is_member_function(self, function_class):
+        return function_class in self.__member_functions
     
     def get_comparator(self):
         return OracleComparator
     
-    def process_result(self, wkb_element):
-        return OraclePersistentSpatialElement(wkb_element)
+    def process_result(self, value, column_srid):
+        value = self.process_wkb(value)
+            
+        return OraclePersistentSpatialElement(WKBSpatialElement(value, column_srid))
+
+    def process_wkb(self, value):
+        """SDO_UTIL.TO_WKBGEOMETRY(..) returns an object of cx_Oracle.LOB, which we 
+        will transform into a buffer.
+        """
+        if value is not None:
+            return buffer(value.read())
+        else:
+            return value
     
+    def bind_wkb_value(self, wkb_element):
+        """Append a transformation to BLOB using the Oracle function 'TO_BLOB'.
+        """
+        if wkb_element is not None and wkb_element.desc is not None:
+            return func.TO_BLOB(wkb_element.desc)
+        
+        return None
+
     def handle_ddl_before_drop(self, bind, table, column):
         bind.execute("DELETE FROM USER_SDO_GEOM_METADATA WHERE table_name = '%s' AND column_name = '%s'" %
                             (table.name.upper(), column.name.upper()))

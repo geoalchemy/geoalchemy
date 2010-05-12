@@ -2,10 +2,9 @@ from sqlalchemy.orm.properties import ColumnProperty
 from sqlalchemy.sql import expression
 from sqlalchemy.types import TypeEngine
 from sqlalchemy.ext.compiler import compiles
-from sqlalchemy import func
 
 from utils import from_wkt
-from functions import functions
+from functions import functions, _get_function
 
 # Base classes for geoalchemy
 
@@ -45,8 +44,9 @@ class WKTSpatialElement(SpatialElement, expression.Function):
     """Represents a Geometry value expressed within application code; i.e. in
     the OGC Well Known Text (WKT) format.
     
-    Extends expression.Function so that the value is interpreted as 
-    GeomFromText(value) in a SQL expression context.
+    Extends expression.Function so that in a SQL expression context the value 
+    is interpreted as 'GeomFromText(value)' or as the equivalent function in the 
+    currently used database.
     
     """
     
@@ -56,10 +56,6 @@ class WKTSpatialElement(SpatialElement, expression.Function):
         self.srid = srid
         
         expression.Function.__init__(self, "")
-#        expression.Function.__init__(self, "GeomFromText", desc, srid)
-#        expression.Function.__init__(self, 'MDSYS.SDO_GEOMETRY', desc, srid)
-#        expression.Function.__init__(self, 'SDO_GEOMETRY', desc, srid)
-        #MDSYS.SDO_GEOMETRY('POINT (-104.9842 39.7392)', 8307)
 
     @property
     def geom_wkt(self):
@@ -68,17 +64,17 @@ class WKTSpatialElement(SpatialElement, expression.Function):
 
 @compiles(WKTSpatialElement)
 def __compile_wktspatialelement(element, compiler, **kw):
-    from geoalchemy.functions import __get_function
-    function = __get_function(element, compiler)
+    function = _get_function(element, compiler, (element.desc, element.srid))
     
-    return compiler.process(function(element.desc, element.srid))
+    return compiler.process(function)
 
 class WKBSpatialElement(SpatialElement, expression.Function):
     """Represents a Geometry value as expressed in the OGC Well
     Known Binary (WKB) format.
     
-    Extends expression.Function so that the value is interpreted as 
-    GeomFromWKB(value) in a SQL expression context.
+    Extends expression.Function so that in a SQL expression context the value 
+    is interpreted as 'GeomFromWKB(value)' or as the equivalent function in the 
+    currently used database .
     
     """
     
@@ -86,15 +82,18 @@ class WKBSpatialElement(SpatialElement, expression.Function):
         assert isinstance(desc, (basestring, buffer))
         self.desc = desc
         self.srid = srid
+        
         expression.Function.__init__(self, "")
-#        expression.Function.__init__(self, "GeomFromWKB", desc, srid)
 
 @compiles(WKBSpatialElement)
 def __compile_wkbspatialelement(element, compiler, **kw):
-    from geoalchemy.functions import __get_function
-    function = __get_function(element, compiler)
+    from geoalchemy.dialect import DialectManager 
+    database_dialect = DialectManager.get_spatial_dialect(compiler.dialect)
     
-    return compiler.process(function(element.desc, element.srid))
+    function = _get_function(element, compiler, (database_dialect.bind_wkb_value(element), 
+                                                 element.srid))
+    
+    return compiler.process(function)
 
 
 class DBSpatialElement(SpatialElement, expression.Function):

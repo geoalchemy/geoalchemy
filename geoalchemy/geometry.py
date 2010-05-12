@@ -1,11 +1,13 @@
-from sqlalchemy import Column
+from sqlalchemy import Column, Table
 from sqlalchemy.orm import column_property
 from sqlalchemy.orm.interfaces import AttributeExtension
+from sqlalchemy.sql.expression import Alias
 from sqlalchemy.sql import expression
 from sqlalchemy.ext.compiler import compiles
 
-from geoalchemy.base import WKBSpatialElement, GeometryBase, _to_gis, SpatialComparator
+from geoalchemy.base import GeometryBase, _to_gis, SpatialComparator
 from geoalchemy.dialect import DialectManager
+from geoalchemy.functions import functions
 
 class Geometry(GeometryBase):
     """Geometry column type. This is the base class for all other
@@ -20,8 +22,7 @@ class Geometry(GeometryBase):
         
         def process(value):
             if value is not None:
-                wkb_element = WKBSpatialElement(value, self.srid)
-                return DialectManager.get_spatial_dialect(dialect).process_result(wkb_element)
+                return DialectManager.get_spatial_dialect(dialect).process_result(value, self.srid)
             else:
                 return value
         return process
@@ -123,10 +124,11 @@ class GeometryExtensionColumn(Column):
         
 @compiles(GeometryExtensionColumn)
 def compile_column(element, compiler, **kw):
-    if kw.has_key("within_columns_clause") and kw["within_columns_clause"] == True:
-        return "AsBinary(%s)" % element
+    if isinstance(element.table, (Table, Alias)):
+        if kw.has_key("within_columns_clause") and kw["within_columns_clause"] == True:
+            return compiler.process(functions.wkb(element))
         
-    return element.__str__()
+    return compiler.visit_column(element) 
      
             
 def GeometryColumn(*args, **kw):

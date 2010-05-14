@@ -3,7 +3,9 @@ from sqlalchemy.ext.compiler import compiles
 from sqlalchemy import literal
 from sqlalchemy.types import NullType, TypeDecorator
 import types
+import re
 
+WKT_REGEX = re.compile('.*\\(.*\\).*')
 
 def parse_clause(clause, compiler):
     """This method is used to translate a clause element (geometries, functions, ..).
@@ -24,8 +26,8 @@ def parse_clause(clause, compiler):
             return clause
         if isinstance(clause, DBSpatialElement):
             return literal(clause.desc, GeometryBase)    
-        return WKBSpatialElement(clause.desc.desc, clause.desc.srid)
-    elif isinstance(clause, basestring):
+        return WKBSpatialElement(clause.desc.desc, clause.desc.srid, clause.desc.geometry_type)
+    elif isinstance(clause, basestring) and WKT_REGEX.match(clause):
         return WKTSpatialElement(clause)
     
     # for raw parameters    

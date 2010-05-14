@@ -93,7 +93,7 @@ class MySQLSpatialDialect(SpatialDialect):
     def get_comparator(self):
         return MySQLComparator
     
-    def process_result(self, value, column_srid):
+    def process_result(self, value, column_srid, geometry_type):
         return MySQLPersistentSpatialElement(WKBSpatialElement(value, column_srid))
     
     def handle_ddl_after_create(self, bind, table, column):

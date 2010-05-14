@@ -106,7 +106,7 @@ class PGSpatialDialect(SpatialDialect):
     def get_comparator(self):
         return PGComparator
     
-    def process_result(self, value, column_srid):
+    def process_result(self, value, column_srid, geometry_type):
         return PGPersistentSpatialElement(WKBSpatialElement(value, column_srid))
     
     def handle_ddl_before_drop(self, bind, table, column):

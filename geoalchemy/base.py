@@ -50,10 +50,11 @@ class WKTSpatialElement(SpatialElement, expression.Function):
     
     """
     
-    def __init__(self, desc, srid=4326):
+    def __init__(self, desc, srid=4326, geometry_type='GEOMETRY'):
         assert isinstance(desc, basestring)
         self.desc = desc
         self.srid = srid
+        self.geometry_type = geometry_type
         
         expression.Function.__init__(self, "")
 
@@ -78,10 +79,11 @@ class WKBSpatialElement(SpatialElement, expression.Function):
     
     """
     
-    def __init__(self, desc, srid=4326):
+    def __init__(self, desc, srid=4326, geometry_type='GEOMETRY'):
         assert isinstance(desc, (basestring, buffer))
         self.desc = desc
         self.srid = srid
+        self.geometry_type = geometry_type
         
         expression.Function.__init__(self, "")
 

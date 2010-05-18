@@ -62,10 +62,31 @@ class oracle_functions(functions):
         """Expand(g)"""
         pass
 
-def CastToST_GeometryType(function, returns_geometry=False, relation_function=False):
-    def get_function(function, geom_cast, params, returns_geometry, relation_function):
+def ST_GeometryFunction(function, returns_geometry = False, relation_function = False, 
+                          returns_boolean = False, compare_value = 1, default_cast = False):
+    """Functions inside MDSYS.OGC_* (OGC SF) and MDSYS.ST_GEOMETRY.ST_* (SQL MM) expect ST_GEOMETRY 
+    instead of SDO_GEOMETRY.
+    
+    Some functions like OGC_X or OGC_IsClosed only work if the geometry (the first parameter) is casted 
+    to a ST_GEOMETRY subtype, for example: 'OGC_X(ST_POINT(SDO_GEOMETRY(..)))'. 
+    This method tries to get the geometry type from WKTSpatialElement, WKBSpatialElement and columns and 
+    adds a corresponding cast (if possible).
+    If the geometry type can not be identified, no cast is added and the user manually has to add 
+    a cast, for example: 'session.scalar(functions.x(func.ST_POINT(spot.spot_location.transform(2249)))'
+    
+    Functions like OGC_IsEmpty do not require a cast to a subtype. In this case (``default_cast = True``),
+    a cast to 'ST_GEOMETRY' is always added.
+    
+    If ``relation_function`` is set to ``True``, a cast is also added for the second parameter. 
 
+    If the database function returns a new geometry (`returns_geometry = True``) a back-cast to
+    SDO_GEOMETRY ('ST_GEOMETRY.GET_SDO_GEOM(..)') is added.  
+    """
+    assert(not (returns_geometry and returns_boolean)) # both can not be true
+     
+    def get_function(function, geom_cast, params, returns_geometry, relation_function):
         if relation_function:
+            # cast 2nd geometry
             geom2_cast = cast_param(params)
             
             if geom2_cast is not None:
@@ -76,6 +97,7 @@ def CastToST_GeometryType(function, returns_geometry=False, relation_function=Fa
             function = function(geom_cast, *params)
             
         if returns_geometry:
+            # add cast to SDO_GEOMETRY
             return func.ST_GEOMETRY.GET_SDO_GEOM(function)
         else:
             return function
@@ -84,7 +106,11 @@ def CastToST_GeometryType(function, returns_geometry=False, relation_function=Fa
         if len(params) > 0:
             geom = params[0]
             
-            if isinstance(geom, (WKBSpatialElement, WKTSpatialElement)) and geom.geometry_type <> Geometry.name:
+            if default_cast:
+                params.pop(0)
+                return func.ST_GEOMETRY(geom)
+            
+            elif isinstance(geom, (WKBSpatialElement, WKTSpatialElement)) and geom.geometry_type <> Geometry.name:
                 params.pop(0)
                 return getattr(func, 'ST_%s' % (geom.geometry_type))(geom)
 
@@ -95,15 +121,62 @@ def CastToST_GeometryType(function, returns_geometry=False, relation_function=Fa
         return None
     
     
-    def function_handler(params):
+    def function_handler(params, within_column_clause):
         if len(params) > 0:
             geom_cast = cast_param(params)
             if geom_cast is not None:
-                return get_function(function, geom_cast, params, returns_geometry, relation_function)
+                return __check_comparison(get_function(function, geom_cast, params, returns_geometry, relation_function),
+                                          within_column_clause, returns_boolean, compare_value)
             
-        return function(*params)
+        return __check_comparison(function(*params), within_column_clause, returns_boolean, compare_value)
     
     return function_handler
+
+#def FunctionList(functions, returns_boolean = False, compare_value = 'TRUE'):
+#    
+#    def function_handler(params, within_column_clause):
+#        
+#        function_call = None
+#        for function in reversed(functions):
+#            
+#            if function_call is None:
+#                """for the innermost function use the passed-in parameters as argument,
+#                otherwise use the prior created function
+#                """
+#                args = params
+#            else:
+#                args = [function_call]
+#                
+#            function_call = function(*args)
+#        
+#        return __check_comparison(function_call, within_column_clause, returns_boolean, compare_value)    
+#    
+#    return function_handler
+
+def BooleanFunction(function, compare_value = 'TRUE'):
+    """Wrapper for SDO_GEOMETRY database function that return 'Boolean-like' values, for example
+    SDO_EQUAL returns the string 'TRUE'.
+    """
+    def function_handler(params, within_column_clause):
+        return __check_comparison(function(*params), within_column_clause, True, compare_value)
+    
+    return function_handler
+
+def __check_comparison(function, within_column_clause, returns_boolean, compare_value):
+    """Because Oracle does not want to know Boolean and functions return 0/1 or the string 'TRUE',
+    we manually have to add a comparison, but only if the function is called inside the where-clause, 
+    not in the select clause.
+    
+    For example:
+    select .. from .. where SDO_EQUAL(.., ..) = 'TRUE'
+    select SDO_EQUAL(.., ..) from ..
+    
+    """
+    if returns_boolean and not within_column_clause:
+        return (function == compare_value)
+    else: 
+        return function
+    
 
 class OracleSpatialDialect(SpatialDialect):
     """Implementation of SpatialDialect for Oracle."""
@@ -112,51 +185,52 @@ class OracleSpatialDialect(SpatialDialect):
                    functions.wkt: ['TO_CHAR', 'SDO_UTIL.TO_WKTGEOMETRY'],
                    WKTSpatialElement : 'MDSYS.SDO_GEOMETRY',
                    functions.wkb: 'SDO_UTIL.TO_WKBGEOMETRY',
-                   WKBSpatialElement : 'SDO_GEOMETRY',
+                   WKBSpatialElement : 'MDSYS.SDO_GEOMETRY',
                    functions.dimension : ['MDSYS.ST_GEOMETRY.ST_DIMENSION', 'MDSYS.ST_GEOMETRY'],
                    functions.srid : ['MDSYS.OGC_SRID', 'MDSYS.ST_GEOMETRY'],
                    functions.geometry_type : ['MDSYS.OGC_GeometryType', 'MDSYS.ST_GEOMETRY'],
-                   functions.is_empty : ['MDSYS.OGC_IsEmpty', 'MDSYS.ST_GEOMETRY'],
-                   functions.is_simple : ['MDSYS.OGC_IsSimple', 'MDSYS.ST_GEOMETRY'],
-                   functions.is_closed : CastToST_GeometryType(func.MDSYS.OGC_IsClosed),
-                   functions.is_ring : CastToST_GeometryType(func.MDSYS.OGC_IsRing),
-                   functions.num_points : CastToST_GeometryType(func.MDSYS.OGC_NumPoints), #sdo_util.getnumvertices
-                   functions.point_n : CastToST_GeometryType(func.MDSYS.OGC_PointN, True),
+                   functions.is_empty : ST_GeometryFunction(func.MDSYS.OGC_IsEmpty, returns_boolean=True, default_cast=True),
+                   functions.is_simple : ST_GeometryFunction(func.MDSYS.OGC_IsSimple, returns_boolean=True, default_cast=True),
+                   functions.is_closed : ST_GeometryFunction(func.MDSYS.OGC_IsClosed, returns_boolean=True),
+                   functions.is_ring : ST_GeometryFunction(func.MDSYS.OGC_IsRing, returns_boolean=True),
+                   functions.num_points : ST_GeometryFunction(func.MDSYS.OGC_NumPoints), #sdo_util.getnumvertices
+                   functions.point_n : ST_GeometryFunction(func.MDSYS.OGC_PointN, True),
                    functions.length : 'SDO_GEOM.SDO_Length',
                    functions.area : 'SDO_GEOM.SDO_Area',
-                   functions.x : CastToST_GeometryType(func.MDSYS.OGC_X),
-                   functions.y : CastToST_GeometryType(func.MDSYS.OGC_Y),
+                   functions.x : ST_GeometryFunction(func.MDSYS.OGC_X),
+                   functions.y : ST_GeometryFunction(func.MDSYS.OGC_Y),
                    functions.centroid : 'SDO_GEOM.SDO_CENTROID',
-                   functions.boundary : CastToST_GeometryType(func.MDSYS.OGC_Boundary, True),
+                   functions.boundary : ST_GeometryFunction(func.MDSYS.ST_GEOMETRY.ST_Boundary, True),
                    functions.buffer : 'SDO_GEOM.SDO_Buffer',
                    functions.convex_hull : 'SDO_GEOM.SDO_ConvexHull',
-                   functions.envelope : CastToST_GeometryType(func.MDSYS.OGC_Envelope, True),
-                   functions.start_point : CastToST_GeometryType(func.MDSYS.OGC_StartPoint, True),
-                   functions.end_point : CastToST_GeometryType(func.MDSYS.OGC_EndPoint, True),
+                   functions.envelope : ST_GeometryFunction(func.MDSYS.ST_GEOMETRY.ST_Envelope, True),
+                   functions.start_point : ST_GeometryFunction(func.MDSYS.OGC_StartPoint, True),
+                   functions.end_point : ST_GeometryFunction(func.MDSYS.OGC_EndPoint, True),
                    functions.transform : 'SDO_CS.TRANSFORM',
-                   functions.equals : lambda params : (func.SDO_EQUAL(*params) == 'TRUE'),
+                   # note: we are not using SDO_Equal because it always requires a spatial index
+                   functions.equals : ST_GeometryFunction(func.MDSYS.OGC_EQUALS, returns_boolean=True, relation_function=True, default_cast=True), 
                    functions.distance : 'SDO_GEOM.SDO_Distance',
-                   functions.within_distance : lambda params : (func.SDO_GEOM.Within_Distance(*params) == 'TRUE'),
-                   functions.disjoint : CastToST_GeometryType(func.MDSYS.OGC_Disjoint, relation_function=True),
+                   functions.within_distance : BooleanFunction(func.SDO_GEOM.Within_Distance),
+                   functions.disjoint : ST_GeometryFunction(func.MDSYS.OGC_Disjoint, relation_function=True, returns_boolean=True, default_cast=True),                   
+                   functions.intersects : ST_GeometryFunction(func.MDSYS.OGC_Intersects, relation_function=True, returns_boolean=True, default_cast=True),
+                   functions.touches : ST_GeometryFunction(func.MDSYS.OGC_Touch, relation_function=True, returns_boolean=True, default_cast=True),
+                   functions.crosses : ST_GeometryFunction(func.MDSYS.OGC_Cross, relation_function=True, returns_boolean=True, default_cast=True),                   
+                   functions.within : ST_GeometryFunction(func.MDSYS.OGC_Within, relation_function=True, returns_boolean=True, default_cast=True),                   
+                   functions.overlaps : ST_GeometryFunction(func.MDSYS.OGC_Overlap, relation_function=True, returns_boolean=True, default_cast=True),                   
+                   functions.gcontains : ST_GeometryFunction(func.MDSYS.OGC_Contains, relation_function=True, returns_boolean=True, default_cast=True),
                    
-                   functions.intersects : CastToST_GeometryType(func.MDSYS.OGC_Intersects, relation_function=True),
-                   functions.touches : lambda params : (func.SDO_TOUCH(*params) == 'TRUE'),
-#                   functions.crosses : CastToST_GeometryType(func.MDSYS.OGC_Crosses, relation_function=True),
-                   functions.crosses : CastToST_GeometryType(func.mdsys.st_geometry.st_crosses, relation_function=True),
-                   functions.within : CastToST_GeometryType(func.MDSYS.OGC_Within, relation_function=True),
+                   functions.covers : BooleanFunction(func.SDO_COVERS),
+                   functions.covered_by : BooleanFunction(func.SDO_COVEREDBY),
                    
-                   functions.overlaps : lambda params : (func.SDO_OVERLAPS(*params) == 'TRUE'),
-                   functions.gcontains : lambda params : (func.SDO_CONTAINS(*params) == 'TRUE'),
-                   functions.covers : lambda params : (func.SDO_COVERS(*params) == 'TRUE'),
-                   functions.covered_by : lambda params : (func.SDO_COVEREDBY(*params) == 'TRUE'),
-                   
-                   functions.intersection : 'ST_Intersection',
+                   functions.intersection : 'SDO_GEOM.SDO_INTERSECTION',
                    
                    oracle_functions.gtype : 'Get_GType',
                    oracle_functions.dims : 'Get_Dims',
                    oracle_functions.kml : ['TO_CHAR', 'SDO_UTIL.TO_KMLGEOMETRY'],
                    oracle_functions.gml : ['TO_CHAR', 'SDO_UTIL.TO_GMLGEOMETRY'],
                    oracle_functions.gml311 : ['TO_CHAR', 'SDO_UTIL.TO_GML311GEOMETRY'],
+                   
+                   #todo
                    oracle_functions.expand : 'ST_Expand'
                   }
     

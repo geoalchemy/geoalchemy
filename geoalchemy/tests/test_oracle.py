@@ -1,6 +1,6 @@
 from unittest import TestCase
 from sqlalchemy import (create_engine, MetaData, Column, Integer, String,
-        Numeric, func, Table, and_)
+        Numeric, func, Table, and_, not_)
 from sqlalchemy.orm import sessionmaker, mapper, aliased
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import and_
@@ -89,44 +89,54 @@ GeometryDDL(Shape.__table__)
 
 class TestGeometry(TestCase):
     """Tests for Oracle
-    
-    Note that WKT is used for comparisons, because PostGIS returns
-    differing WKB values on different systems.
     """
 
-    def setUp(self):
-        metadata.drop_all()
-        metadata.create_all()
+    SLOW_SYSTEM = True
+    database_is_set_up = False
 
-        # Add objects.  We can use strings...
-        session.add_all([
-            Road(road_name='Jeff Rd', road_geom='LINESTRING(-88.9139332929936 42.5082802993631,-88.8203027197452 42.5985669235669,-88.7383759681529 42.7239650127389,-88.6113059044586 42.9680732929936,-88.3655256496815 43.1402866687898)'),
-            Road(road_name='Peter Rd', road_geom='LINESTRING(-88.9139332929936 42.5082802993631,-88.8203027197452 42.5985669235669,-88.7383759681529 42.7239650127389,-88.6113059044586 42.9680732929936,-88.3655256496815 43.1402866687898)'),
-            Road(road_name='Geordie Rd', road_geom='LINESTRING(-89.2232485796178 42.6420382611465,-89.2449842484076 42.9179140573248,-89.2316084522293 43.106847178344,-89.0710987261147 43.243949044586,-89.092834566879 43.2957802993631,-89.092834566879 43.2957802993631,-89.0309715095541 43.3175159681529)'),
-            Road(road_name='Paul St', road_geom='LINESTRING(-88.2652071783439 42.5584395350319,-88.1598727834395 42.6269904904459,-88.1013536751592 42.621974566879,-88.0244428471338 42.6437102356688,-88.0110670509554 42.6771497261147)'),
-            Road(road_name='Graeme Ave', road_geom='LINESTRING(-88.5477708726115 42.6988853949045,-88.6096339299363 42.9697452675159,-88.6029460318471 43.0884554585987,-88.5912422101911 43.187101955414)'),
-            Road(road_name='Phil Tce', road_geom='LINESTRING(-88.9356689617834 42.9363057770701,-88.9824842484076 43.0366242484076,-88.9222931656051 43.1085191528662,-88.8487262866242 43.0449841210191)'),
-            Lake(lake_name='My Lake', lake_geom='POLYGON((-88.7968950764331 43.2305732929936,-88.7935511273885 43.1553344394904,-88.716640299363 43.1570064140127,-88.7250001719745 43.2339172420382,-88.7968950764331 43.2305732929936))'),
-            Lake(lake_name='Lake White', lake_geom='POLYGON((-88.1147292993631 42.7540605095542,-88.1548566878981 42.7824840764331,-88.1799363057325 42.7707802547771,-88.188296178344 42.7323248407643,-88.1832802547771 42.6955414012739,-88.1565286624204 42.6771496815287,-88.1448248407643 42.6336783439491,-88.131449044586 42.5718152866242,-88.1013535031847 42.565127388535,-88.1080414012739 42.5868630573248,-88.1164012738854 42.6119426751592,-88.1080414012739 42.6520700636943,-88.0980095541401 42.6838375796178,-88.0846337579618 42.7139331210191,-88.1013535031847 42.7423566878981,-88.1147292993631 42.7540605095542))'),
-            Lake(lake_name='Lake Blue', lake_geom='POLYGON((-89.0694267515924 43.1335987261147,-89.1078821656051 43.1135350318471,-89.1329617834395 43.0884554140127,-89.1312898089172 43.0466560509554,-89.112898089172 43.0132165605096,-89.0694267515924 42.9898089171975,-89.0343152866242 42.953025477707,-89.0209394904459 42.9179140127389,-89.0042197452229 42.8961783439491,-88.9774681528663 42.8644108280255,-88.9440286624204 42.8292993630573,-88.9072452229299 42.8142515923567,-88.8687898089172 42.815923566879,-88.8687898089172 42.815923566879,-88.8102707006369 42.8343152866242,-88.7734872611465 42.8710987261147,-88.7517515923567 42.9145700636943,-88.7433917197452 42.9730891719745,-88.7517515923567 43.0299363057325,-88.7734872611465 43.0867834394905,-88.7885352038217 43.158678388535,-88.8738057324841 43.1620222929936,-88.947372611465 43.1937898089172,-89.0042197452229 43.2138535031847,-89.0410031847134 43.2389331210191,-89.0710987261147 43.243949044586,-89.0660828025478 43.2238853503185,-89.0543789808917 43.203821656051,-89.0376592356688 43.175398089172,-89.0292993630573 43.1519904458599,-89.0376592356688 43.1369426751592,-89.0393312101911 43.1386146496815,-89.0393312101911 43.1386146496815,-89.0510350318471 43.1335987261147,-89.0694267515924 43.1335987261147))'),
-            Lake(lake_name='Lake Deep', lake_geom='POLYGON((-88.9122611464968 43.038296178344,-88.9222929936306 43.0399681528663,-88.9323248407643 43.0282643312102,-88.9206210191083 43.0182324840764,-88.9105891719745 43.0165605095542,-88.9005573248408 43.0232484076433,-88.9072452229299 43.0282643312102,-88.9122611464968 43.038296178344))'),
-            Spot(spot_height=420.40, spot_location='POINT(-88.5945861592357 42.9480095987261)'),
-            Spot(spot_height=102.34, spot_location='POINT(-88.9055734203822 43.0048567324841)'),
-            Spot(spot_height=388.62, spot_location='POINT(-89.201512910828 43.1051752038217)'),
-            Spot(spot_height=454.66, spot_location='POINT(-88.3304141847134 42.6269904904459)'),
-            Shape(shape_name='Bus Stop', shape_geom='GEOMETRYCOLLECTION(POINT(-88.3304141847134 42.6269904904459))'),
-            Shape(shape_name='Jogging Track', shape_geom='GEOMETRYCOLLECTION(LINESTRING(-88.2652071783439 42.5584395350319,-88.1598727834395 42.6269904904459,-88.1013536751592 42.621974566879,-88.0244428471338 42.6437102356688,-88.0110670509554 42.6771497261147))'),
-            Shape(shape_name='Play Ground', shape_geom='GEOMETRYCOLLECTION(POLYGON((-88.7968950764331 43.2305732929936,-88.7935511273885 43.1553344394904,-88.716640299363 43.1570064140127,-88.7250001719745 43.2339172420382,-88.7968950764331 43.2305732929936)))'),
-        ])
- 
-        # or use an explicit WKTSpatialElement (similar to saying func.GeomFromText())
-        self.r = Road(road_name='Dave Cres', road_geom=WKTSpatialElement('LINESTRING(-88.6748409363057 43.1035032292994,-88.6464173694267 42.9981688343949,-88.607961955414 42.9680732929936,-88.5160033566879 42.9363057770701,-88.4390925286624 43.0031847579618)', 4326))
-        session.add(self.r)
-        session.commit()
+    def __init__(self, methodName):
+        TestCase.__init__(self, methodName)
+
+    def setUp(self):
+        if not TestGeometry.SLOW_SYSTEM or not TestGeometry.database_is_set_up:
+            
+            metadata.drop_all()
+            metadata.create_all()
+    
+            # Add objects.  We can use strings...
+            session.add_all([
+                Road(road_name='Jeff Rd', road_geom='LINESTRING(-88.9139332929936 42.5082802993631,-88.8203027197452 42.5985669235669,-88.7383759681529 42.7239650127389,-88.6113059044586 42.9680732929936,-88.3655256496815 43.1402866687898)'),
+                Road(road_name='Peter Rd', road_geom='LINESTRING(-88.9139332929936 42.5082802993631,-88.8203027197452 42.5985669235669,-88.7383759681529 42.7239650127389,-88.6113059044586 42.9680732929936,-88.3655256496815 43.1402866687898)'),
+                Road(road_name='Geordie Rd', road_geom='LINESTRING(-89.2232485796178 42.6420382611465,-89.2449842484076 42.9179140573248,-89.2316084522293 43.106847178344,-89.0710987261147 43.243949044586,-89.092834566879 43.2957802993631,-89.0309715095541 43.3175159681529)'),
+                Road(road_name='Paul St', road_geom='LINESTRING(-88.2652071783439 42.5584395350319,-88.1598727834395 42.6269904904459,-88.1013536751592 42.621974566879,-88.0244428471338 42.6437102356688,-88.0110670509554 42.6771497261147)'),
+                Road(road_name='Graeme Ave', road_geom='LINESTRING(-88.5477708726115 42.6988853949045,-88.6096339299363 42.9697452675159,-88.6029460318471 43.0884554585987,-88.5912422101911 43.187101955414)'),
+                Road(road_name='Phil Tce', road_geom='LINESTRING(-88.9356689617834 42.9363057770701,-88.9824842484076 43.0366242484076,-88.9222931656051 43.1085191528662,-88.8487262866242 43.0449841210191)'),
+                Lake(lake_name='My Lake', lake_geom='POLYGON((-88.7968950764331 43.2305732929936,-88.7935511273885 43.1553344394904,-88.716640299363 43.1570064140127,-88.7250001719745 43.2339172420382,-88.7968950764331 43.2305732929936))'),
+                Lake(lake_name='Lake White', lake_geom='POLYGON((-88.1147292993631 42.7540605095542,-88.1548566878981 42.7824840764331,-88.1799363057325 42.7707802547771,-88.188296178344 42.7323248407643,-88.1832802547771 42.6955414012739,-88.1565286624204 42.6771496815287,-88.1448248407643 42.6336783439491,-88.131449044586 42.5718152866242,-88.1013535031847 42.565127388535,-88.1080414012739 42.5868630573248,-88.1164012738854 42.6119426751592,-88.1080414012739 42.6520700636943,-88.0980095541401 42.6838375796178,-88.0846337579618 42.7139331210191,-88.1013535031847 42.7423566878981,-88.1147292993631 42.7540605095542))'),
+                Lake(lake_name='Lake Blue', lake_geom='POLYGON((-89.0694267515924 43.1335987261147,-89.1078821656051 43.1135350318471,-89.1329617834395 43.0884554140127,-89.1312898089172 43.0466560509554,-89.112898089172 43.0132165605096,-89.0694267515924 42.9898089171975,-89.0343152866242 42.953025477707,-89.0209394904459 42.9179140127389,-89.0042197452229 42.8961783439491,-88.9774681528663 42.8644108280255,-88.9440286624204 42.8292993630573,-88.9072452229299 42.8142515923567,-88.8687898089172 42.815923566879,-88.8687898089172 42.815923566879,-88.8102707006369 42.8343152866242,-88.7734872611465 42.8710987261147,-88.7517515923567 42.9145700636943,-88.7433917197452 42.9730891719745,-88.7517515923567 43.0299363057325,-88.7734872611465 43.0867834394905,-88.7885352038217 43.158678388535,-88.8738057324841 43.1620222929936,-88.947372611465 43.1937898089172,-89.0042197452229 43.2138535031847,-89.0410031847134 43.2389331210191,-89.0710987261147 43.243949044586,-89.0660828025478 43.2238853503185,-89.0543789808917 43.203821656051,-89.0376592356688 43.175398089172,-89.0292993630573 43.1519904458599,-89.0376592356688 43.1369426751592,-89.0393312101911 43.1386146496815,-89.0393312101911 43.1386146496815,-89.0510350318471 43.1335987261147,-89.0694267515924 43.1335987261147))'),
+                Lake(lake_name='Lake Deep', lake_geom='POLYGON((-88.9122611464968 43.038296178344,-88.9222929936306 43.0399681528663,-88.9323248407643 43.0282643312102,-88.9206210191083 43.0182324840764,-88.9105891719745 43.0165605095542,-88.9005573248408 43.0232484076433,-88.9072452229299 43.0282643312102,-88.9122611464968 43.038296178344))'),
+                Spot(spot_height=420.40, spot_location='POINT(-88.5945861592357 42.9480095987261)'),
+                Spot(spot_height=102.34, spot_location='POINT(-88.9055734203822 43.0048567324841)'),
+                Spot(spot_height=388.62, spot_location='POINT(-89.201512910828 43.1051752038217)'),
+                Spot(spot_height=454.66, spot_location='POINT(-88.3304141847134 42.6269904904459)'),
+                Shape(shape_name='Bus Stop', shape_geom='GEOMETRYCOLLECTION(POINT(-88.3304141847134 42.6269904904459))'),
+                Shape(shape_name='Jogging Track', shape_geom='GEOMETRYCOLLECTION(LINESTRING(-88.2652071783439 42.5584395350319,-88.1598727834395 42.6269904904459,-88.1013536751592 42.621974566879,-88.0244428471338 42.6437102356688,-88.0110670509554 42.6771497261147))'),
+                Shape(shape_name='Play Ground', shape_geom='GEOMETRYCOLLECTION(POLYGON((-88.7968950764331 43.2305732929936,-88.7935511273885 43.1553344394904,-88.716640299363 43.1570064140127,-88.7250001719745 43.2339172420382,-88.7968950764331 43.2305732929936)))'),
+            ])
+     
+            # or use an explicit WKTSpatialElement (similar to saying func.GeomFromText())
+            self.r = Road(road_name='Dave Cres', road_geom=WKTSpatialElement('LINESTRING(-88.6748409363057 43.1035032292994,-88.6464173694267 42.9981688343949,-88.607961955414 42.9680732929936,-88.5160033566879 42.9363057770701,-88.4390925286624 43.0031847579618)', 4326))
+            session.add(self.r)
+            session.commit()
+            
+            TestGeometry.database_is_set_up = True
+        
+        self.r = session.query(Road).filter(Road.road_name=='Dave Cres').one()
 
     def tearDown(self):
-        session.rollback()
-        metadata.drop_all()
+        if not TestGeometry.SLOW_SYSTEM:
+            session.rollback()
+            metadata.drop_all()
 
     def test_ok(self):
         session.execute("SELECT * FROM dual")
@@ -136,7 +146,6 @@ class TestGeometry(TestCase):
         s = session.query(Spot).get(1)     
         ok_(isinstance(s.spot_location.geom_wkb, buffer))
         ok_(session.scalar(func.SDO_UTIL.VALIDATE_WKBGEOMETRY(s.spot_location.geom_wkb)))
-#        ok_(session.scalar(func.SDO_GEOM.SDO_MBR(func.SDO_GEOMETRY(func.to_blob(s.spot_location.geom_wkb), 4326))))
         ok_(session.scalar(func.SDO_GEOM.SDO_MBR(s.spot_location.desc)))
         
     # Test Geometry Functions
@@ -238,7 +247,7 @@ class TestGeometry(TestCase):
         l = session.query(Lake).filter(Lake.lake_name=='My Lake').one()
         assert not session.scalar(r.road_geom.is_empty)
         assert not session.scalar(l.lake_geom.is_empty)
-        ok_(session.query(Spot).filter(Spot.spot_location.is_empty == False).first() is not None)
+        ok_(session.query(Spot).filter(not_(Spot.spot_location.is_empty)).first() is not None)
         eq_(session.scalar(functions.is_empty('POINT(-88.5945861592357 42.9480095987261)')), False)
 
     def test_is_simple(self):
@@ -246,22 +255,23 @@ class TestGeometry(TestCase):
         l = session.query(Lake).filter(Lake.lake_name=='My Lake').one()
         assert session.scalar(r.road_geom.is_simple)
         assert session.scalar(l.lake_geom.is_simple)
-        ok_(session.query(Spot).filter(Spot.spot_location.is_simple == True).first() is not None)
+        ok_(session.query(Spot).filter(Spot.spot_location.is_simple).first() is not None)
         eq_(session.scalar(functions.is_simple('LINESTRING(1 1,2 2,2 3.5,1 3,1 2,2 1)')), False)
 
     def test_is_closed(self):
         r = session.query(Road).filter(Road.road_name=='Graeme Ave').one()
         l = session.query(Lake).filter(Lake.lake_name=='My Lake').one()
         assert not session.scalar(r.road_geom.is_closed)
-#        assert session.scalar(l.lake_geom.is_closed) # todo
-#        ok_(session.query(Lake).filter(Lake.lake_geom.is_closed == 1).first() is not None)
-        # note that we manually have to add a cast to ST_LINESTRING
+        # note Oracle always returns FALSE for polygons
+        assert not session.scalar(l.lake_geom.is_closed) 
+        ok_(session.query(Lake).filter(Lake.lake_geom.is_closed).first() is None)
+        # note that we manually have to set a geometry type for WKTSpatialElement 
         eq_(session.scalar(functions.is_closed(WKTSpatialElement('LINESTRING(0 0, 1 1)', geometry_type=LineString.name))), False)
 
     def test_is_ring(self):
         r = session.query(Road).filter(Road.road_name=='Graeme Ave').one()
         assert not session.scalar(r.road_geom.is_ring)
-#        ok_(session.query(Road).filter(Road.road_geom.is_ring == 1).first() is None)
+        ok_(session.query(Road).filter(Road.road_geom.is_ring).first() is None)
         eq_(session.scalar(functions.is_ring(WKTSpatialElement('LINESTRING(0 0, 0 1, 1 0, 1 1, 0 0)', geometry_type=LineString.name))), False)
 
     def test_num_points(self):
@@ -272,7 +282,8 @@ class TestGeometry(TestCase):
         eq_(session.scalar(r.road_geom.num_points), 5)
 #        ok_(not session.scalar(s.spot_location.num_points))
         ok_(session.query(Road).filter(Road.road_geom.num_points == 5).first() is not None)
-        eq_(session.scalar(functions.num_points(WKTSpatialElement('LINESTRING(77.29 29.07,77.42 29.26,77.27 29.31,77.29 29.07)', geometry_type=LineString.name))), 4)
+        eq_(session.scalar(functions.num_points(WKTSpatialElement('LINESTRING(77.29 29.07,77.42 29.26,77.27 29.31,77.29 29.07)', geometry_type=LineString.name))), 
+            4)
 
     def test_point_n(self):
         l = session.query(Lake).get(1)
@@ -286,16 +297,16 @@ class TestGeometry(TestCase):
                                                 WKTSpatialElement('LINESTRING(77.29 29.07,77.42 29.26,77.27 29.31,77.29 29.07)', geometry_type=LineString.name), 1))), 
             u'POINT (77.29 29.07)')
 
-#    def test_persistent(self):
-#        eq_(session.scalar(functions.wkt(func.GeomFromWKB(self.r.road_geom.wkb, 4326))), 
-#            u'LINESTRING(-88.6748409363057 43.1035032292994,-88.6464173694267 42.9981688343949,-88.607961955414 42.9680732929936,-88.5160033566879 42.9363057770701,-88.4390925286624 43.0031847579618)')
-#        
-#        geom = WKTSpatialElement('POINT(30250865.9714116 -610981.481754275)', 2249)
-#        spot = Spot(spot_height=102.34, spot_location=geom)
-#        session.add(spot)
-#        session.commit();
-#        assert_almost_equal(session.scalar(spot.spot_location.x), 0)
-#        assert_almost_equal(session.scalar(spot.spot_location.y), 0)
+    def test_persistent(self):
+        eq_(session.scalar(functions.wkt(func.SDO_GEOMETRY(self.r.road_geom.wkb, 4326))), 
+            u'LINESTRING (-88.6748409363057 43.1035032292994, -88.6464173694267 42.9981688343949, -88.607961955414 42.9680732929936, -88.5160033566879 42.9363057770701, -88.4390925286624 43.0031847579618)')
+        
+        geom = WKTSpatialElement('POINT(30250865.9714116 -610981.481754275)', 2249)
+        spot = Spot(spot_height=102.34, spot_location=geom)
+        session.add(spot)
+        session.commit();
+        assert_almost_equal(session.scalar(spot.spot_location.x), 0)
+        assert_almost_equal(session.scalar(spot.spot_location.y), 0)
         
     def test_eq(self):
         r1 = session.query(Road).filter(Road.road_name=='Graeme Ave').one()
@@ -351,8 +362,10 @@ class TestGeometry(TestCase):
        
     def test_buffer(self):
         r = session.query(Road).filter(Road.road_name=='Graeme Ave').one()
-        assert_almost_equal(session.scalar(functions.area(r.road_geom.buffer(diminfo_, 10.0), diminfo_)), 1094509.7688706999)
-#        ok_(session.query(Spot).filter(functions.within('POINT(-88.5945861592357 42.9480095987261)', Spot.spot_location.buffer(10))).first() is not None)
+        assert_almost_equal(session.scalar(functions.area(r.road_geom.buffer(diminfo_, 10.0), diminfo_)), 1094509.76889366)
+        ok_(session.query(Spot).filter(functions.within(
+                                                'POINT(-88.5945861592357 42.9480095987261)', 
+                                                Spot.spot_location.buffer(diminfo_, 10))).first() is not None)
         assert_almost_equal(session.scalar(functions.area(functions.buffer(
                                         'POINT(-88.5945861592357 42.9480095987261)', diminfo_, 10, 
                                         'unit=km arc_tolerance=0.05'), diminfo_)), 
@@ -397,7 +410,7 @@ class TestGeometry(TestCase):
         
     def test_transform(self):
         spot = session.query(Spot).get(1)
-        # compare the coordinates using a tolerance, because they may vary on different systems
+        # note that we have to cast to 'ST_POINT', because 'functions.x' only works for Points in Oracle
         assert_almost_equal(session.scalar(functions.x(func.ST_POINT(spot.spot_location.transform(2249)))), -3890517.61088792)
         assert_almost_equal(session.scalar(functions.y(func.ST_POINT(spot.spot_location.transform(2249)))), 3627658.6749871401)
         ok_(session.query(Spot).filter(functions.wkt(Spot.spot_location.transform(2249)) == 'POINT (-3890517.61088792 3627658.67498714)').first() is not None)
@@ -415,8 +428,7 @@ class TestGeometry(TestCase):
         ok_(r2 in equal_roads)
         ok_(r3 not in equal_roads)
         ok_(session.query(Spot).filter(Spot.spot_location.equals(WKTSpatialElement('POINT(-88.5945861592357 42.9480095987261)'))).first() is not None)
-        # Oracle requires a spatial index when executing Equals
-        #eq_(session.scalar(functions.equals('POINT(-88.5945861592357 42.9480095987261)', 'POINT(-88.5945861592357 42.9480095987261)')), True)
+        eq_(session.scalar(functions.equals('POINT(-88.5945861592357 42.9480095987261)', 'POINT(-88.5945861592357 42.9480095987261)')), True)
 
     def test_distance(self):
         r1 = session.query(Road).filter(Road.road_name=='Jeff Rd').one()
@@ -441,135 +453,123 @@ class TestGeometry(TestCase):
         r1 = session.query(Road).filter(Road.road_name=='Jeff Rd').one()
         r2 = session.query(Road).filter(Road.road_name=='Graeme Ave').one()
         r3 = session.query(Road).filter(Road.road_name=='Geordie Rd').one()
-        disjoint_roads = session.query(Road).filter(Road.road_geom.disjoint(r1.road_geom) == True).all()
+        disjoint_roads = session.query(Road).filter(Road.road_geom.disjoint(r1.road_geom)).all()
         ok_(r2 not in disjoint_roads)
         ok_(r3 in disjoint_roads)
         eq_(session.scalar(functions.disjoint(
-                                WKTSpatialElement('POINT(0 0)', geometry_type=Point.name), 
-                                WKTSpatialElement('LINESTRING ( 2 0, 0 2 )', geometry_type=LineString.name))), True)
+                                WKTSpatialElement('POINT(0 0)'), 
+                                WKTSpatialElement('LINESTRING ( 2 0, 0 2 )'))), True)
 
     def test_intersects(self):
         r1 = session.query(Road).filter(Road.road_name=='Jeff Rd').one()
         r2 = session.query(Road).filter(Road.road_name=='Graeme Ave').one()
         r3 = session.query(Road).filter(Road.road_name=='Geordie Rd').one()
-        intersecting_roads = session.query(Road).filter(Road.road_geom.intersects(r1.road_geom) == True).all()
+        intersecting_roads = session.query(Road).filter(Road.road_geom.intersects(r1.road_geom)).all()
         ok_(r2 in intersecting_roads)
         ok_(r3 not in intersecting_roads)
         eq_(session.scalar(functions.intersects(
-                                WKTSpatialElement('POINT(0 0)', geometry_type=Point.name), 
-                                WKTSpatialElement('LINESTRING ( 2 0, 0 2 )', geometry_type=LineString.name))), False)
+                                WKTSpatialElement('POINT(0 0)'), 
+                                WKTSpatialElement('LINESTRING ( 2 0, 0 2 )'))), False)
 
     def test_touches(self):
         l1 = session.query(Lake).filter(Lake.lake_name=='Lake White').one()
         l2 = session.query(Lake).filter(Lake.lake_name=='Lake Blue').one()
         r = session.query(Road).filter(Road.road_name=='Geordie Rd').one()
         touching_lakes = session.query(Lake).filter(Lake.lake_geom.touches(r.road_geom)).all()
-#        ok_(not session.query('1').filter(l1.lake_geom.touches(r.road_geom)).first())
-#        ok_(session.scalar(l2.lake_geom.touches(r.road_geom)))
+        ok_(session.scalar(l2.lake_geom.touches(r.road_geom)))
         ok_(l1 not in touching_lakes)
         ok_(l2 in touching_lakes)
-#        eq_(session.query(1).where(functions.touches(
-#                                WKTSpatialElement('POINT(0 0)', geometry_type=Point.name), 
-#                                WKTSpatialElement('LINESTRING ( 2 0, 0 2 )', geometry_type=LineString.name))), False)
+        eq_(session.scalar(functions.touches(
+                                WKTSpatialElement('POINT(0 0)'), 
+                                WKTSpatialElement('LINESTRING ( 2 0, 0 2 )'))), False)
 
     def test_crosses(self):
         r1 = session.query(Road).filter(Road.road_name=='Jeff Rd').one()
         r2 = session.query(Road).filter(Road.road_name=='Paul St').one()
         l = session.query(Lake).filter(Lake.lake_name=='Lake White').one()
-        crossing_roads = session.query(Road).filter(Road.road_geom.crosses(l.lake_geom) == True).all()
+        crossing_roads = session.query(Road).filter(Road.road_geom.crosses(l.lake_geom)).all()
         ok_(not session.scalar(r1.road_geom.crosses(l.lake_geom)))
         ok_(session.scalar(r2.road_geom.crosses(l.lake_geom)))
         ok_(r1 not in crossing_roads)
         ok_(r2 in crossing_roads)
-        eq_(session.scalar(functions.crosses(
-                                WKTSpatialElement('POINT(0 0)', geometry_type=Point.name), 
-                                WKTSpatialElement('LINESTRING ( 2 0, 0 2 )', geometry_type=LineString.name))), 0)
-#                                WKTSpatialElement('LINESTRING ( 2 0, 0 2 )', geometry_type=LineString.name))), True) # todo
+        # note that Oracle returns False instead of True (like the other databases do..)
+        eq_(session.scalar(functions.crosses('LINESTRING(0 1, 2 1)', 'LINESTRING (0 0, 1 2, 0 2)')), False)
 
-#    def test_within(self):
-#        l = session.query(Lake).filter(Lake.lake_name=='Lake Blue').one()
-#        p1 = session.query(Spot).filter(Spot.spot_height==102.34).one()
-#        p2 = session.query(Spot).filter(Spot.spot_height==388.62).one()
-#        spots_within = session.query(Spot).filter(Spot.spot_location.within(l.lake_geom)).all()
-#        ok_(session.scalar(p1.spot_location.within(l.lake_geom)))
-#        ok_(not session.scalar(p2.spot_location.within(l.lake_geom)))
-#        ok_(p1 in spots_within)
-#        ok_(p2 not in spots_within)
-#        eq_(session.scalar(functions.within('LINESTRING(0 1, 2 1)', 'POLYGON((-1 -1, 3 -1, 3 2, -1 2, -1 -1))')), True)
-#        buffer_geom = DBSpatialElement(session.scalar(l.lake_geom.buffer(10.0)))
-#        spots_within = session.query(Spot).filter(l.lake_geom.within(buffer_geom)).all()
-#        ok_(p1 in spots_within)
-#        ok_(p2 in spots_within)
-#
-#    def test_overlaps(self):
-#        l1 = session.query(Lake).filter(Lake.lake_name=='Lake White').one()
-#        l2 = session.query(Lake).filter(Lake.lake_name=='Lake Blue').one()
-#        l3 = session.query(Lake).filter(Lake.lake_name=='My Lake').one()
-#        overlapping_lakes = session.query(Lake).filter(Lake.lake_geom.overlaps(l3.lake_geom)).all()
-#        ok_(not session.scalar(l1.lake_geom.overlaps(l3.lake_geom)))
-#        ok_(session.scalar(l2.lake_geom.overlaps(l3.lake_geom)))
-#        ok_(l1 not in overlapping_lakes)
-#        ok_(l2 in overlapping_lakes)
-#        eq_(session.scalar(functions.overlaps('POLYGON((2 1, 4 1, 4 3, 2 3, 2 1))', 'POLYGON((-1 -1, 3 -1, 3 2, -1 2, -1 -1))')), True)
-#
-#    def test_contains(self):
-#        l = session.query(Lake).filter(Lake.lake_name=='Lake Blue').one()
-#        l1 = session.query(Lake).filter(Lake.lake_name=='Lake White').one()
-#        p1 = session.query(Spot).filter(Spot.spot_height==102.34).one()
-#        p2 = session.query(Spot).filter(Spot.spot_height==388.62).one()
-#        containing_lakes = session.query(Lake).filter(Lake.lake_geom.gcontains(p1.spot_location)).all()
-#        ok_(session.scalar(l.lake_geom.gcontains(p1.spot_location)))
-#        ok_(not session.scalar(l.lake_geom.gcontains(p2.spot_location)))
-#        ok_(l in containing_lakes)
-#        ok_(l1 not in containing_lakes)
-#        ok_(session.scalar(l.lake_geom.gcontains(WKTSpatialElement('POINT(-88.9055734203822 43.0048567324841)'))))
-#        containing_lakes = session.query(Lake).filter(Lake.lake_geom.gcontains('POINT(-88.9055734203822 43.0048567324841)')).all()
-#        ok_(l in containing_lakes)
-#        ok_(l1 not in containing_lakes)
-#        spots_within = session.query(Spot).filter(l.lake_geom.gcontains(Spot.spot_location)).all()
-#        ok_(session.scalar(l.lake_geom.gcontains(p1.spot_location)))
-#        ok_(not session.scalar(l.lake_geom.gcontains(p2.spot_location)))
-#        ok_(p1 in spots_within)
-#        ok_(p2 not in spots_within)
-#        eq_(session.scalar(functions.gcontains('LINESTRING(0 1, 2 1)', 'POLYGON((-1 -1, 3 -1, 3 2, -1 2, -1 -1))')), False)
-#
-#    def test_covers(self):
-#        l = session.query(Lake).filter(Lake.lake_name=='Lake Blue').one()
-#        l1 = session.query(Lake).filter(Lake.lake_name=='Lake White').one()
-#        p1 = session.query(Spot).filter(Spot.spot_height==102.34).one()
-#        p2 = session.query(Spot).filter(Spot.spot_height==388.62).one()
-#        covering_lakes = session.query(Lake).filter(Lake.lake_geom.covers(p1.spot_location)).all()
-#        ok_(session.scalar(l.lake_geom.covers(p1.spot_location)))
-#        ok_(not session.scalar(l.lake_geom.covers(p2.spot_location)))
-#        ok_(l in covering_lakes)
-#        ok_(l1 not in covering_lakes)
-#        eq_(session.scalar(functions.gcontains('LINESTRING(0 1, 2 1)', 'POLYGON((-1 -1, 3 -1, 3 2, -1 2, -1 -1))')), False)
-#
-#    def test_covered_by(self):
-#        l = session.query(Lake).filter(Lake.lake_name=='Lake Blue').one()
-#        p1 = session.query(Spot).filter(Spot.spot_height==102.34).one()
-#        p2 = session.query(Spot).filter(Spot.spot_height==388.62).one()
-#        covered_spots = session.query(Spot).filter(Spot.spot_location.covered_by(l.lake_geom)).all()
-#        ok_(session.scalar(p1.spot_location.covered_by(l.lake_geom)))
-#        ok_(not session.scalar(p2.spot_location.covered_by(l.lake_geom)))
-#        ok_(p1 in covered_spots)
-#        ok_(p2 not in covered_spots)
-#        eq_(session.scalar(functions.covered_by('LINESTRING(0 1, 2 1)', 'POLYGON((-1 -1, 3 -1, 3 2, -1 2, -1 -1))')), True)
-#
-#    def test_intersection(self):
-#        l = session.query(Lake).filter(Lake.lake_name=='Lake Blue').one()
-#        r = session.query(Road).filter(Road.road_name=='Geordie Rd').one()
-#        s = session.query(Spot).filter(Spot.spot_height==454.66).one()
-#        eq_(session.scalar(func.ST_AsText(l.lake_geom.intersection(s.spot_location))), 'GEOMETRYCOLLECTION EMPTY')
-#        eq_(session.scalar(func.ST_AsText(session.scalar(l.lake_geom.intersection(r.road_geom)))), 'POINT(-89.0710987261147 43.243949044586)')
-#        l = session.query(Lake).filter(Lake.lake_name=='Lake White').one()
-#        r = session.query(Road).filter(Road.road_name=='Paul St').one()
-#        eq_(session.scalar(func.ST_AsText(session.scalar(l.lake_geom.intersection(r.road_geom)))), 'LINESTRING(-88.1430673666454 42.6255500261493,-88.1140839697546 42.6230657349872)')
-#        ok_(session.query(Lake).filter(Lake.lake_geom.intersection(r.road_geom) == WKTSpatialElement('LINESTRING(-88.1430673666454 42.6255500261493,-88.1140839697546 42.6230657349872)')).first() is not None)
-# 
+    def test_within(self):
+        l = session.query(Lake).filter(Lake.lake_name=='Lake Blue').one()
+        p1 = session.query(Spot).get(2)
+        p2 = session.query(Spot).get(3)
+        spots_within = session.query(Spot).filter(Spot.spot_location.within(l.lake_geom)).all()
+        ok_(session.scalar(p1.spot_location.within(l.lake_geom)))
+        ok_(not session.scalar(p2.spot_location.within(l.lake_geom)))
+        ok_(p1 in spots_within)
+        ok_(p2 not in spots_within)
+        eq_(session.scalar(functions.within('LINESTRING(0 1, 2 1)', 'POLYGON((-1 -1, 3 -1, 3 2, -1 2, -1 -1))')), True)
+
+    def test_overlaps(self):
+        l1 = session.query(Lake).filter(Lake.lake_name=='Lake White').one()
+        l2 = session.query(Lake).filter(Lake.lake_name=='Lake Blue').one()
+        l3 = session.query(Lake).filter(Lake.lake_name=='My Lake').one()
+        overlapping_lakes = session.query(Lake).filter(Lake.lake_geom.overlaps(l3.lake_geom)).all()
+        ok_(not session.scalar(l1.lake_geom.overlaps(l3.lake_geom)))
+        ok_(session.scalar(l2.lake_geom.overlaps(l3.lake_geom)))
+        ok_(l1 not in overlapping_lakes)
+        ok_(l2 in overlapping_lakes)
+        eq_(session.scalar(functions.overlaps('POLYGON((2 1, 4 1, 4 3, 2 3, 2 1))', 'POLYGON((-1 -1, 3 -1, 3 2, -1 2, -1 -1))')), True)
+
+    def test_contains(self):
+        l = session.query(Lake).filter(Lake.lake_name=='Lake Blue').one()
+        l1 = session.query(Lake).filter(Lake.lake_name=='Lake White').one()
+        p1 = session.query(Spot).get(2)
+        p2 = session.query(Spot).get(3)
+        containing_lakes = session.query(Lake).filter(Lake.lake_geom.gcontains(p1.spot_location)).all()
+        ok_(session.scalar(l.lake_geom.gcontains(p1.spot_location)))
+        ok_(not session.scalar(l.lake_geom.gcontains(p2.spot_location)))
+        ok_(l in containing_lakes)
+        ok_(l1 not in containing_lakes)
+        ok_(session.scalar(l.lake_geom.gcontains(WKTSpatialElement('POINT(-88.9055734203822 43.0048567324841)'))))
+        containing_lakes = session.query(Lake).filter(Lake.lake_geom.gcontains('POINT(-88.9055734203822 43.0048567324841)')).all()
+        ok_(l in containing_lakes)
+        ok_(l1 not in containing_lakes)
+        spots_within = session.query(Spot).filter(l.lake_geom.gcontains(Spot.spot_location)).all()
+        ok_(session.scalar(l.lake_geom.gcontains(p1.spot_location)))
+        ok_(not session.scalar(l.lake_geom.gcontains(p2.spot_location)))
+        ok_(p1 in spots_within)
+        ok_(p2 not in spots_within)
+        eq_(session.scalar(functions.gcontains('LINESTRING(0 1, 2 1)', 'POLYGON((-1 -1, 3 -1, 3 2, -1 2, -1 -1))')), False)
+
+    def test_covers(self):
+        # see http://download.oracle.com/docs/cd/E11882_01/appdev.112/e11830/sdo_intro.htm#i880253
+        # Covers/CoveredBy work different in Oracle
+        l = session.query(Lake).filter(Lake.lake_name=='My Lake').one()
+        l1 = session.query(Lake).filter(Lake.lake_name=='Lake White').one()
+        covering_lakes = session.query(Lake).filter(Lake.lake_geom.covers('LINESTRING(-88.7968950764331 43.2305732929936, -88.7935511273885 43.1553344394904)')).all()
+        ok_(l in covering_lakes)
+        ok_(l1 not in covering_lakes)
+
+    def test_covered_by(self):
+        test_lake = Lake(lake_name='Test Lake', lake_geom=WKTSpatialElement('POLYGON((0 0, 10 0, 10 10, 0 10, 0 0))', 4326))
+        session.add(test_lake)
+        session.commit()
+        
+        l1 = session.query(Lake).filter(Lake.lake_name=='Lake White').one()
+        covering_lakes = session.query(Lake).filter(Lake.lake_geom.covered_by('POLYGON((0 0, 20 0, 20 20, 0 20, 0 0))')).all()
+        ok_(test_lake in covering_lakes)
+        ok_(l1 not in covering_lakes)
+
+    def test_intersection(self):
+        l = session.query(Lake).filter(Lake.lake_name=='Lake Blue').one()
+        s = session.query(Spot).get(4)
+        eq_(session.scalar(functions.wkt(l.lake_geom.intersection(s.spot_location, tolerance))), None)
+        l = session.query(Lake).filter(Lake.lake_name=='Lake White').one()
+        r = session.query(Road).filter(Road.road_name=='Paul St').one()
+        eq_(session.scalar(functions.wkt(l.lake_geom.intersection(r.road_geom, tolerance))), u'LINESTRING (-88.1430664921296 42.6255530821991, -88.114084510211 42.6230683849207)')
+        ok_(session.query(Lake).filter(functions.equals(Lake.lake_geom.intersection(r.road_geom, tolerance), WKTSpatialElement('LINESTRING(-88.1430664921296 42.6255530821991, -88.114084510211 42.6230683849207)'))).first() is not None)
+ 
+#todo: insert None
 #    @raises(IntegrityError)
 #    def test_constraint_nullable(self):
-#        spot_null = Spot(spot_height=420.40, spot_location=None)
+#        spot_null = Spot(spot_height=None, spot_location=None)
 #        session.add(spot_null)
 #        session.commit();
 #        ok_(True)

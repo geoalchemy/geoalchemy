@@ -34,7 +34,7 @@ def parse_clause(clause, compiler):
     return literal(clause)
 
 
-def _get_function(element, compiler, params):
+def _get_function(element, compiler, params, within_column_clause):
     """For elements of type BaseFunction, the database specific function data 
     is looked up and a executable sqlalchemy.sql.expression.Function object 
     is returned.
@@ -72,7 +72,7 @@ def _get_function(element, compiler, params):
         """if we have a function, call this function with the parameters and return the
         created Function object
         """
-        return function_data(params)
+        return function_data(params, within_column_clause)
     
     else:
         packages = function_data.split('.')
@@ -114,7 +114,7 @@ def __compile_base_function(element, compiler, **kw):
     database_dialect = DialectManager.get_spatial_dialect(compiler.dialect)
 
     if not database_dialect.is_member_function(element.__class__):
-        function = _get_function(element, compiler, params)
+        function = _get_function(element, compiler, params, kw.get('within_columns_clause', False))
         return compiler.process(function)
     else:
         geometry = params.pop(0)

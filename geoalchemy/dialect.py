@@ -71,7 +71,7 @@ class SpatialDialect(object):
                     
             - Method: A method that accepts a list/set of arguments and returns a Function object, e.g.::
             
-                    functions.equals : lambda params : (func.SDO_EQUAL(*params) == 'TRUE')
+                    functions.equals : lambda params, within_column_clause : (func.SDO_EQUAL(*params) == 'TRUE')
     
         """
         if self._get_function_mapping() is not None:

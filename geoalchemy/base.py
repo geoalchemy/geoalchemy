@@ -65,7 +65,7 @@ class WKTSpatialElement(SpatialElement, expression.Function):
 
 @compiles(WKTSpatialElement)
 def __compile_wktspatialelement(element, compiler, **kw):
-    function = _get_function(element, compiler, (element.desc, element.srid))
+    function = _get_function(element, compiler, (element.desc, element.srid), kw.get('within_columns_clause', False))
     
     return compiler.process(function)
 
@@ -93,7 +93,8 @@ def __compile_wkbspatialelement(element, compiler, **kw):
     database_dialect = DialectManager.get_spatial_dialect(compiler.dialect)
     
     function = _get_function(element, compiler, (database_dialect.bind_wkb_value(element), 
-                                                 element.srid))
+                                                 element.srid),
+                                                 kw.get('within_columns_clause', False))
     
     return compiler.process(function)
 

@@ -26,7 +26,7 @@ def parse_clause(clause, compiler):
             return clause
         if isinstance(clause, DBSpatialElement):
             return literal(clause.desc, GeometryBase)    
-        return WKBSpatialElement(clause.desc.desc, clause.desc.srid, clause.desc.geometry_type)
+        return clause.desc
     elif isinstance(clause, basestring) and WKT_REGEX.match(clause):
         return WKTSpatialElement(clause)
     
@@ -72,7 +72,7 @@ def _get_function(element, compiler, params, within_column_clause):
         """if we have a function, call this function with the parameters and return the
         created Function object
         """
-        return function_data(params, within_column_clause)
+        return function_data(params, within_column_clause, **(element.flags))
     
     else:
         packages = function_data.split('.')
@@ -95,13 +95,17 @@ class BaseFunction(Function):
     
     def __init__(self, *arguments, **kwargs):
         self.arguments = arguments
+        self.flags = kwargs.copy()
         
         Function.__init__(self, self.__class__.__name__, **kwargs)
         
-    def __call__(self, *arguments):
+    def __call__(self, *arguments, **kwargs):
         if len(arguments) > 0:
             self.arguments =  self.arguments + arguments
-            
+        
+        if len(kwargs) > 0:
+            self.flags.update(kwargs)
+        
         return self
     
 

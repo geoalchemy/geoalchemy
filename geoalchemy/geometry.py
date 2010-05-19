@@ -22,7 +22,7 @@ class Geometry(GeometryBase):
         
         def process(value):
             if value is not None:
-                return DialectManager.get_spatial_dialect(dialect).process_result(value, self.srid, self.name)
+                return DialectManager.get_spatial_dialect(dialect).process_result(value, self)
             else:
                 return value
         return process

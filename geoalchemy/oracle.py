@@ -10,6 +10,7 @@ from geoalchemy.base import WKTSpatialElement, WKBSpatialElement
     
 import warnings
 from sqlalchemy.schema import Column
+from sqlalchemy.sql.expression import table, column, and_, text
 
 class OracleComparator(SpatialComparator):
     """Comparator class used for Oracle
@@ -132,33 +133,59 @@ def ST_GeometryFunction(function, returns_geometry = False, relation_function = 
     
     return function_handler
 
-#def FunctionList(functions, returns_boolean = False, compare_value = 'TRUE'):
-#    
-#    def function_handler(params, within_column_clause):
-#        
-#        function_call = None
-#        for function in reversed(functions):
-#            
-#            if function_call is None:
-#                """for the innermost function use the passed-in parameters as argument,
-#                otherwise use the prior created function
-#                """
-#                args = params
-#            else:
-#                args = [function_call]
-#                
-#            function_call = function(*args)
-#        
-#        return __check_comparison(function_call, within_column_clause, returns_boolean, compare_value)    
-#    
-#    return function_handler
-
 def BooleanFunction(function, compare_value = 'TRUE'):
     """Wrapper for SDO_GEOMETRY database function that return 'Boolean-like' values, for example
     SDO_EQUAL returns the string 'TRUE'.
     """
     def function_handler(params, within_column_clause):
         return __check_comparison(function(*params), within_column_clause, True, compare_value)
+    
+    return function_handler
+
+def DimInfoFunction(function, returns_boolean = False, compare_value = 'TRUE'):
+    """Some Oracle functions expect a 'dimension info array' (DIMINFO) for each geometry. This method
+    tries to append a corresponding DIMINFO for every geometry in the parameter list.
+    
+    For geometry columns a subselect is added which queries the DIMINFO from 'ALL_SDO_GEOM_METADATA'.
+    For WKTSpatialElement/WKBSpatialElement objects, that were queried from the database, the DIMINFO 
+    will be added as text representation (if possible).
+    
+    Most functions that require DIMINFO also accept a tolerance value instead of the DIMINFO. If you want to 
+    use a tolerance value for geometry columns or WKBSpatialElement objects that come from the database, 
+    the flag 'auto_diminfo' has to be set to 'False' when calling the function::
+        
+        l = session.query(Lake).filter(Lake.lake_name=='Lake White').one()
+        session.scalar(l.lake_geom.area) # DIMINFO is added automatically
+        session.scalar(l.lake_geom.area(tolerance, auto_diminfo=False)) # DIMINFO is not added
+    
+    see also: http://download.oracle.com/docs/cd/E11882_01/appdev.112/e11830/sdo_objrelschema.htm#sthref300
+    """
+    
+    def function_handler(params, within_column_clause, **flags):
+        if flags.get('auto_diminfo', True):
+            # insert diminfo for all geometries in params
+            params = list(params)
+            
+            i = 0
+            length = len(params)
+            while i < length:
+                diminfo = None
+                if isinstance(params[i], (WKBSpatialElement, WKTSpatialElement)) and hasattr(params[i], 'DIMINFO'):
+                    # the attribute DIMINFO is set in OracleSpatialDialect.process_result()
+                    diminfo = params[i].DIMINFO
+                    
+                elif isinstance(params[i], Column) and isinstance(params[i].type, GeometryBase):
+                    diminfo = OracleSpatialDialect.get_diminfo_select(params[i])
+                    
+                if diminfo is not None:
+                    i += 1
+                    # insert DIMINFO after the geometry
+                    params.insert(i, diminfo)
+                    length += 1
+                    
+                i += 1
+
+        return __check_comparison(function(*params), within_column_clause, returns_boolean, compare_value)
     
     return function_handler
 
@@ -195,22 +222,22 @@ class OracleSpatialDialect(SpatialDialect):
                    functions.is_ring : ST_GeometryFunction(func.MDSYS.OGC_IsRing, returns_boolean=True),
                    functions.num_points : ST_GeometryFunction(func.MDSYS.OGC_NumPoints), #sdo_util.getnumvertices
                    functions.point_n : ST_GeometryFunction(func.MDSYS.OGC_PointN, True),
-                   functions.length : 'SDO_GEOM.SDO_Length',
-                   functions.area : 'SDO_GEOM.SDO_Area',
+                   functions.length : DimInfoFunction(func.SDO_GEOM.SDO_Length),
+                   functions.area : DimInfoFunction(func.SDO_GEOM.SDO_Area),
                    functions.x : ST_GeometryFunction(func.MDSYS.OGC_X),
                    functions.y : ST_GeometryFunction(func.MDSYS.OGC_Y),
-                   functions.centroid : 'SDO_GEOM.SDO_CENTROID',
+                   functions.centroid : DimInfoFunction(func.SDO_GEOM.SDO_CENTROID),
                    functions.boundary : ST_GeometryFunction(func.MDSYS.ST_GEOMETRY.ST_Boundary, True),
-                   functions.buffer : 'SDO_GEOM.SDO_Buffer',
-                   functions.convex_hull : 'SDO_GEOM.SDO_ConvexHull',
+                   functions.buffer : DimInfoFunction(func.SDO_GEOM.SDO_Buffer),
+                   functions.convex_hull : DimInfoFunction(func.SDO_GEOM.SDO_ConvexHull),
                    functions.envelope : ST_GeometryFunction(func.MDSYS.ST_GEOMETRY.ST_Envelope, True),
                    functions.start_point : ST_GeometryFunction(func.MDSYS.OGC_StartPoint, True),
                    functions.end_point : ST_GeometryFunction(func.MDSYS.OGC_EndPoint, True),
                    functions.transform : 'SDO_CS.TRANSFORM',
                    # note: we are not using SDO_Equal because it always requires a spatial index
                    functions.equals : ST_GeometryFunction(func.MDSYS.OGC_EQUALS, returns_boolean=True, relation_function=True, default_cast=True), 
-                   functions.distance : 'SDO_GEOM.SDO_Distance',
-                   functions.within_distance : BooleanFunction(func.SDO_GEOM.Within_Distance),
+                   functions.distance : DimInfoFunction(func.SDO_GEOM.SDO_Distance),
+                   functions.within_distance : DimInfoFunction(func.SDO_GEOM.Within_Distance, returns_boolean=True),
                    functions.disjoint : ST_GeometryFunction(func.MDSYS.OGC_Disjoint, relation_function=True, returns_boolean=True, default_cast=True),                   
                    functions.intersects : ST_GeometryFunction(func.MDSYS.OGC_Intersects, relation_function=True, returns_boolean=True, default_cast=True),
                    functions.touches : ST_GeometryFunction(func.MDSYS.OGC_Touch, relation_function=True, returns_boolean=True, default_cast=True),
@@ -222,7 +249,7 @@ class OracleSpatialDialect(SpatialDialect):
                    functions.covers : BooleanFunction(func.SDO_COVERS),
                    functions.covered_by : BooleanFunction(func.SDO_COVEREDBY),
                    
-                   functions.intersection : 'SDO_GEOM.SDO_INTERSECTION',
+                   functions.intersection : DimInfoFunction(func.SDO_GEOM.SDO_INTERSECTION),
                    
                    oracle_functions.gtype : 'Get_GType',
                    oracle_functions.dims : 'Get_Dims',
@@ -240,6 +267,8 @@ class OracleSpatialDialect(SpatialDialect):
                         
                     )
     
+    METADATA_TABLE = table('ALL_SDO_GEOM_METADATA', column('diminfo'), column('table_name'), column('column_name'))
+    
     def _get_function_mapping(self):
         return OracleSpatialDialect.__functions
     
@@ -249,10 +278,18 @@ class OracleSpatialDialect(SpatialDialect):
     def get_comparator(self):
         return OracleComparator
     
-    def process_result(self, value, column_srid, geometry_type):
+    def process_result(self, value, type):
         value = self.process_wkb(value)
-            
-        return OraclePersistentSpatialElement(WKBSpatialElement(value, column_srid, geometry_type))
+        wkb_element = WKBSpatialElement(value, type.srid, type.name)    
+        
+        if type.kwargs.has_key("diminfo"):
+            # also set the DIMINFO data so that in can be used in function calls, see DimInfoFunction()
+            if not type.kwargs.has_key("diminfo_sql"):
+                # cache the SQLAlchemy text literal
+                type.kwargs["diminfo_sql"] = text(type.kwargs["diminfo"])
+            wkb_element.DIMINFO = type.kwargs["diminfo_sql"]
+        
+        return OraclePersistentSpatialElement(wkb_element)
 
     def process_wkb(self, value):
         """SDO_UTIL.TO_WKBGEOMETRY(..) returns an object of cx_Oracle.LOB, which we 
@@ -270,6 +307,17 @@ class OracleSpatialDialect(SpatialDialect):
             return func.TO_BLOB(wkb_element.desc)
         
         return None
+
+    @staticmethod
+    def get_diminfo_select(column):
+        """Returns a select which queries the DIMINFO array from 'ALL_SDO_GEOM_METADATA'
+        for the passed in column.
+        
+        see: http://download.oracle.com/docs/cd/E11882_01/appdev.112/e11830/sdo_objrelschema.htm#sthref300
+        """
+        return select([OracleSpatialDialect.METADATA_TABLE.c.diminfo]).where(
+                                                and_(OracleSpatialDialect.METADATA_TABLE.c.table_name == column.table.name.upper(),
+                                                     OracleSpatialDialect.METADATA_TABLE.c.column_name == column.name.upper()))
 
     def handle_ddl_before_drop(self, bind, table, column):
         bind.execute("DELETE FROM USER_SDO_GEOM_METADATA WHERE table_name = '%s' AND column_name = '%s'" %

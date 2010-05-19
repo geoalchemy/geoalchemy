@@ -71,8 +71,8 @@ class SQLiteSpatialDialect(SpatialDialect):
     def get_comparator(self):
         return SQLiteComparator
     
-    def process_result(self, value, column_srid, geometry_type):
-        return SQLitePersistentSpatialElement(WKBSpatialElement(value, column_srid))
+    def process_result(self, value, type):
+        return SQLitePersistentSpatialElement(WKBSpatialElement(value, type.srid))
     
     def handle_ddl_before_drop(self, bind, table, column):
         if column.type.spatial_index and SQLiteSpatialDialect.supports_rtree(bind.dialect):

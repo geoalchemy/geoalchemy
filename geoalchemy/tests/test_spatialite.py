@@ -477,3 +477,6 @@ class TestGeometry(TestCase):
         ok_('AsBinary(roads.road_geom)' in query, 'table name is part of the column expression (select clause)')
         ok_('WHERE Equals(roads.road_geom' in query, 'table name is part of the column expression (where clause)')
         
+#        query_extent = Query(func.extent(Road.road_geom)).__str__()
+#        ok_('extent(roads.road_geom)' in query_extent, 'AsBinary is not added')
+        

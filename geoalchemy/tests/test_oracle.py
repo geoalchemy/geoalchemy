@@ -315,15 +315,15 @@ class TestGeometry(TestCase):
         ok_(r1 is r2 is r3)
 
     def test_length(self):
-        r = session.query(Road).filter(Road.road_name=='Graeme Ave').one()
-        eq_(session.scalar(r.road_geom.length(diminfo_)), 54711.459044609008)
-        ok_(session.query(Road).filter(Road.road_geom.length(diminfo_) > 0).first() is not None) 
+        r = session.query(Road).filter(Road.road_name=='Graeme Ave').one()                                      
+        eq_(session.scalar(r.road_geom.length), 54711.459044609008)
+        ok_(session.query(Road).filter(Road.road_geom.length > 0).first() is not None) 
         eq_(session.scalar(functions.length('LINESTRING(77.29 29.07,77.42 29.26,77.27 29.31,77.29 29.07)', diminfo_)), 66830.9630972249)
 
     def test_area(self):
         l = session.query(Lake).filter(Lake.lake_name=='Lake White').one()
-        assert_almost_equal(session.scalar(l.lake_geom.area(tolerance)), 104854567.261647)
-        ok_(session.query(Lake).filter(Lake.lake_geom.area(diminfo_) > 0).first() is not None)
+        assert_almost_equal(session.scalar(l.lake_geom.area(tolerance, auto_diminfo=False)), 104854567.261647)
+        ok_(session.query(Lake).filter(Lake.lake_geom.area > 0).first() is not None)
         eq_(session.scalar(functions.area(WKTSpatialElement('POLYGON((743238 2967416,743238 2967450,743265 2967450,743265.625 2967416,743238 2967416))',2249), diminfo_)), 
                             86.272430609366495)
 
@@ -347,9 +347,9 @@ class TestGeometry(TestCase):
         r = session.query(Road).filter(Road.road_name=='Graeme Ave').one()
         l = session.query(Lake).filter(Lake.lake_name=='Lake Blue').one()
         # Oracle does not support centroid for LineString
-        eq_(session.scalar(functions.wkt(r.road_geom.centroid(diminfo_))), None)
-        eq_(session.scalar(functions.wkt(l.lake_geom.centroid(diminfo_))), u'POINT (-88.9213649409212 43.0190392609092)')
-        ok_(session.query(Spot).filter(functions.wkt(Spot.spot_location.centroid(diminfo_)) == 'POINT (-88.5945861592357 42.9480095987261)').first() is not None)
+        eq_(session.scalar(functions.wkt(r.road_geom.centroid)), None)
+        eq_(session.scalar(functions.wkt(l.lake_geom.centroid)), u'POINT (-88.9213649409212 43.0190392609092)')
+        ok_(session.query(Spot).filter(functions.wkt(Spot.spot_location.centroid) == 'POINT (-88.5945861592357 42.9480095987261)').first() is not None)
         eq_(session.scalar(functions.wkt(functions.centroid('MULTIPOINT((-1 0), (-1 2), (-1 3), (-1 4), (-1 7), (0 1), (0 3), (1 1), (2 0), (6 0), (7 8), (9 8), (10 6) )', diminfo_))), 
             u'POINT (2.30460703912783 3.31788085910597)')
 
@@ -362,10 +362,10 @@ class TestGeometry(TestCase):
        
     def test_buffer(self):
         r = session.query(Road).filter(Road.road_name=='Graeme Ave').one()
-        assert_almost_equal(session.scalar(functions.area(r.road_geom.buffer(diminfo_, 10.0), diminfo_)), 1094509.76889366)
+        assert_almost_equal(session.scalar(functions.area(r.road_geom.buffer(10.0), diminfo_)), 1094509.76889366)
         ok_(session.query(Spot).filter(functions.within(
                                                 'POINT(-88.5945861592357 42.9480095987261)', 
-                                                Spot.spot_location.buffer(diminfo_, 10))).first() is not None)
+                                                Spot.spot_location.buffer(10))).first() is not None)
         assert_almost_equal(session.scalar(functions.area(functions.buffer(
                                         'POINT(-88.5945861592357 42.9480095987261)', diminfo_, 10, 
                                         'unit=km arc_tolerance=0.05'), diminfo_)), 
@@ -373,10 +373,10 @@ class TestGeometry(TestCase):
         
     def test_convex_hull(self):
         r = session.query(Road).filter(Road.road_name=='Graeme Ave').one()
-        eq_(session.scalar(functions.wkt(r.road_geom.convex_hull(diminfo_))), 
+        eq_(session.scalar(functions.wkt(r.road_geom.convex_hull)), 
             u'POLYGON ((-88.5477708728477 42.6988853969538, -88.5912422100661 43.1871019533972, -88.6029460317718 43.0884554581896, -88.6096339299412 42.9697452675198, -88.5477708728477 42.6988853969538))')
         # Oracle does not support ConvexHull for points
-        ok_(session.query(Spot).filter(functions.equals(Spot.spot_location.convex_hull(diminfo_),
+        ok_(session.query(Spot).filter(functions.equals(Spot.spot_location.convex_hull,
                                                         WKTSpatialElement('POINT(-88.5945861592357 42.9480095987261)'))).first() is None)
         eq_(session.scalar(functions.wkt(functions.convex_hull('LINESTRING(0 0, 1 1, 1 0)', diminfo_))), 
             u'POLYGON ((0.999999915732742 8.48487373222706E-8, 0.999999915755202 0.999999915201249, 8.4273559349594E-8 8.48422467917753E-8, 0.999999915732742 8.48487373222706E-8))')
@@ -434,9 +434,11 @@ class TestGeometry(TestCase):
         r1 = session.query(Road).filter(Road.road_name=='Jeff Rd').one()
         r2 = session.query(Road).filter(Road.road_name=='Geordie Rd').one()
         r3 = session.query(Road).filter(Road.road_name=='Peter Rd').one()
-        eq_(session.scalar(r1.road_geom.distance(r2.road_geom, tolerance)), 29371.776054049602)
-        eq_(session.scalar(r1.road_geom.distance(diminfo_, r3.road_geom, diminfo_)), 0.0)
-        ok_(session.query(Spot).filter(Spot.spot_location.distance(WKTSpatialElement('POINT(-88.5945861592357 42.9480095987261)'), tolerance) < 10).first() is not None)
+        eq_(session.scalar(r1.road_geom.distance(r2.road_geom)), 29371.776054049602)
+        eq_(session.scalar(r1.road_geom.distance(r3.road_geom)), 0.0)
+        ok_(session.query(Spot).filter(Spot.spot_location.distance(
+                                                            WKTSpatialElement('POINT(-88.5945861592357 42.9480095987261)'), 
+                                                            tolerance, auto_diminfo=False) < 10).first() is not None)
         eq_(session.scalar(functions.distance('POINT(-88.5945861592357 42.9480095987261)', 'POINT(-88.5945861592357 42.9480095987261)', tolerance)), 0)
 
     def test_within_distance(self):
@@ -444,7 +446,7 @@ class TestGeometry(TestCase):
         r2 = session.query(Road).filter(Road.road_name=='Graeme Ave').one()
         r3 = session.query(Road).filter(Road.road_name=='Geordie Rd').one()
         roads_within_distance = session.query(Road).filter(
-            Road.road_geom.within_distance(diminfo_, 0.20, r1.road_geom, diminfo_)).all()
+            Road.road_geom.within_distance(0.20, r1.road_geom)).all()
         ok_(r2 in roads_within_distance)
         ok_(r3 not in roads_within_distance)
 #        eq_(session.scalar(functions.within_distance('POINT(-88.9139332929936 42.5082802993631)', 10, 'POINT(-88.9139332929936 35.5082802993631)', tolerance)), True)
@@ -560,11 +562,11 @@ class TestGeometry(TestCase):
     def test_intersection(self):
         l = session.query(Lake).filter(Lake.lake_name=='Lake Blue').one()
         s = session.query(Spot).get(4)
-        eq_(session.scalar(functions.wkt(l.lake_geom.intersection(s.spot_location, tolerance))), None)
+        eq_(session.scalar(functions.wkt(l.lake_geom.intersection(s.spot_location, tolerance, auto_diminfo=False))), None)
         l = session.query(Lake).filter(Lake.lake_name=='Lake White').one()
         r = session.query(Road).filter(Road.road_name=='Paul St').one()
-        eq_(session.scalar(functions.wkt(l.lake_geom.intersection(r.road_geom, tolerance))), u'LINESTRING (-88.1430664921296 42.6255530821991, -88.114084510211 42.6230683849207)')
-        ok_(session.query(Lake).filter(functions.equals(Lake.lake_geom.intersection(r.road_geom, tolerance), WKTSpatialElement('LINESTRING(-88.1430664921296 42.6255530821991, -88.114084510211 42.6230683849207)'))).first() is not None)
+        eq_(session.scalar(functions.wkt(l.lake_geom.intersection(r.road_geom))), u'LINESTRING (-88.1430664921296 42.6255530821991, -88.114084510211 42.6230683849207)')
+        ok_(session.query(Lake).filter(functions.equals(Lake.lake_geom.intersection(r.road_geom), WKTSpatialElement('LINESTRING(-88.1430664921296 42.6255530821991, -88.114084510211 42.6230683849207)'))).first() is not None)
  
 #todo: insert None
 #    @raises(IntegrityError)

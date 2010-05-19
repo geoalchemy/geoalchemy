@@ -106,8 +106,8 @@ class PGSpatialDialect(SpatialDialect):
     def get_comparator(self):
         return PGComparator
     
-    def process_result(self, value, column_srid, geometry_type):
-        return PGPersistentSpatialElement(WKBSpatialElement(value, column_srid))
+    def process_result(self, value, type):
+        return PGPersistentSpatialElement(WKBSpatialElement(value, type.srid))
     
     def handle_ddl_before_drop(self, bind, table, column):
         bind.execute(select([func.DropGeometryColumn((table.schema or 'public'), table.name, column.name)]).execution_options(autocommit=True))

@@ -107,7 +107,7 @@ class SpatialDialect(object):
         """
         raise NotImplementedError("Method SpatialDialect.get_comparator must be implemented in subclasses.")
     
-    def process_result(self, value, column_srid, geometry_type):
+    def process_result(self, value, type):
         """This method is called when a geometry value from the database is
         transformed into a SpatialElement object. It receives an WKB binary sequence, either as Buffer (for PostGIS
         and Spatialite), a String (for MySQL) or a cx_Oracle.LOB (for Oracle), and is supposed to return a 

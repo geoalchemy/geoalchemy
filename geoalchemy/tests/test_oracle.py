@@ -5,21 +5,21 @@ from sqlalchemy.orm import sessionmaker, mapper, aliased
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import and_
 from sqlalchemy.exceptions import IntegrityError
-
-from geoalchemy import (Geometry, GeometryCollection, GeometryColumn,
-        GeometryDDL, WKTSpatialElement, DBSpatialElement, GeometryExtensionColumn)
-from geoalchemy.functions import functions
-from geoalchemy.oracle import OracleComparator, oracle_functions
-
-from nose.tools import eq_, ok_, raises, assert_almost_equal
-
-import os
 from geoalchemy.geometry import LineString, Point, Polygon
 from sqlalchemy.schema import Sequence
 from sqlalchemy.sql.expression import text
 
+from geoalchemy import (Geometry, GeometryCollection, GeometryColumn,
+        GeometryDDL, WKTSpatialElement, DBSpatialElement, GeometryExtensionColumn)
+from geoalchemy.functions import functions
+from geoalchemy.oracle import OracleComparator, oracle_functions, ORACLE_NULL_GEOMETRY
+
+from nose.tools import eq_, ok_, raises, assert_almost_equal
+
+import os
 os.environ['ORACLE_HOME'] = '/usr/lib/oracle/xe/app/oracle/product/10.2.0/server'
 os.environ['LD_LIBRARY'] = '/usr/lib/oracle/xe/app/oracle/product/10.2.0/server/lib'
+
 
 import cx_Oracle
 
@@ -569,12 +569,14 @@ class TestGeometry(TestCase):
         ok_(session.query(Lake).filter(functions.equals(Lake.lake_geom.intersection(r.road_geom), WKTSpatialElement('LINESTRING(-88.1430664921296 42.6255530821991, -88.114084510211 42.6230683849207)'))).first() is not None)
  
 #todo: insert None
-#    @raises(IntegrityError)
-#    def test_constraint_nullable(self):
+    @raises(IntegrityError)
+    def test_constraint_nullable(self):
+        spot_null = Spot(spot_height=None, spot_location=ORACLE_NULL_GEOMETRY)
 #        spot_null = Spot(spot_height=None, spot_location=None)
-#        session.add(spot_null)
-#        session.commit();
-#        ok_(True)
+        session.add(spot_null)
+        session.commit();
+        ok_(True)
+        road_null = Road(road_name='Jeff Rd', road_geom=ORACLE_NULL_GEOMETRY)
 #        road_null = Road(road_name='Jeff Rd', road_geom=None)
-#        session.add(road_null)
-#        session.commit();
+        session.add(road_null)
+        session.commit();

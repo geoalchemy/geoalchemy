@@ -12,6 +12,16 @@ import warnings
 from sqlalchemy.schema import Column
 from sqlalchemy.sql.expression import table, column, and_, text
 
+"""Currently cx_Oracle does not support the insertion of NULL values into geometry columns 
+as bind parameter, see http://sourceforge.net/mailarchive/forum.php?thread_name=AANLkTikNG4brmQJiua2FQS8zUwk8rNgLHoe6SZ32f1gQ%40mail.gmail.com&forum_name=cx-oracle-users
+
+For still being able to insert NULL, this variable can be used::
+    
+    spot_null = Spot(spot_height=None, spot_location=ORACLE_NULL_GEOMETRY)
+    
+"""
+ORACLE_NULL_GEOMETRY = select([text('NULL')], from_obj=['dual'])
+
 class OracleComparator(SpatialComparator):
     """Comparator class used for Oracle
     """

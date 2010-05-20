@@ -203,5 +203,5 @@ class DialectManager(object):
                 
             return DialectManager.__spatial_dialect_instances[spatial_dialect]
         else:
-            raise NotImplementedError
+            raise NotImplementedError('Dialect "%s" is not supported by GeoAlchemy' % (dialect.name))
         

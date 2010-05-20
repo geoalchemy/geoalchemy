@@ -5,6 +5,7 @@ from sqlalchemy import (create_engine, MetaData, Column, Integer, String,
 from sqlalchemy.orm import sessionmaker, mapper
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.exceptions import IntegrityError
+from sqlalchemy.sql.expression import Select
 
 from pysqlite2 import dbapi2 as sqlite
 from geoalchemy import (GeometryColumn, Point, Polygon,
@@ -477,6 +478,10 @@ class TestGeometry(TestCase):
         ok_('AsBinary(roads.road_geom)' in query, 'table name is part of the column expression (select clause)')
         ok_('WHERE Equals(roads.road_geom' in query, 'table name is part of the column expression (where clause)')
         
-#        query_extent = Query(func.extent(Road.road_geom)).__str__()
-#        ok_('extent(roads.road_geom)' in query_extent, 'AsBinary is not added')
+        query_wkb = Select([Road.road_geom]).where(Road.road_geom == 'POINT(0 0)').__str__()
+        ok_('SELECT AsBinary(roads.road_geom)' in query_wkb, 'AsBinary is added')
+        ok_('WHERE Equals(roads.road_geom' in query_wkb, 'AsBinary is not added in where clause')
+        
+        query_extent = Query(func.extent(Road.road_geom.RAW)).__str__()
+        ok_('extent(roads.road_geom)' in query_extent, 'AsBinary is not added')
         

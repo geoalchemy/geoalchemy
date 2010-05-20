@@ -1,5 +1,6 @@
 from sqlalchemy.orm.properties import ColumnProperty
 from sqlalchemy.sql import expression
+from sqlalchemy.sql.expression import ColumnClause
 from sqlalchemy.types import TypeEngine
 from sqlalchemy.ext.compiler import compiles
 
@@ -197,6 +198,18 @@ def _check_srid(spatial_element, srid_db):
     else:
         return functions.transform(spatial_element, srid_db)
 
+class RawColumn(ColumnClause):
+    """This class is used to wrap a geometry column, so that
+    no conversion to WKB is added, see SpatialComparator.RAW
+    """
+    def __init__(self, column):
+        self.column = column
+        ColumnClause.__init__(self, '')
+        
+@compiles(RawColumn)
+def __compile_rawcolumn(rawcolumn, compiler, **kw):
+    return compiler.visit_column(rawcolumn.column)
+
 class SpatialComparator(ColumnProperty.ColumnComparator):
     """Intercepts standard Column operators on mapped class attributes
         and overrides their behavior.
@@ -204,6 +217,17 @@ class SpatialComparator(ColumnProperty.ColumnComparator):
         A comparator class makes sure that queries like 
         "session.query(Lake).filter(Lake.lake_geom.gcontains(..)).all()" can be executed.
     """
+    
+    @property
+    def RAW(self):
+        """For queries like 'select extent(spots.spot_location) from spots' the 
+        geometry column should not be surrounded by 'AsBinary(..)'. If 'RAW' is
+        called on a geometry column, this column wont't be converted to WKB::
+        
+            session.query(func.extent(Spot.spot_location.RAW)).first() 
+        
+        """
+        return RawColumn(self.property.columns[0])
     
     def __getattr__(self, name):
         return getattr(functions, name)(self)

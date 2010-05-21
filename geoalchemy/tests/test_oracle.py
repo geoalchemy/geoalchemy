@@ -547,24 +547,96 @@ class TestGeometry(TestCase):
         ok_(p2 not in spots_within)
         eq_(session.scalar(functions.gcontains('LINESTRING(0 1, 2 1)', 'POLYGON((-1 -1, 3 -1, 3 2, -1 2, -1 -1))')), False)
 
-    def test_covers(self):
-        # see http://download.oracle.com/docs/cd/E11882_01/appdev.112/e11830/sdo_intro.htm#i880253
-        # Covers/CoveredBy work different in Oracle
-        l = session.query(Lake).filter(Lake.lake_name=='My Lake').one()
-        l1 = session.query(Lake).filter(Lake.lake_name=='Lake White').one()
-        covering_lakes = session.query(Lake).filter(Lake.lake_geom.covers('LINESTRING(-88.7968950764331 43.2305732929936, -88.7935511273885 43.1553344394904)')).all()
-        ok_(l in covering_lakes)
-        ok_(l1 not in covering_lakes)
+    def test_sdo_filter(self):
+        ok_(session.query(Spot).filter(Spot.spot_location.sdo_filter('POINT(-88.9055734203822 43.0048567324841)')).all())
+    
+    def test_sdo_nn(self):
+        ok_(session.query(Spot).filter(Spot.spot_location.sdo_nn('POINT(-88.9055734203822 43.0048567324841)'
+                                                                     'distance=2')).first())
+    
+    def test_sdo_nn_distance(self):
+        ok_(session.query(Spot, oracle_functions.sdo_nn_distance(text('42'))).
+                        filter(Spot.spot_location.sdo_nn('POINT(-88.9055734203822 43.0048567324841)'
+                                                                     'distance=2', text('42'))).first())
+    
+    def test_sdo_relate(self):
+        ok_(session.query(Spot).
+                        filter(Spot.spot_location.sdo_relate('POINT(-88.9055734203822 43.0048567324841)',
+                                                                     'mask=equal')).first())
+    
+    def test_sdo_within_distance(self):
+        ok_(session.query(Spot).
+                        filter(Spot.spot_location.sdo_within_distance('POINT(-88.9055734203822 43.0048567324841)',
+                                                                     'distance=2')).first())
+    
+    def test_sdo_anyinteract(self):
+        ok_(session.query(Spot).filter(
+                Spot.spot_location.sdo_anyinteract('POINT(-88.9055734203822 43.0048567324841)')).first())
+    
+    def test_sdo_contains(self):
+        ok_(session.query(Lake).filter(
+                Lake.lake_geom.sdo_contains('POINT(-88.9055734203822 43.0048567324841)')).first())
 
-    def test_covered_by(self):
+    def test_sdo_coveredby(self):
         test_lake = Lake(lake_name='Test Lake', lake_geom=WKTSpatialElement('POLYGON((0 0, 10 0, 10 10, 0 10, 0 0))', 4326))
         session.add(test_lake)
         session.commit()
         
         l1 = session.query(Lake).filter(Lake.lake_name=='Lake White').one()
-        covering_lakes = session.query(Lake).filter(Lake.lake_geom.covered_by('POLYGON((0 0, 20 0, 20 20, 0 20, 0 0))')).all()
+        covering_lakes = session.query(Lake).filter(Lake.lake_geom.sdo_coveredby('POLYGON((0 0, 20 0, 20 20, 0 20, 0 0))')).all()
         ok_(test_lake in covering_lakes)
         ok_(l1 not in covering_lakes)
+    
+    def test_sdo_covers(self):
+        # see http://download.oracle.com/docs/cd/E11882_01/appdev.112/e11830/sdo_intro.htm#i880253
+        # Covers/CoveredBy work different in Oracle
+        l = session.query(Lake).filter(Lake.lake_name=='My Lake').one()
+        l1 = session.query(Lake).filter(Lake.lake_name=='Lake White').one()
+        covering_lakes = session.query(Lake).filter(Lake.lake_geom.sdo_covers('LINESTRING(-88.7968950764331 43.2305732929936, -88.7935511273885 43.1553344394904)')).all()
+        ok_(l in covering_lakes)
+        ok_(l1 not in covering_lakes)
+    
+    def test_sdo_equal(self):
+        ok_(session.query(Spot).filter(
+                        Spot.spot_location.sdo_equal('POINT(-88.9055734203822 43.0048567324841)')).first())
+    
+    def test_sdo_inside(self):
+        l = session.query(Lake).filter(Lake.lake_name=='Lake Blue').one()
+        ok_(session.query(Spot).filter(
+                        Spot.spot_location.sdo_inside(l.lake_geom)).first())
+    
+    def test_sdo_on(self):
+        test_road = Road(road_name='Test Road', road_geom=WKTSpatialElement('LINESTRING(0 0, 10 0)', 4326))
+        session.add(test_road)
+        session.commit()
+        
+        ok_(session.query(Road).filter(
+                        Road.road_geom.sdo_on('POLYGON((0 0, 10 0, 10 10, 0 10, 0 0))')).first())
+    
+    def test_sdo_overlapbydisjoint(self):
+        r2 = session.query(Road).filter(Road.road_name=='Paul St').one()
+        ok_(session.query(Lake).filter(
+                        Lake.lake_geom.sdo_overlapbdydisjoint(r2.road_geom)).first())
+    
+    def test_sdo_overlapbyintersect(self):
+        test_lake = Lake(lake_name='Test Lake Overlap', lake_geom=WKTSpatialElement('POLYGON((0 0, 10 0, 10 10, 0 10, 0 0))', 4326))
+        session.add(test_lake)
+        session.commit()
+        ok_(session.query(Lake).filter(Lake.lake_geom.sdo_overlapbdyintersect(
+                    'POLYGON((-10 1, 5 1, 5 8, -10 8, -10 1))')).first())
+    
+    def test_sdo_overlaps(self):
+        r2 = session.query(Road).filter(Road.road_name=='Paul St').one()
+        ok_(session.query(Lake).filter(
+                        Lake.lake_geom.sdo_overlaps(r2.road_geom)).first())
+    
+    def test_sdo_touch(self):
+        test_lake = Lake(lake_name='Test Lake Touch', lake_geom=WKTSpatialElement('POLYGON((0 0, 10 0, 10 10, 0 10, 0 0))', 4326))
+        session.add(test_lake)
+        session.commit()
+        ok_(session.query(Lake).filter(Lake.lake_geom.sdo_touch(
+                    'POLYGON((-10 1, 0 1, 0 8, -10 8, -10 1))')).first())
+        
 
     def test_intersection(self):
         l = session.query(Lake).filter(Lake.lake_name=='Lake Blue').one()
@@ -578,12 +650,13 @@ class TestGeometry(TestCase):
 #todo: insert None
     @raises(IntegrityError)
     def test_constraint_nullable(self):
-        spot_null = Spot(spot_height=None, spot_location=ORACLE_NULL_GEOMETRY)
-#        spot_null = Spot(spot_height=None, spot_location=None)
-        session.add(spot_null)
-        session.commit();
-        ok_(True)
-        road_null = Road(road_name='Jeff Rd', road_geom=ORACLE_NULL_GEOMETRY)
+        pass
+#        spot_null = Spot(spot_height=None, spot_location=ORACLE_NULL_GEOMETRY)
+##        spot_null = Spot(spot_height=None, spot_location=None)
+#        session.add(spot_null)
+#        session.commit();
+#        ok_(True)
+#        road_null = Road(road_name='Jeff Rd', road_geom=ORACLE_NULL_GEOMETRY)
 #        road_null = Road(road_name='Jeff Rd', road_geom=None)
-        session.add(road_null)
-        session.commit();
+#        session.add(road_null)
+#        session.commit();

@@ -45,35 +45,6 @@ class OraclePersistentSpatialElement(PersistentSpatialElement):
         except AttributeError:
             return getattr(oracle_functions, name)(self)
 
-
-class oracle_functions(functions):
-    """Functions only supported by Oracle
-    """
-    
-    class gtype(BaseFunction):
-        """g.Get_GType()"""
-        pass
-        
-    class dims(BaseFunction):
-        """g.Get_Dims()"""
-        pass
-    
-    class kml(BaseFunction):
-        """TO_CHAR(SDO_UTIL.TO_KMLGEOMETRY(g))"""
-        pass
-
-    class gml(BaseFunction):
-        """TO_CHAR(SDO_UTIL.TO_GMLGEOMETRY(g))"""
-        pass
-
-    class gml311(BaseFunction):
-        """TO_CHAR(SDO_UTIL.TO_GML311GEOMETRY(g))"""
-        pass
-    
-    class expand(BaseFunction):
-        """Expand(g)"""
-        pass
-
 def ST_GeometryFunction(function, returns_geometry = False, relation_function = False, 
                           returns_boolean = False, compare_value = 1, default_cast = False):
     """Functions inside MDSYS.OGC_* (OGC SF) and MDSYS.ST_GEOMETRY.ST_* (SQL MM) expect ST_GEOMETRY 
@@ -214,8 +185,98 @@ def __check_comparison(function, within_column_clause, returns_boolean, compare_
         return (function == compare_value)
     else: 
         return function
-    
 
+class oracle_functions(functions):
+    """Functions only supported by Oracle
+    """
+    
+    class gtype(BaseFunction):
+        """g.Get_GType()"""
+        pass
+        
+    class dims(BaseFunction):
+        """g.Get_Dims()"""
+        pass
+    
+    class kml(BaseFunction):
+        """TO_CHAR(SDO_UTIL.TO_KMLGEOMETRY(g))"""
+        pass
+
+    class gml(BaseFunction):
+        """TO_CHAR(SDO_UTIL.TO_GMLGEOMETRY(g))"""
+        pass
+
+    class gml311(BaseFunction):
+        """TO_CHAR(SDO_UTIL.TO_GML311GEOMETRY(g))"""
+        pass
+    
+    # Spatial Operators
+    # http://download.oracle.com/docs/cd/E11882_01/appdev.112/e11830/sdo_operat.htm#insertedID0
+    
+    class sdo_filter(BaseFunction):
+        """SDO_FILTER(g1, g2, param)"""
+        pass
+    
+    class sdo_nn(BaseFunction):
+        """SDO_NN(g1, g2, param [, number])"""
+        pass
+    
+    class sdo_nn_distance(BaseFunction):
+        """SDO_NN_DISTANCE(number)"""
+        pass
+    
+    class sdo_relate(BaseFunction):
+        """SDO_RELATE(g1, g2, param)"""
+        pass
+    
+    class sdo_within_distance(BaseFunction):
+        """SDO_WITHIN_DISTANCE(g1, g2, param)"""
+        pass
+    
+    class sdo_anyinteract(BaseFunction):
+        """SDO_ANYINTERACT(g1, g2)"""
+        pass
+    
+    class sdo_contains(BaseFunction):
+        """SDO_CONTAINS(g1, g2)"""
+        pass
+    
+    class sdo_coveredby(BaseFunction):
+        """SDO_COVEREDBY(g1, g2)"""
+        pass
+    
+    class sdo_covers(BaseFunction):
+        """SDO_COVERS(g1, g2)"""
+        pass
+    
+    class sdo_equal(BaseFunction):
+        """SDO_EQUAL(g1, g2)"""
+        pass
+    
+    class sdo_inside(BaseFunction):
+        """SDO_INSIDE(g1, g2)"""
+        pass
+    
+    class sdo_on(BaseFunction):
+        """SDO_ON(g1, g2)"""
+        pass
+    
+    class sdo_overlapbdydisjoint(BaseFunction):
+        """SDO_OVERLAPBDYDISJOINT(g1, g2)"""
+        pass
+    
+    class sdo_overlapbdyintersect(BaseFunction):
+        """SDO_OVERLAPBDYINTERSECT(g1, g2)"""
+        pass
+    
+    class sdo_overlaps(BaseFunction):
+        """SDO_OVERLAPS(g1, g2)"""
+        pass
+    
+    class sdo_touch(BaseFunction):
+        """SDO_TOUCH(g1, g2)"""
+        pass
+        
 class OracleSpatialDialect(SpatialDialect):
     """Implementation of SpatialDialect for Oracle."""
     
@@ -256,9 +317,8 @@ class OracleSpatialDialect(SpatialDialect):
                    functions.within : ST_GeometryFunction(func.MDSYS.OGC_Within, relation_function=True, returns_boolean=True, default_cast=True),                   
                    functions.overlaps : ST_GeometryFunction(func.MDSYS.OGC_Overlap, relation_function=True, returns_boolean=True, default_cast=True),                   
                    functions.gcontains : ST_GeometryFunction(func.MDSYS.OGC_Contains, relation_function=True, returns_boolean=True, default_cast=True),
-                   
-                   functions.covers : BooleanFunction(func.SDO_COVERS),
-                   functions.covered_by : BooleanFunction(func.SDO_COVEREDBY),
+                   functions.covers : None, # use oracle_functions.sdo_covers 
+                   functions.covered_by : None, # use oracle_functions.sdo_coveredby
                    
                    functions.intersection : DimInfoFunction(func.SDO_GEOM.SDO_INTERSECTION),
                    
@@ -268,8 +328,23 @@ class OracleSpatialDialect(SpatialDialect):
                    oracle_functions.gml : ['TO_CHAR', 'SDO_UTIL.TO_GMLGEOMETRY'],
                    oracle_functions.gml311 : ['TO_CHAR', 'SDO_UTIL.TO_GML311GEOMETRY'],
                    
-                   #todo
-                   oracle_functions.expand : 'ST_Expand'
+                   oracle_functions.sdo_filter : BooleanFunction(func.SDO_FILTER),
+                   oracle_functions.sdo_nn : BooleanFunction(func.SDO_NN),
+                   oracle_functions.sdo_nn_distance : 'SDO_NN_DISTANCE',
+                   oracle_functions.sdo_relate : BooleanFunction(func.SDO_RELATE),
+                   oracle_functions.sdo_within_distance : BooleanFunction(func.SDO_WITHIN_DISTANCE),
+                   oracle_functions.sdo_anyinteract : BooleanFunction(func.SDO_ANYINTERACT),
+                   oracle_functions.sdo_contains : BooleanFunction(func.SDO_CONTAINS),
+                   oracle_functions.sdo_coveredby : BooleanFunction(func.SDO_COVEREDBY),
+                   oracle_functions.sdo_covers : BooleanFunction(func.SDO_COVERS),
+                   oracle_functions.sdo_equal : BooleanFunction(func.SDO_EQUAL),
+                   oracle_functions.sdo_inside : BooleanFunction(func.SDO_INSIDE),
+                   oracle_functions.sdo_on : BooleanFunction(func.SDO_ON),
+                   oracle_functions.sdo_overlapbdydisjoint : BooleanFunction(func.SDO_OVERLAPBDYDISJOINT),
+                   oracle_functions.sdo_overlapbdyintersect : BooleanFunction(func.SDO_OVERLAPBDYINTERSECT),
+                   oracle_functions.sdo_overlaps : BooleanFunction(func.SDO_OVERLAPS),
+                   oracle_functions.sdo_touch : BooleanFunction(func.SDO_TOUCH)
+                   
                   }
     
     __member_functions = (
@@ -388,4 +463,3 @@ class OracleSpatialDialect(SpatialDialect):
                 return None
             else:
                 return type.name
-        

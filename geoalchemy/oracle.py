@@ -21,7 +21,7 @@ For still being able to insert NULL, this variable can be used::
     spot_null = Spot(spot_height=None, spot_location=ORACLE_NULL_GEOMETRY)
     
 """
-ORACLE_NULL_GEOMETRY = select([text('NULL')], from_obj=['dual'])
+ORACLE_NULL_GEOMETRY = text('NULL')
 
 class OracleComparator(SpatialComparator):
     """Comparator class used for Oracle
@@ -276,6 +276,69 @@ class oracle_functions(functions):
     class sdo_touch(BaseFunction):
         """SDO_TOUCH(g1, g2)"""
         pass
+    
+    # Selection of functions of the SDO_GEOM package
+    # http://download.oracle.com/docs/cd/E11882_01/appdev.112/e11830/sdo_objgeom.htm#insertedID0
+    
+    class sdo_geom_sdo_area(BaseFunction):
+        """SDO_GEOM.SDO_AREA()"""
+        pass
+    
+    class sdo_geom_sdo_buffer(BaseFunction):
+        """SDO_GEOM.SDO_BUFFER()"""
+        pass
+    
+    class sdo_geom_sdo_centroid(BaseFunction):
+        """SDO_GEOM.SDO_CENTROID()"""
+        pass
+    
+    class sdo_geom_sdo_concavehull(BaseFunction):
+        """SDO_GEOM.SDO_CONCAVEHULL()"""
+        pass
+    
+    class sdo_geom_sdo_concavehull_boundary(BaseFunction):
+        """SDO_GEOM.SDO_CONCAVEHULL_BOUNDARY()"""
+        pass
+    
+    class sdo_geom_sdo_convexhull(BaseFunction):
+        """SDO_GEOM.SDO_CONVEXHULL()"""
+        pass
+    
+    class sdo_geom_sdo_difference(BaseFunction):
+        """SDO_GEOM.SDO_DIFFERENCE()"""
+        pass
+    
+    class sdo_geom_sdo_distance(BaseFunction):
+        """SDO_GEOM.SDO_DISTANCE()"""
+        pass
+    
+    class sdo_geom_sdo_intersection(BaseFunction):
+        """SDO_GEOM.SDO_INTERSECTION()"""
+        pass
+    
+    class sdo_geom_sdo_length(BaseFunction):
+        """SDO_GEOM.SDO_LENGTH()"""
+        pass
+    
+    class sdo_geom_sdo_mbr(BaseFunction):
+        """SDO_GEOM.SDO_MBR()"""
+        pass
+    
+    class sdo_geom_sdo_pointonsurface(BaseFunction):
+        """SDO_GEOM.SDO_POINTONSURFACE()"""
+        pass
+    
+    class sdo_geom_sdo_union(BaseFunction):
+        """SDO_GEOM.SDO_UNION()"""
+        pass
+    
+    class sdo_geom_sdo_xor(BaseFunction):
+        """SDO_GEOM.SDO_XOR()"""
+        pass
+    
+    class sdo_geom_sdo_within_distance(BaseFunction):
+        """SDO_GEOM.WITHIN_DISTANCE()"""
+        pass
         
 class OracleSpatialDialect(SpatialDialect):
     """Implementation of SpatialDialect for Oracle."""
@@ -319,7 +382,6 @@ class OracleSpatialDialect(SpatialDialect):
                    functions.gcontains : ST_GeometryFunction(func.MDSYS.OGC_Contains, relation_function=True, returns_boolean=True, default_cast=True),
                    functions.covers : None, # use oracle_functions.sdo_covers 
                    functions.covered_by : None, # use oracle_functions.sdo_coveredby
-                   
                    functions.intersection : DimInfoFunction(func.SDO_GEOM.SDO_INTERSECTION),
                    
                    oracle_functions.gtype : 'Get_GType',
@@ -343,7 +405,30 @@ class OracleSpatialDialect(SpatialDialect):
                    oracle_functions.sdo_overlapbdydisjoint : BooleanFunction(func.SDO_OVERLAPBDYDISJOINT),
                    oracle_functions.sdo_overlapbdyintersect : BooleanFunction(func.SDO_OVERLAPBDYINTERSECT),
                    oracle_functions.sdo_overlaps : BooleanFunction(func.SDO_OVERLAPS),
-                   oracle_functions.sdo_touch : BooleanFunction(func.SDO_TOUCH)
+                   oracle_functions.sdo_touch : BooleanFunction(func.SDO_TOUCH),
+                   
+                   # same as functions.area
+                   oracle_functions.sdo_geom_sdo_area : DimInfoFunction(func.SDO_GEOM.SDO_Area), 
+                   # same as functions.buffer
+                   oracle_functions.sdo_geom_sdo_buffer : DimInfoFunction(func.SDO_GEOM.SDO_Buffer), 
+                   # same as functions.centroid
+                   oracle_functions.sdo_geom_sdo_centroid : DimInfoFunction(func.SDO_GEOM.SDO_CENTROID), 
+                   oracle_functions.sdo_geom_sdo_concavehull : 'SDO_GEOM.SDO_CONCAVEHULL', 
+                   oracle_functions.sdo_geom_sdo_concavehull_boundary : 'SDO_GEOM.SDO_CONCAVEHULL_BOUNDARY',
+                   # same as functions.convexhull
+                   oracle_functions.sdo_geom_sdo_convexhull : DimInfoFunction(func.SDO_GEOM.SDO_CONVEXHULL), 
+                   # same as functions.distance
+                   oracle_functions.sdo_geom_sdo_difference : DimInfoFunction(func.SDO_GEOM.SDO_DIFFERENCE), 
+                   # same as functions.intersection
+                   oracle_functions.sdo_geom_sdo_difference : DimInfoFunction(func.SDO_GEOM.SDO_INTERSECTION), 
+                   # same as functions.length
+                   oracle_functions.sdo_geom_sdo_length : DimInfoFunction(func.SDO_GEOM.SDO_LENGTH), 
+                   oracle_functions.sdo_geom_sdo_mbr : DimInfoFunction(func.SDO_GEOM.SDO_MBR), 
+                   oracle_functions.sdo_geom_sdo_pointonsurface : DimInfoFunction(func.SDO_GEOM.SDO_POINTONSURFACE), 
+                   oracle_functions.sdo_geom_sdo_union : DimInfoFunction(func.SDO_GEOM.SDO_UNION), 
+                   oracle_functions.sdo_geom_sdo_xor : DimInfoFunction(func.SDO_GEOM.SDO_XOR), 
+                   # same as functions.within_distance
+                   oracle_functions.sdo_geom_sdo_within_distance : DimInfoFunction(func.SDO_GEOM.Within_Distance, returns_boolean=True) 
                    
                   }
     

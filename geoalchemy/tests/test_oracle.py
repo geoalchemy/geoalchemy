@@ -99,6 +99,9 @@ class TestGeometry(TestCase):
         TestCase.__init__(self, methodName)
 
     def setUp(self):
+        if not session.is_active:
+            session.rollback()
+        
         if not TestGeometry.SLOW_SYSTEM or not TestGeometry.database_is_set_up:
             
             metadata.drop_all()
@@ -647,16 +650,82 @@ class TestGeometry(TestCase):
         eq_(session.scalar(functions.wkt(l.lake_geom.intersection(r.road_geom))), u'LINESTRING (-88.1430664921296 42.6255530821991, -88.114084510211 42.6230683849207)')
         ok_(session.query(Lake).filter(functions.equals(Lake.lake_geom.intersection(r.road_geom), WKTSpatialElement('LINESTRING(-88.1430664921296 42.6255530821991, -88.114084510211 42.6230683849207)'))).first() is not None)
  
+    def test_sdo_geom_sdo_area(self):
+        ok_(self.test_area, 'same as functions.area')
+    
+    def test_sdo_geom_sdo_buffer(self):
+        ok_(self.test_buffer, 'same as functions.buffer')
+    
+    def test_sdo_geom_sdo_centroid(self):
+        ok_(self.test_centroid, 'same as functions.centroid')
+    
+    def test_sdo_geom_sdo_concavehull(self):
+        r = session.query(Road).filter(Road.road_name=='Graeme Ave').one()
+        eq_(session.scalar(functions.wkt(r.road_geom.sdo_geom_sdo_concavehull(tolerance))), 
+            u'POLYGON ((-88.5477708728477 42.6988853969538, -88.5912422100661 43.1871019533972, -88.6029460317718 43.0884554581896, -88.6096339299412 42.9697452675198, -88.5477708728477 42.6988853969538))')
+        
+    def test_sdo_geom_sdo_concavehull_boundary(self):
+        r = session.query(Road).filter(Road.road_name=='Graeme Ave').one()
+        eq_(session.scalar(functions.wkt(r.road_geom.sdo_geom_sdo_concavehull_boundary(tolerance))), 
+            u'POLYGON ((-88.5477708728477 42.6988853969538, -88.5912422100661 43.1871019533972, -88.6029460317718 43.0884554581896, -88.6096339299412 42.9697452675198, -88.5477708728477 42.6988853969538))')
+        
+    def test_sdo_geom_sdo_convexhull(self):
+        ok_(self.test_convex_hull, 'same as functions.convex_hull')
+    
+    def test_sdo_geom_sdo_difference(self):
+        eq_(session.scalar(functions.wkt(oracle_functions.sdo_geom_sdo_difference(
+                                    'POLYGON((0 0, 10 0, 10 10, 0 10, 0 0))',
+                                    'POLYGON((-10 1, 5 1, 5 8, -10 8, -10 1))',                                                 
+                                    tolerance))), 
+            u'POLYGON ((5.0 1.0, 5.0 8.0, 0.0 8.06054845190832, 0.0 1.00766739404158, 5.0 1.0))')
+        
+    
+    def test_sdo_geom_sdo_distance(self):
+        ok_(self.test_distance, 'same as functions.distance')
+    
+    def test_sdo_geom_sdo_intersection(self):
+        ok_(self.test_intersection, 'same as functions.intersection')
+    
+    def test_sdo_geom_sdo_length(self):
+        ok_(self.test_length, 'same as functions.length')
+    
+    def test_sdo_geom_sdo_mbr(self):
+        r = session.query(Road).filter(Road.road_name=='Graeme Ave').one()
+        eq_(session.scalar(functions.wkt(r.road_geom.sdo_geom_sdo_mbr)), 
+            u'POLYGON ((-88.6096339299363 42.6988853949045, -88.5477708726115 42.6988853949045, -88.5477708726115 43.187101955414, -88.6096339299363 43.187101955414, -88.6096339299363 42.6988853949045))')
+    
+    def test_sdo_geom_sdo_pointonsurface(self):
+        l = session.query(Lake).filter(Lake.lake_name=='Lake Blue').one()
+        eq_(session.scalar(functions.wkt(l.lake_geom.sdo_geom_sdo_pointonsurface)), u'POINT (-89.0694267515924 43.1335987261147)')
+    
+    def test_sdo_geom_sdo_union(self):
+        eq_(session.scalar(functions.wkt(oracle_functions.sdo_geom_sdo_union(
+                                    'POLYGON((0 0, 10 0, 10 10, 0 10, 0 0))',
+                                    'POLYGON((-10 1, 5 1, 5 8, -10 8, -10 1))',                                                 
+                                    tolerance))), 
+            u'POLYGON ((0.0 8.06054845190832, -10.0 8.0, -10.0 1.0, 0.0 1.00766739404158, 0.0 0.0, 10.0 0.0, 10.0 10.0, 0.0 10.0, 0.0 8.06054845190832))')
+    
+    def test_sdo_geom_sdo_xor(self):
+        eq_(session.scalar(functions.wkt(oracle_functions.sdo_geom_sdo_xor(
+                                    'POLYGON((0 0, 10 0, 10 10, 0 10, 0 0))',
+                                    'POLYGON((-10 1, 5 1, 5 8, -10 8, -10 1))',                                                 
+                                    tolerance))), 
+            u'MULTIPOLYGON (((-10.0 8.0, -10.0 1.0, 0.0 1.00766739404158, 0.0 8.06054845190832, -10.0 8.0)), ((10.0 0.0, 10.0 10.0, 0.0 10.0, 0.0 8.06054845190832, 5.0 8.0, 5.0 1.0, 0.0 1.00766739404158, 0.0 0.0, 10.0 0.0)))')
+    
+    def test_sdo_geom_sdo_within_distance(self):
+        ok_(self.test_within_distance, 'same as functions.within_distance')
+ 
 #todo: insert None
     @raises(IntegrityError)
     def test_constraint_nullable(self):
-        pass
-#        spot_null = Spot(spot_height=None, spot_location=ORACLE_NULL_GEOMETRY)
-##        spot_null = Spot(spot_height=None, spot_location=None)
-#        session.add(spot_null)
-#        session.commit();
-#        ok_(True)
-#        road_null = Road(road_name='Jeff Rd', road_geom=ORACLE_NULL_GEOMETRY)
+        spot_null = Spot(spot_height=None, spot_location=ORACLE_NULL_GEOMETRY)
+#        spot_null = Spot(spot_height=None, spot_location=None)
+        session.add(spot_null)
+        session.commit();
+        session.delete(spot_null)
+        session.commit();
+        ok_(True)
+        road_null = Road(road_name='Jeff Rd', road_geom=ORACLE_NULL_GEOMETRY)
 #        road_null = Road(road_name='Jeff Rd', road_geom=None)
-#        session.add(road_null)
-#        session.commit();
+        session.add(road_null)
+        session.commit();

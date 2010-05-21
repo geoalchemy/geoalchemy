@@ -204,7 +204,10 @@ class RawColumn(ColumnClause):
     """
     def __init__(self, column):
         self.column = column
-        ColumnClause.__init__(self, '')
+        ColumnClause.__init__(self, column.name, column.table)
+        
+    def _make_proxy(self, selectable, name=None):
+        return self.column._make_proxy(selectable, name)
         
 @compiles(RawColumn)
 def __compile_rawcolumn(rawcolumn, compiler, **kw):

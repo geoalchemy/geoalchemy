@@ -5,7 +5,7 @@ from sqlalchemy import (create_engine, MetaData, Column, Integer, String,
 from sqlalchemy.orm import sessionmaker, mapper
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.exceptions import IntegrityError
-from sqlalchemy.sql.expression import Select
+from sqlalchemy.sql.expression import Select, select
 
 from pysqlite2 import dbapi2 as sqlite
 from geoalchemy import (GeometryColumn, Point, Polygon,
@@ -482,6 +482,17 @@ class TestGeometry(TestCase):
         ok_('SELECT AsBinary(roads.road_geom)' in query_wkb, 'AsBinary is added')
         ok_('WHERE Equals(roads.road_geom' in query_wkb, 'AsBinary is not added in where clause')
         
-        query_extent = Query(func.extent(Road.road_geom.RAW)).__str__()
-        ok_('extent(roads.road_geom)' in query_extent, 'AsBinary is not added')
+        # test for RAW attribute
+        query_wkb = Select([Road.road_geom.RAW]).__str__()
+        ok_('SELECT roads.road_geom' in query_wkb, 'AsBinary is not added')
+        
+        ok_(session.query(Road.road_geom.RAW).first())
+        
+        query_srid = Query(func.SRID(Road.road_geom.RAW))
+        ok_('SRID(roads.road_geom)' in query_srid.__str__(), 'AsBinary is not added')
+        ok_(session.scalar(query_srid))
+        
+        eq_(session.scalar(select(['1']).where(
+                            functions.disjoint(Select([Spot.spot_location.RAW]).where(Spot.spot_id == 1).as_scalar(), 
+                                            'POINT(0 0)'))), True)
         

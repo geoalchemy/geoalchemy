@@ -11,6 +11,7 @@ from geoalchemy.base import WKTSpatialElement, WKBSpatialElement
 import warnings
 from sqlalchemy.schema import Column
 from sqlalchemy.sql.expression import table, column, and_, text
+from sqlalchemy.orm.attributes import InstrumentedAttribute
 
 """Currently cx_Oracle does not support the insertion of NULL values into geometry columns 
 as bind parameter, see http://sourceforge.net/mailarchive/forum.php?thread_name=AANLkTikNG4brmQJiua2FQS8zUwk8rNgLHoe6SZ32f1gQ%40mail.gmail.com&forum_name=cx-oracle-users
@@ -325,6 +326,9 @@ class OracleSpatialDialect(SpatialDialect):
         
         see: http://download.oracle.com/docs/cd/E11882_01/appdev.112/e11830/sdo_objrelschema.htm#sthref300
         """
+        if isinstance(column, InstrumentedAttribute):
+            column = column.property.columns[0]
+        
         return select([OracleSpatialDialect.METADATA_TABLE.c.diminfo]).where(
                                                 and_(OracleSpatialDialect.METADATA_TABLE.c.table_name == column.table.name.upper(),
                                                      OracleSpatialDialect.METADATA_TABLE.c.column_name == column.name.upper()))

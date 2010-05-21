@@ -12,7 +12,8 @@ from sqlalchemy.sql.expression import text
 from geoalchemy import (Geometry, GeometryCollection, GeometryColumn,
         GeometryDDL, WKTSpatialElement, DBSpatialElement, GeometryExtensionColumn)
 from geoalchemy.functions import functions
-from geoalchemy.oracle import OracleComparator, oracle_functions, ORACLE_NULL_GEOMETRY
+from geoalchemy.oracle import OracleComparator, oracle_functions, ORACLE_NULL_GEOMETRY,\
+    OracleSpatialDialect
 
 from nose.tools import eq_, ok_, raises, assert_almost_equal
 
@@ -323,6 +324,12 @@ class TestGeometry(TestCase):
     def test_area(self):
         l = session.query(Lake).filter(Lake.lake_name=='Lake White').one()
         assert_almost_equal(session.scalar(l.lake_geom.area(tolerance, auto_diminfo=False)), 104854567.261647)
+        assert_almost_equal(session.scalar(l.lake_geom.area(
+                                                OracleSpatialDialect.get_diminfo_select(Lake.lake_geom), 
+                                                auto_diminfo=False)), 104854567.261647)
+        assert_almost_equal(session.scalar(l.lake_geom.area(
+                                                OracleSpatialDialect.get_diminfo_select(Lake.__table__.c.lake_geom), 
+                                                auto_diminfo=False)), 104854567.261647)
         ok_(session.query(Lake).filter(Lake.lake_geom.area > 0).first() is not None)
         eq_(session.scalar(functions.area(WKTSpatialElement('POLYGON((743238 2967416,743238 2967450,743265 2967450,743265.625 2967416,743238 2967416))',2249), diminfo_)), 
                             86.272430609366495)

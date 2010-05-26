@@ -103,9 +103,6 @@ class PGSpatialDialect(SpatialDialect):
     def _get_function_mapping(self):
         return PGSpatialDialect.__functions
     
-    def get_comparator(self):
-        return PGComparator
-    
     def process_result(self, value, type):
         return PGPersistentSpatialElement(WKBSpatialElement(value, type.srid))
     

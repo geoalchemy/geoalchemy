@@ -101,14 +101,6 @@ class SpatialDialect(object):
         """
         return None
     
-    def get_comparator(self):
-        """Returns the comparator class that contains all database operations
-        you can execute on geometries. This method has to be overridden.
-        The returned class must be a subclass of geoalchemy.comparator.SpatialComparator.
-        
-        """
-        raise NotImplementedError("Method SpatialDialect.get_comparator must be implemented in subclasses.")
-    
     def process_result(self, value, type):
         """This method is called when a geometry value from the database is
         transformed into a SpatialElement object. It receives an WKB binary sequence, either as Buffer (for PostGIS

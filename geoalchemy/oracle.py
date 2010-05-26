@@ -446,9 +446,6 @@ class OracleSpatialDialect(SpatialDialect):
     def is_member_function(self, function_class):
         return function_class in self.__member_functions
     
-    def get_comparator(self):
-        return OracleComparator
-    
     def process_result(self, value, type):
         value = self.process_wkb(value)
         wkb_element = WKBSpatialElement(value, type.srid, type.name)    

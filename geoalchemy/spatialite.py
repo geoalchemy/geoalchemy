@@ -68,9 +68,6 @@ class SQLiteSpatialDialect(SpatialDialect):
     def _get_function_mapping(self):
         return SQLiteSpatialDialect.__functions
     
-    def get_comparator(self):
-        return SQLiteComparator
-    
     def process_result(self, value, type):
         return SQLitePersistentSpatialElement(WKBSpatialElement(value, type.srid))
     

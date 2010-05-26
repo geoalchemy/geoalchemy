@@ -90,9 +90,6 @@ class MySQLSpatialDialect(SpatialDialect):
     def _get_function_mapping(self):
         return MySQLSpatialDialect.__functions
     
-    def get_comparator(self):
-        return MySQLComparator
-    
     def process_result(self, value, type):
         return MySQLPersistentSpatialElement(WKBSpatialElement(value, type.srid))
     

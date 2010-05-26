@@ -104,9 +104,10 @@ class DBSpatialElement(SpatialElement, expression.Function):
     """This class can be used to wrap a geometry returned by a 
     spatial database operation.
     
-    For example: 
-    element = DBSpatialElement(session.scalar(r.geom.buffer(10.0)))
-    session.scalar(element.wkt)
+    For example:: 
+    
+        element = DBSpatialElement(session.scalar(r.geom.buffer(10.0)))
+        session.scalar(element.wkt)
     
     """
     

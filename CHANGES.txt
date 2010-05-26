@@ -1,6 +1,15 @@
 GeoAlchemy Change Log
 =====================
 
+0.2.1
+-----
+
+* GeoAlchemy supports Oracle
+* Introduced RAW attribute, so that the geometry column can
+    be used in a select clause without being surrounded with
+    'AsBinary(..)'
+    >>> session.query(func.extent(Spot.spot_location.RAW)).first()
+
 0.2
 ---
 

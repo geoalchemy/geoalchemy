@@ -492,7 +492,10 @@ class TestGeometry(TestCase):
         ok_('SRID(roads.road_geom)' in query_srid.__str__(), 'AsBinary is not added')
         ok_(session.scalar(query_srid))
         
-        eq_(session.scalar(select(['1']).where(
-                            functions.disjoint(Select([Spot.spot_location.RAW]).where(Spot.spot_id == 1).as_scalar(), 
-                                            'POINT(0 0)'))), True)
+        eq_(session.scalar(Select([func.SRID(Spot.spot_location)]).where(Spot.spot_id == 1)), 
+                None,
+                'AsBinary is added and the SRID is not returned')
+        eq_(str(session.scalar(Select([func.SRID(Spot.spot_location.RAW)]).where(Spot.spot_id == 1))), 
+                '4326',
+                'AsBinary is not added and the SRID is returned')
         

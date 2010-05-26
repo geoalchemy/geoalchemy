@@ -22,4 +22,5 @@ Dialects
    postgis
    mysql
    spatialite
+   oracle
    

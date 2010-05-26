@@ -48,7 +48,7 @@ class OraclePersistentSpatialElement(PersistentSpatialElement):
 def ST_GeometryFunction(function, returns_geometry = False, relation_function = False, 
                           returns_boolean = False, compare_value = 1, default_cast = False):
     """Functions inside MDSYS.OGC_* (OGC SF) and MDSYS.ST_GEOMETRY.ST_* (SQL MM) expect ST_GEOMETRY 
-    instead of SDO_GEOMETRY.
+    instead of SDO_GEOMETRY, this method adds a cast.
     
     Some functions like OGC_X or OGC_IsClosed only work if the geometry (the first parameter) is casted 
     to a ST_GEOMETRY subtype, for example: 'OGC_X(ST_POINT(SDO_GEOMETRY(..)))'. 
@@ -502,7 +502,7 @@ class OracleSpatialDialect(SpatialDialect):
           
     def handle_ddl_after_create(self, bind, table, column):    
         bind.execute("ALTER TABLE %s ADD %s %s" % 
-                            (table.name, column.name, 'SDO_GEOMETRY')) #column.type.name))
+                            (table.name, column.name, 'SDO_GEOMETRY'))
         
         if not column.nullable:
             bind.execute("ALTER TABLE %s MODIFY %s NOT NULL" % (table.name, column.name))

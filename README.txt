@@ -14,23 +14,24 @@ under the mentorship of `Mark Ramm-Christensen <http://compoundthinking.com/blog
 
 Requirements
 ------------
-Requires SQLAlchemy >= 0.6. Supported on python 2.5 and python 2.6.
-Should also work with python 2.4 but has not been tested. It also
+Requires SQLAlchemy > 0.6. Supported on Python 2.5 and Python 2.6.
+Should also work with Python 2.4 but has not been tested. It also
 requires a supported spatial database.
 
 
 Supported Spatial Databases
 ---------------------------
 At present `PostGIS <http://postgis.refractions.net/>`_, `Spatialite
-<http://www.gaia-gis.it/spatialite/>`_ and `MySQL Spatial
-<http://www.mysql.com/>`_  are supported.
+<http://www.gaia-gis.it/spatialite/>`_, `MySQL <http://www.mysql.com/>`_
+and `Oracle <http://www.oracle.com/technology/software/products/database/index.html>`_
+are supported.
 
 Support
 -------
-GeoAlchemy is at an early stage of development. It does not yet have a
-mailing list of its own but support should be available on the SQLAlchemy
-Mailing List or IRC Channel. Also, feel free to email the author directly
-to send bugreports, feature requests, patches, etc.
+GeoAlchemy is at an early stage of development. Its mailing list is available on
+`Google Groups <http://groups.google.com/group/geoalchemy>`_. The source code can be 
+found on `BitBucket <http://bitbucket.org/geoalchemy/geoalchemy/>`_. Also, feel free to email 
+the author directly to send bugreports, feature requests, patches, etc.
 
 
 Installation
@@ -46,7 +47,7 @@ Or, download the package, change into geoalchemy dir and type::
 
 Documentation
 -------------
-Documentation is available online at `http://geo.turbogears.org/geoalchemy`.
+Documentation is available online at http://geoalchemy.org.
 You can also generate full documentation using sphinx by doing `make html`
 in the `doc` dir and pointing the browser to `doc/_build/index.html`.
 
@@ -57,12 +58,14 @@ Package Contents
   geoalchemy/
       Source code of the project.
 
-  geoalchemy/doc/
-      Documentation index in rst-format, can be built using makefile
-      included.
-
   geoalchemy/tests/
       Unittests for GeoAlchemy.
+
+  doc/
+      Documentation source.
+
+  examples/
+      A few examples demonstrating usage.
 
 
 License

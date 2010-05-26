@@ -84,11 +84,13 @@ class SpatialDialect(object):
         
         return SpatialDialect.__functions[function_class]
     
-    def is_member_function(self, function_class):
-        """Returns True if the passed-in function should be called as member function, e.g.::
+    def is_member_function(self, function_class):   
+        """Returns True if the passed-in function should be called as member 
+        function, e.g.::
+        
+            Point.the_geom.dims is compiled as:
+            points.the_geom.Get_Dims()
             
-                points.the_geom.Get_Dims()
-
         """
         return False
     

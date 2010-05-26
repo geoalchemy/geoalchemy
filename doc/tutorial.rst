@@ -6,7 +6,7 @@ you started quickly. In this tutorial we will create a simple model using
 three vector layers in PostGIS. The same tutorial will be applicable for
 MySQL. Minor changes are required for spatialte as the spatialite extension
 needs to be loaded. Spatialite specific details are given `here
-<#notes-for-spatialite>`_.
+<usagenotes.html#notes-for-spatialite>`_.
 
 Setting up PostGIS
 ------------------
@@ -71,8 +71,8 @@ classes and database tables separately and then mapping the classes to
 the tables using mapper configuration, or they can be defined
 declaratively using the new declarative extension. In this example we
 use the SQLAlchemy declarative extension to define the model. Notes on how to use
-GeoAlchemy with a non-declarative mapping are stated `below
-<#notes-on-non-declarative-mapping>`_. We also
+GeoAlchemy with a non-declarative mapping are stated in the `Usage Notes
+<usagenotes.html#notes-on-non-declarative-mapping>`_. We also
 create a metadata object that holds the schema information of all
 database objects and will thus be useful for creating the objects in
 the database.
@@ -166,6 +166,7 @@ The following comparators and database specific function declarations are availa
 * PostGIS: *geoalchemy.postgis.PGComparator* and *geoalchemy.postgis.pg_functions*
 * MySQL: *geoalchemy.mysql.MySQLComparator* and *geoalchemy.mysql.mysql_functions*
 * Spatialite: *geoalchemy.spatialite.SQLiteComparator* and *geoalchemy.spatialite.sqlite_functions*
+* Oracle: *geoalchemy.oracle.OracleComparator* and *geoalchemy.oracle.oracle_functions*
 
 Creating Database Tables
 ------------------------
@@ -338,106 +339,3 @@ more complex queries can be made.
 	>>> session.scalar(pg_functions.gml(functions.transform(point, 2249)))
 	'<gml:Point srsName="EPSG:2249"><gml:coordinates>-2369733.76351267,1553066.7062767</gml:coordinates></gml:Point>'
 	
-
-Notes for Spatialite
---------------------
-
-Although Python2.5 and its higher versions include sqlite support,
-while using spatialite in python we have to use the db-api module
-provided by `pysqlite2 <http://code.google.com/p/pysqlite/>`_.  So we have to 
-install pysqlite2 separately. Also, by default the pysqlite2 disables extension
-loading. In order to enable extension loading, we have to build it
-ourselves. Download the pysqlite tarball, open the file setup.cfg and
-comment out the line that reads:
-
-.. code-block:: python
-
-    define=SQLITE_OMIT_LOAD_EXTENSION
-
-Now save the file and then build and install pysqlite2:
-
-.. code-block:: bash
-
-    $ python setup.py install
-
-Now, we are ready to use spatialte in our code. While importing pysqlite
-in our code we must ensure that we are importing from the newly installed
-pysqlite2 and not from the pysqlite library included in python. Also pass
-the imported module as a parameter to sqlalchemy create_engine function
-so that sqlalchemy uses this module instead of the default module:
-to be used:
-
-.. code-block:: python
-
-    from pysqlite2 import dbapi2 as sqlite
-
-    engine = create_engine('sqlite:////tmp/devdata.db', module=sqlite, echo=True)
-
-Enable sqlite extension loading and load the spatialite extension:
-
-.. code-block:: python
-
-    connection = engine.raw_connection().connection
-    connection.enable_load_extension(True)
-    metadata = MetaData(engine)
-    session = sessionmaker(bind=engine)()
-    session.execute("select load_extension('/usr/local/lib/libspatialite.so')")
-
-When using for the database for the first time we have to initialize the
-database. Details are given in `spatialite documentation
-<http://www.gaia-gis.it/spatialite/spatialite-tutorial-2.3.1.html#t2>`_.
-
-.. code-block:: sql
-
-    sqlite3> SELECT InitSpatialMetaData();
-    sqlite3> INSERT INTO spatial_ref_sys (srid, auth_name, auth_srid, ref_sys_name, proj4text) VALUES (4326, 'epsg', 4326, 'WGS 84', '+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs');
-
-
-Notes on non-declarative mapping
---------------------------------
-
-In some cases it may be favored to define the database tables and the model classes separately. GeoAlchemy also
-supports this way of non-declarative mapping. The following example demonstrates how a mapping can
-be set up.
-
-.. code-block:: python
-
-	from sqlalchemy import *
-	from sqlalchemy.orm import *
-	from geoalchemy import *
-	from geoalchemy.postgis import PGComparator
-	
-	engine = create_engine('postgresql://gis:gis@localhost/gis', echo=True)
-	metadata = MetaData(engine)
-	session = sessionmaker(bind=engine)()
-	
-	# define table
-	spots_table = Table('spots', metadata,
-	                    Column('spot_id', Integer, primary_key=True),
-	                    Column('spot_height', Numeric),
-	                    GeometryExtensionColumn('spot_location', Geometry(2)))
-	
-	# define class
-	class Spot(object):
-	    def __init__(self, spot_id=None, spot_height=None, spot_location=None):
-	        self.spot_id = spot_id
-	        self.spot_height = spot_height
-	        self.spot_location = spot_location
-	
-	# set up the mapping between table and class       
-	mapper(Spot, spots_table, properties={
-	            'spot_location': GeometryColumn(spots_table.c.spot_location, 
-	                                            comparator=PGComparator)}) 
-	
-	# enable the DDL extension   
-	GeometryDDL(spots_table)
-	
-	# create table
-	metadata.create_all()
-
-	# add object
-	session.add(Spot(spot_height=420.40, spot_location='POINT(-88.5945861592357 42.9480095987261)'))
-	session.commit()
-	
-	s = session.query(Spot).get(1)
-	print session.scalar(s.spot_location.wkt)

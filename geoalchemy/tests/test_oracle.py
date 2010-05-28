@@ -3,13 +3,12 @@ from sqlalchemy import (create_engine, MetaData, Column, Integer, String,
         Numeric, func, Table, and_, not_)
 from sqlalchemy.orm import sessionmaker, mapper, aliased
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import and_
 from sqlalchemy.exceptions import IntegrityError
 from geoalchemy.geometry import LineString, Point, Polygon
 from sqlalchemy.schema import Sequence
 from sqlalchemy.sql.expression import text
 
-from geoalchemy import (Geometry, GeometryCollection, GeometryColumn,
+from geoalchemy import (GeometryCollection, GeometryColumn,
         GeometryDDL, WKTSpatialElement, DBSpatialElement, GeometryExtensionColumn)
 from geoalchemy.functions import functions
 from geoalchemy.oracle import OracleComparator, oracle_functions, ORACLE_NULL_GEOMETRY,\
@@ -141,10 +140,6 @@ class TestGeometry(TestCase):
         if not TestGeometry.SLOW_SYSTEM:
             session.rollback()
             metadata.drop_all()
-
-    def test_ok(self):
-        session.execute("SELECT * FROM dual")
-        ok_(True)
 
     def test_WKBSpatialElement(self):
         s = session.query(Spot).get(1)     
@@ -279,20 +274,14 @@ class TestGeometry(TestCase):
         eq_(session.scalar(functions.is_ring(WKTSpatialElement('LINESTRING(0 0, 0 1, 1 0, 1 1, 0 0)', geometry_type=LineString.name))), False)
 
     def test_num_points(self):
-        l = session.query(Lake).get(1)
         r = session.query(Road).get(1)
-        s = session.query(Spot).get(1)
-#        ok_(not session.scalar(l.lake_geom.num_points))
         eq_(session.scalar(r.road_geom.num_points), 5)
-#        ok_(not session.scalar(s.spot_location.num_points))
         ok_(session.query(Road).filter(Road.road_geom.num_points == 5).first() is not None)
         eq_(session.scalar(functions.num_points(WKTSpatialElement('LINESTRING(77.29 29.07,77.42 29.26,77.27 29.31,77.29 29.07)', geometry_type=LineString.name))), 
             4)
 
     def test_point_n(self):
-        l = session.query(Lake).get(1)
         r = session.query(Road).get(1)
-#        ok_(not session.scalar(l.lake_geom.point_n(1)))
         ok_(session.query(Road).filter(and_(Road.road_geom.point_n(5) <> None,  
                                             functions.wkt(Road.road_geom.point_n(5)) == 'POINT (-88.3655256496815 43.1402866687898)')).first() 
                                             is not None)
@@ -320,9 +309,9 @@ class TestGeometry(TestCase):
 
     def test_length(self):
         r = session.query(Road).filter(Road.road_name=='Graeme Ave').one()                                      
-        eq_(session.scalar(r.road_geom.length), 54711.459044609008)
+        assert_almost_equal(session.scalar(r.road_geom.length), 54711.459044609008)
         ok_(session.query(Road).filter(Road.road_geom.length > 0).first() is not None) 
-        eq_(session.scalar(functions.length('LINESTRING(77.29 29.07,77.42 29.26,77.27 29.31,77.29 29.07)', diminfo_)), 66830.9630972249)
+        assert_almost_equal(session.scalar(functions.length('LINESTRING(77.29 29.07,77.42 29.26,77.27 29.31,77.29 29.07)', diminfo_)), 66830.9630972249)
 
     def test_area(self):
         l = session.query(Lake).filter(Lake.lake_name=='Lake White').one()
@@ -334,12 +323,12 @@ class TestGeometry(TestCase):
                                                 OracleSpatialDialect.get_diminfo_select(Lake.__table__.c.lake_geom), 
                                                 auto_diminfo=False)), 104854567.261647)
         ok_(session.query(Lake).filter(Lake.lake_geom.area > 0).first() is not None)
-        eq_(session.scalar(functions.area(WKTSpatialElement('POLYGON((743238 2967416,743238 2967450,743265 2967450,743265.625 2967416,743238 2967416))',2249), diminfo_)), 
+        assert_almost_equal(session.scalar(functions.area(WKTSpatialElement('POLYGON((743238 2967416,743238 2967450,743265 2967450,743265.625 2967416,743238 2967416))',2249), diminfo_)), 
                             86.272430609366495)
 
     def test_x(self):
         s = session.query(Spot).get(1)
-        eq_(session.scalar(s.spot_location.x), -88.594586159235689)
+        assert_almost_equal(session.scalar(s.spot_location.x), -88.594586159235689)
         s = session.query(Spot).filter(and_(Spot.spot_location.x < 0, Spot.spot_location.y > 42)).all()
         ok_(s is not None)
         assert_almost_equal(session.scalar(functions.x(WKTSpatialElement('POINT(-88.3655256496815 43.1402866687898)', geometry_type=Point.name))), 
@@ -347,7 +336,7 @@ class TestGeometry(TestCase):
 
     def test_y(self):
         s = session.query(Spot).get(1)
-        eq_(session.scalar(s.spot_location.y), 42.9480095987261)
+        assert_almost_equal(session.scalar(s.spot_location.y), 42.9480095987261)
         s = session.query(Spot).filter(and_(Spot.spot_location.y < 0, Spot.spot_location.y > 42)).all()
         ok_(s is not None)
         assert_almost_equal(session.scalar(functions.y(WKTSpatialElement('POINT(-88.3655256496815 43.1402866687898)', geometry_type=Point.name))), 
@@ -444,12 +433,13 @@ class TestGeometry(TestCase):
         r1 = session.query(Road).filter(Road.road_name=='Jeff Rd').one()
         r2 = session.query(Road).filter(Road.road_name=='Geordie Rd').one()
         r3 = session.query(Road).filter(Road.road_name=='Peter Rd').one()
-        eq_(session.scalar(r1.road_geom.distance(r2.road_geom)), 29371.776054049602)
+        assert_almost_equal(session.scalar(r1.road_geom.distance(r2.road_geom)), 29371.776054049602)
         eq_(session.scalar(r1.road_geom.distance(r3.road_geom)), 0.0)
         ok_(session.query(Spot).filter(Spot.spot_location.distance(
                                                             WKTSpatialElement('POINT(-88.5945861592357 42.9480095987261)'), 
                                                             tolerance, auto_diminfo=False) < 10).first() is not None)
-        eq_(session.scalar(functions.distance('POINT(-88.5945861592357 42.9480095987261)', 'POINT(-88.5945861592357 42.9480095987261)', tolerance)), 0)
+        eq_(session.scalar(functions.distance('POINT(-88.5945861592357 42.9480095987261)', 'POINT(-88.5945861592357 42.9480095987261)', tolerance)), 
+            0)
 
     def test_within_distance(self):
         r1 = session.query(Road).filter(Road.road_name=='Jeff Rd').one()
@@ -459,7 +449,6 @@ class TestGeometry(TestCase):
             Road.road_geom.within_distance(0.20, r1.road_geom)).all()
         ok_(r2 in roads_within_distance)
         ok_(r3 not in roads_within_distance)
-#        eq_(session.scalar(functions.within_distance('POINT(-88.9139332929936 42.5082802993631)', 10, 'POINT(-88.9139332929936 35.5082802993631)', tolerance)), True)
 
     def test_disjoint(self):
         r1 = session.query(Road).filter(Road.road_name=='Jeff Rd').one()

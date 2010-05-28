@@ -235,8 +235,8 @@ class TestGeometry(TestCase):
         l = session.query(Lake).get(1)
         r = session.query(Road).get(1)
         s = session.query(Spot).get(1)
-        eq_(session.scalar(l.lake_geom.length), 0.30157858985653774)
-        eq_(session.scalar(r.road_geom.length), 0.8551694164147895)
+        assert_almost_equal(session.scalar(l.lake_geom.length), 0.30157858985653774)
+        assert_almost_equal(session.scalar(r.road_geom.length), 0.8551694164147895)
         ok_(not session.scalar(s.spot_location.length))
 
     def test_is_closed(self):
@@ -291,9 +291,9 @@ class TestGeometry(TestCase):
         l = session.query(Lake).get(1)
         r = session.query(Road).get(1)
         s = session.query(Spot).get(1)
-        eq_(session.scalar(l.lake_geom.area), 0.0056748625704927669)
-        eq_(session.scalar(r.road_geom.area), 0.0)
-        eq_(session.scalar(s.spot_location.area), 0.0)
+        assert_almost_equal(session.scalar(l.lake_geom.area), 0.0056748625704927669)
+        assert_almost_equal(session.scalar(r.road_geom.area), 0.0)
+        assert_almost_equal(session.scalar(s.spot_location.area), 0.0)
 
     def test_equals(self):
         r1 = session.query(Road).filter(Road.road_name=='Jeff Rd').one()
@@ -308,8 +308,8 @@ class TestGeometry(TestCase):
         r1 = session.query(Road).filter(Road.road_name=='Jeff Rd').one()
         r2 = session.query(Road).filter(Road.road_name=='Geordie Rd').one()
         r3 = session.query(Road).filter(Road.road_name=='Peter Rd').one()
-        eq_(session.scalar(r1.road_geom.distance(r2.road_geom)), 0.3369972386828412)
-        eq_(session.scalar(r1.road_geom.distance(r3.road_geom)), 0.0)
+        assert_almost_equal(session.scalar(r1.road_geom.distance(r2.road_geom)), 0.3369972386828412)
+        assert_almost_equal(session.scalar(r1.road_geom.distance(r3.road_geom)), 0.0)
 
     def test_disjoint(self):
         r1 = session.query(Road).filter(Road.road_name=='Jeff Rd').one()

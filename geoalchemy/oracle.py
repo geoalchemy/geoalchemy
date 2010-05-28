@@ -355,7 +355,7 @@ class OracleSpatialDialect(SpatialDialect):
                    functions.is_simple : ST_GeometryFunction(func.MDSYS.OGC_IsSimple, returns_boolean=True, default_cast=True),
                    functions.is_closed : ST_GeometryFunction(func.MDSYS.OGC_IsClosed, returns_boolean=True),
                    functions.is_ring : ST_GeometryFunction(func.MDSYS.OGC_IsRing, returns_boolean=True),
-                   functions.num_points : ST_GeometryFunction(func.MDSYS.OGC_NumPoints), #sdo_util.getnumvertices
+                   functions.num_points : ST_GeometryFunction(func.MDSYS.OGC_NumPoints),
                    functions.point_n : ST_GeometryFunction(func.MDSYS.OGC_PointN, True),
                    functions.length : DimInfoFunction(func.SDO_GEOM.SDO_Length),
                    functions.area : DimInfoFunction(func.SDO_GEOM.SDO_Area),
@@ -435,7 +435,6 @@ class OracleSpatialDialect(SpatialDialect):
     __member_functions = (
                           oracle_functions.dims,
                           oracle_functions.gtype
-                        
                     )
     
     METADATA_TABLE = table('ALL_SDO_GEOM_METADATA', column('diminfo'), column('table_name'), column('column_name'))

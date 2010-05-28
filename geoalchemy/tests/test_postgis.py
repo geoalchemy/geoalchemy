@@ -246,15 +246,15 @@ class TestGeometry(TestCase):
 
     def test_length(self):
         r = session.query(Road).filter(Road.road_name=='Graeme Ave').one()
-        eq_(session.scalar(r.road_geom.length), 0.496071476676014)
+        assert_almost_equal(session.scalar(r.road_geom.length), 0.496071476676014)
         ok_(session.query(Road).filter(Road.road_geom.length > 0).first() is not None) 
-        eq_(session.scalar(functions.length('LINESTRING(77.29 29.07,77.42 29.26,77.27 29.31,77.29 29.07)')), 0.62916306324869398)
+        assert_almost_equal(session.scalar(functions.length('LINESTRING(77.29 29.07,77.42 29.26,77.27 29.31,77.29 29.07)')), 0.62916306324869398)
 
     def test_area(self):
         l = session.query(Lake).filter(Lake.lake_name=='Lake Blue').one()
         assert_almost_equal(session.scalar(l.lake_geom.area), 0.10475991566721)
         ok_(session.query(Lake).filter(Lake.lake_geom.area > 0).first() is not None)
-        eq_(session.scalar(functions.area(WKTSpatialElement('POLYGON((743238 2967416,743238 2967450,743265 2967450,743265.625 2967416,743238 2967416))',2249))), 
+        assert_almost_equal(session.scalar(functions.area(WKTSpatialElement('POLYGON((743238 2967416,743238 2967450,743265 2967450,743265.625 2967416,743238 2967416))',2249))), 
                             928.625)
 
     def test_x(self):
@@ -352,10 +352,10 @@ class TestGeometry(TestCase):
         r1 = session.query(Road).filter(Road.road_name=='Jeff Rd').one()
         r2 = session.query(Road).filter(Road.road_name=='Geordie Rd').one()
         r3 = session.query(Road).filter(Road.road_name=='Peter Rd').one()
-        eq_(session.scalar(r1.road_geom.distance(r2.road_geom)), 0.336997238682841)
+        assert_almost_equal(session.scalar(r1.road_geom.distance(r2.road_geom)), 0.336997238682841)
         eq_(session.scalar(r1.road_geom.distance(r3.road_geom)), 0.0)
         ok_(session.query(Spot).filter(Spot.spot_location.distance(WKTSpatialElement('POINT(-88.5945861592357 42.9480095987261)')) < 10).first() is not None)
-        eq_(session.scalar(functions.distance('POINT(-88.5945861592357 42.9480095987261)', 'POINT(-88.5945861592357 42.9480095987261)')), 0)
+        assert_almost_equal(session.scalar(functions.distance('POINT(-88.5945861592357 42.9480095987261)', 'POINT(-88.5945861592357 42.9480095987261)')), 0)
 
     def test_within_distance(self):
         r1 = session.query(Road).filter(Road.road_name=='Jeff Rd').one()

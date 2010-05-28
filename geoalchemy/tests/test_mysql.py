@@ -212,7 +212,7 @@ class TestGeometry(TestCase):
         l = session.query(Lake).get(1)
         r = session.query(Road).get(1)
         s = session.query(Spot).get(1)
-        eq_(session.scalar(r.road_geom.length), 0.85516941641479005)
+        assert_almost_equal(session.scalar(r.road_geom.length), 0.85516941641479005)
         ok_(not session.scalar(l.lake_geom.length))
         ok_(not session.scalar(s.spot_location.length))
 

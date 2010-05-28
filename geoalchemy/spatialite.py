@@ -1,6 +1,7 @@
 from sqlalchemy import select, func
 
-from geoalchemy.base import SpatialComparator, PersistentSpatialElement
+from geoalchemy.base import SpatialComparator, PersistentSpatialElement,\
+    WKBSpatialElement
 from geoalchemy.dialect import SpatialDialect 
 from geoalchemy.functions import functions, BaseFunction
 from geoalchemy.mysql import mysql_functions
@@ -67,11 +68,8 @@ class SQLiteSpatialDialect(SpatialDialect):
     def _get_function_mapping(self):
         return SQLiteSpatialDialect.__functions
     
-    def get_comparator(self):
-        return SQLiteComparator
-    
-    def process_result(self, wkb_element):
-        return SQLitePersistentSpatialElement(wkb_element)
+    def process_result(self, value, type):
+        return SQLitePersistentSpatialElement(WKBSpatialElement(value, type.srid))
     
     def handle_ddl_before_drop(self, bind, table, column):
         if column.type.spatial_index and SQLiteSpatialDialect.supports_rtree(bind.dialect):

@@ -1,7 +1,11 @@
 from sqlalchemy.sql.expression import Function, ClauseElement
 from sqlalchemy.ext.compiler import compiles
-from sqlalchemy import func, literal
+from sqlalchemy import literal
+from sqlalchemy.types import NullType, TypeDecorator
+import types
+import re
 
+WKT_REGEX = re.compile('.*\\(.*\\).*')
 
 def parse_clause(clause, compiler):
     """This method is used to translate a clause element (geometries, functions, ..).
@@ -18,61 +22,114 @@ def parse_clause(clause, compiler):
         # for cascaded clause elements, like other functions
         return clause
     elif isinstance(clause, SpatialElement):
-        if isinstance(clause, WKTSpatialElement):
-            return func.GeomFromText(literal(clause.desc, GeometryBase), clause.srid)
-        if isinstance(clause, WKBSpatialElement):
-            return func.GeomFromWKB(literal(clause.desc, GeometryBase), clause.srid)
+        if isinstance(clause, (WKTSpatialElement, WKBSpatialElement)):
+            return clause
         if isinstance(clause, DBSpatialElement):
             return literal(clause.desc, GeometryBase)    
-        return func.GeomFromWKB(literal(clause.desc.desc, GeometryBase), clause.desc.srid)
-    elif isinstance(clause, basestring):
-        wkt = WKTSpatialElement(clause)
-        return func.GeomFromText(literal(wkt, GeometryBase), wkt.srid)
+        return clause.desc
+    elif isinstance(clause, basestring) and WKT_REGEX.match(clause):
+        return WKTSpatialElement(clause)
     
     # for raw parameters    
     return literal(clause)
 
 
-def __get_function(element, compiler):
-    """For elements of type BaseFunction, the database specific function name 
+def _get_function(element, compiler, params, within_column_clause):
+    """For elements of type BaseFunction, the database specific function data 
     is looked up and a executable sqlalchemy.sql.expression.Function object 
-    is created with this name.
+    is returned.
     """
     from geoalchemy.dialect import DialectManager 
     database_dialect = DialectManager.get_spatial_dialect(compiler.dialect)
-    function_name = database_dialect.get_function_name(element.__class__)
+    function_data = database_dialect.get_function(element.__class__)
     
-    # getattr(func, function_name) is like calling func.(the value of function_name)
-    return getattr(func, function_name)
+    if isinstance(function_data, list):
+        """if we have a list of function names, create cascaded Function objects
+        for all function names in the list::
+        
+            ['TO_CHAR', 'SDO_UTIL.TO_WKTGEOMETRY'] --> TO_CHAR(SDO_UTIL.TO_WKTGEOMETRY(..))
+        """
+        function = None
+        for name in reversed(function_data):
+            packages = name.split('.')
+            
+            if function is None:
+                """for the innermost function use the passed-in parameters as argument,
+                otherwise use the prior created function
+                """
+                args = params
+            else:
+                args = [function]
+                
+            function = Function(packages.pop(-1), 
+                        *args, 
+                        packagenames=packages
+                        )
+        
+        return function
+    
+    elif isinstance(function_data, types.FunctionType):
+        """if we have a function, call this function with the parameters and return the
+        created Function object
+        """
+        return function_data(params, within_column_clause, **(element.flags))
+    
+    else:
+        packages = function_data.split('.')
+        
+        return Function(packages.pop(-1), 
+                        *params, 
+                        packagenames=packages
+                        )
+
     
 class BaseFunction(Function):
     """Represents a database function.
     
     When the function is used on a geometry column (r.geom.point_n(2) or Road.geom.point_n(2)),
-    an additional argument is set using __call__. The column or geometry the function is called on 
-    is stored inside the constructor.
+    additional arguments are set using __call__. The column or geometry the function is called on 
+    is stored inside the constructor (see base.SpatialComparator.__getattr__()).
     When the function is called directly (functions.point_n(..., 2)),
     all arguments are set using the constructor.
     """
     
-    def __init__(self, *arguments):
+    def __init__(self, *arguments, **kwargs):
         self.arguments = arguments
+        self.flags = kwargs.copy()
         
-        Function.__init__(self, self.__class__.__name__)
+        Function.__init__(self, self.__class__.__name__, **kwargs)
         
-    def __call__(self, *arguments):
+    def __call__(self, *arguments, **kwargs):
         if len(arguments) > 0:
             self.arguments =  self.arguments + arguments
-            
+        
+        if len(kwargs) > 0:
+            self.flags.update(kwargs)
+        
         return self
+    
 
 @compiles(BaseFunction)
 def __compile_base_function(element, compiler, **kw):
-    function = __get_function(element, compiler)
     
     params = [parse_clause(argument, compiler) for argument in element.arguments]
     
-    return compiler.process(function(*params))
+    from geoalchemy.dialect import DialectManager 
+    database_dialect = DialectManager.get_spatial_dialect(compiler.dialect)
+
+    if not database_dialect.is_member_function(element.__class__):
+        function = _get_function(element, compiler, params, kw.get('within_columns_clause', False))
+        return compiler.process(function)
+    else:
+        geometry = params.pop(0)
+        
+        function_name = database_dialect.get_function(element.__class__)
+        
+        return "%s.%s(%s)" % (
+            compiler.process(geometry),
+            function_name,
+            ", ".join([compiler.process(e) for e in params]) 
+            ) 
 
 class functions:
     """Functions that implement OGC SFS or SQL/MM and that are supported by most databases
@@ -81,11 +138,12 @@ class functions:
     class wkt(BaseFunction):
         """AsText(g)"""
         pass
-    
+
     class wkb(BaseFunction):
         """AsBinary(g)"""
-        pass
-    
+        def __init__(self, *arguments):
+            BaseFunction.__init__(self, *arguments, type_=_WKBType)
+        
     class dimension(BaseFunction):
         """Dimension(g)"""
         pass
@@ -221,4 +279,36 @@ class functions:
     class intersection(BaseFunction):
         """Intersection(g1, g2)"""
         pass
+
+
+class _WKBType(TypeDecorator):
+    """A helper type which makes sure that the WKB sequence returned from queries like 
+    'session.scalar(r.road_geom.wkb)', has the same type as the attribute 'geom_wkb' which
+    is filled when querying an object of a mapped class, for example with 'r = session.query(Road).get(1)'::
+    
+        eq_(session.scalar(self.r.road_geom.wkb), self.r.road_geom.geom_wkb)
+    
+    This type had to be introduced, because for Oracle 'SDO_UTIL.TO_WKBGEOMETRY(..)' returned the type 
+    cx_Oracle.LOB and not a buffer.
+    
+    To modify the behavior of 'process_result_value' for a specific database dialect, overwrite the 
+    method 'process_wkb' in that dialect.
+    
+    This class is used inside :class:`functions.wkb`.
+    
+    """
+
+    impl = NullType
+
+    def process_result_value(self, value, dialect):
+        if value is not None:
+            from geoalchemy.dialect import DialectManager 
+            database_dialect = DialectManager.get_spatial_dialect(dialect)
+            
+            return database_dialect.process_wkb(value)
+        else:
+            return value
+
+    def copy(self):
+        return _WKBType()
     

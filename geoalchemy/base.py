@@ -1,9 +1,11 @@
 from sqlalchemy.orm.properties import ColumnProperty
 from sqlalchemy.sql import expression
+from sqlalchemy.sql.expression import ColumnClause
 from sqlalchemy.types import TypeEngine
+from sqlalchemy.ext.compiler import compiles
 
 from utils import from_wkt
-from functions import functions
+from functions import functions, _get_function
 
 # Base classes for geoalchemy
 
@@ -43,45 +45,69 @@ class WKTSpatialElement(SpatialElement, expression.Function):
     """Represents a Geometry value expressed within application code; i.e. in
     the OGC Well Known Text (WKT) format.
     
-    Extends expression.Function so that the value is interpreted as 
-    GeomFromText(value) in a SQL expression context.
+    Extends expression.Function so that in a SQL expression context the value 
+    is interpreted as 'GeomFromText(value)' or as the equivalent function in the 
+    currently used database.
     
     """
     
-    def __init__(self, desc, srid=4326):
+    def __init__(self, desc, srid=4326, geometry_type='GEOMETRY'):
         assert isinstance(desc, basestring)
         self.desc = desc
         self.srid = srid
-        expression.Function.__init__(self, "GeomFromText", desc, srid)
+        self.geometry_type = geometry_type
+        
+        expression.Function.__init__(self, "")
 
     @property
     def geom_wkt(self):
         # directly return WKT value
         return self.desc
 
+@compiles(WKTSpatialElement)
+def __compile_wktspatialelement(element, compiler, **kw):
+    function = _get_function(element, compiler, (element.desc, element.srid), kw.get('within_columns_clause', False))
+    
+    return compiler.process(function)
+
 class WKBSpatialElement(SpatialElement, expression.Function):
     """Represents a Geometry value as expressed in the OGC Well
     Known Binary (WKB) format.
     
-    Extends expression.Function so that the value is interpreted as 
-    GeomFromWKB(value) in a SQL expression context.
+    Extends expression.Function so that in a SQL expression context the value 
+    is interpreted as 'GeomFromWKB(value)' or as the equivalent function in the 
+    currently used database .
     
     """
     
-    def __init__(self, desc, srid=4326):
+    def __init__(self, desc, srid=4326, geometry_type='GEOMETRY'):
         assert isinstance(desc, (basestring, buffer))
         self.desc = desc
         self.srid = srid
-        expression.Function.__init__(self, "GeomFromWKB", desc, srid)
+        self.geometry_type = geometry_type
         
+        expression.Function.__init__(self, "")
+
+@compiles(WKBSpatialElement)
+def __compile_wkbspatialelement(element, compiler, **kw):
+    from geoalchemy.dialect import DialectManager 
+    database_dialect = DialectManager.get_spatial_dialect(compiler.dialect)
+    
+    function = _get_function(element, compiler, (database_dialect.bind_wkb_value(element), 
+                                                 element.srid),
+                                                 kw.get('within_columns_clause', False))
+    
+    return compiler.process(function)
+
 
 class DBSpatialElement(SpatialElement, expression.Function):
     """This class can be used to wrap a geometry returned by a 
     spatial database operation.
     
-    For example: 
-    element = DBSpatialElement(session.scalar(r.geom.buffer(10.0)))
-    session.scalar(element.wkt)
+    For example:: 
+    
+        element = DBSpatialElement(session.scalar(r.geom.buffer(10.0)))
+        session.scalar(element.wkt)
     
     """
     
@@ -116,6 +142,7 @@ class GeometryBase(TypeEngine):
         self.dimension = dimension
         self.srid = srid
         self.spatial_index = spatial_index
+        self.kwargs = kwargs
         super(GeometryBase, self).__init__(**kwargs)
     
     def bind_processor(self, dialect):
@@ -172,6 +199,21 @@ def _check_srid(spatial_element, srid_db):
     else:
         return functions.transform(spatial_element, srid_db)
 
+class RawColumn(ColumnClause):
+    """This class is used to wrap a geometry column, so that
+    no conversion to WKB is added, see SpatialComparator.RAW
+    """
+    def __init__(self, column):
+        self.column = column
+        ColumnClause.__init__(self, column.name, column.table)
+        
+    def _make_proxy(self, selectable, name=None):
+        return self.column._make_proxy(selectable, name)
+        
+@compiles(RawColumn)
+def __compile_rawcolumn(rawcolumn, compiler, **kw):
+    return compiler.visit_column(rawcolumn.column)
+
 class SpatialComparator(ColumnProperty.ColumnComparator):
     """Intercepts standard Column operators on mapped class attributes
         and overrides their behavior.
@@ -179,6 +221,17 @@ class SpatialComparator(ColumnProperty.ColumnComparator):
         A comparator class makes sure that queries like 
         "session.query(Lake).filter(Lake.lake_geom.gcontains(..)).all()" can be executed.
     """
+    
+    @property
+    def RAW(self):
+        """For queries like 'select extent(spots.spot_location) from spots' the 
+        geometry column should not be surrounded by 'AsBinary(..)'. If 'RAW' is
+        called on a geometry column, this column wont't be converted to WKB::
+        
+            session.query(func.extent(Spot.spot_location.RAW)).first() 
+        
+        """
+        return RawColumn(self.property.columns[0])
     
     def __getattr__(self, name):
         return getattr(functions, name)(self)

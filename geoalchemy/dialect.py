@@ -1,7 +1,9 @@
 from sqlalchemy.dialects.postgresql.base import PGDialect
 from sqlalchemy.dialects.sqlite.base import SQLiteDialect
 from sqlalchemy.dialects.mysql.base import MySQLDialect
+from sqlalchemy.dialects.oracle.base import OracleDialect
 from geoalchemy.functions import functions
+from geoalchemy.base import WKTSpatialElement, WKBSpatialElement
 
 class SpatialDialect(object):
     """This class bundles all required classes and methods to support 
@@ -13,7 +15,9 @@ class SpatialDialect(object):
     
     __functions = {
                    functions.wkt: 'AsText',
+                   WKTSpatialElement : 'GeomFromText',
                    functions.wkb: 'AsBinary',
+                   WKBSpatialElement : 'GeomFromWKB',
                    functions.dimension : 'Dimension',
                    functions.srid : 'SRID',
                    functions.geometry_type : 'GeometryType',
@@ -50,7 +54,26 @@ class SpatialDialect(object):
                    functions.intersection : 'Intersections'
                   }
     
-    def get_function_name(self, function_class):
+    def get_function(self, function_class):
+        """This method is called to translate a generic function into a database
+        dialect specific function.
+        
+        It either returns a string, a list or a method that returns a Function object.
+        
+            - String: A function name, e.g.::
+                    
+                    functions.wkb: 'SDO_UTIL.TO_WKBGEOMETRY'
+            
+            - List: A list of function names that are called cascaded, e.g.::
+            
+                    functions.wkt: ['TO_CHAR', 'SDO_UTIL.TO_WKTGEOMETRY'] is compiled as:
+                    TO_CHAR(SDO_UTIL.TO_WKTGEOMETRY(..))
+                    
+            - Method: A method that accepts a list/set of arguments and returns a Function object, e.g.::
+            
+                    functions.equals : lambda params, within_column_clause : (func.SDO_EQUAL(*params) == 'TRUE')
+    
+        """
         if self._get_function_mapping() is not None:
             if function_class in self._get_function_mapping():
                 if self._get_function_mapping()[function_class] is None:
@@ -61,27 +84,45 @@ class SpatialDialect(object):
         
         return SpatialDialect.__functions[function_class]
     
+    def is_member_function(self, function_class):   
+        """Returns True if the passed-in function should be called as member 
+        function, e.g.::
+        
+            Point.the_geom.dims is compiled as:
+            points.the_geom.Get_Dims()
+            
+        """
+        return False
+    
     def _get_function_mapping(self):
         """This method can be overridden in subclasses, to set a database specific name
         for a function, or to add new functions, that are only supported by the database.
+        
         """
         return None
     
-    def get_comparator(self):
-        """Returns the comparator class that contains all database operations
-        you can execute on geometries. This method has to be overridden.
-        The returned class must be a subclass of geoalchemy.comparator.SpatialComparator.
-        
-        """
-        raise NotImplementedError("Method SpatialDialect.get_comparator must be implemented in subclasses.")
-    
-    def process_result(self, wkb_element):
+    def process_result(self, value, type):
         """This method is called when a geometry value from the database is
-        transformed into a SpatialElement object. It receives an object of geoalchemy.base.WKBSpatialElement
-        and is supposed to return a subclass of SpatialElement, e.g. PGSpatialElement or MySQLSpatialElement.
+        transformed into a SpatialElement object. It receives an WKB binary sequence, either as Buffer (for PostGIS
+        and Spatialite), a String (for MySQL) or a cx_Oracle.LOB (for Oracle), and is supposed to return a 
+        subclass of SpatialElement, e.g. PGSpatialElement or MySQLSpatialElement.
         
         """
         raise NotImplementedError("Method SpatialDialect.process_result must be implemented in subclasses.")
+    
+    def process_wkb(self, value):
+        """This method is called from functions._WKBType.process_result_value() to convert
+        the result of functions.wkb() into a usable format. 
+        
+        """
+        return value
+    
+    def bind_wkb_value(self, wkb_element):
+        """This method is called from base.__compile_wkbspatialelement() to insert
+        the value of base.WKBSpatialElement into a query.
+        
+        """
+        return None if wkb_element is None else wkb_element.desc
     
     def handle_ddl_after_create(self, bind, table, column):
         """This method is called after the mapped table was created in the database
@@ -120,11 +161,13 @@ class DialectManager(object):
         from geoalchemy.postgis import PGSpatialDialect
         from geoalchemy.mysql import MySQLSpatialDialect
         from geoalchemy.spatialite import SQLiteSpatialDialect
+        from geoalchemy.oracle import OracleSpatialDialect
             
         DialectManager.__dialects_mapping = {
                 PGDialect: PGSpatialDialect,
                 SQLiteDialect: SQLiteSpatialDialect,
-                MySQLDialect: MySQLSpatialDialect
+                MySQLDialect: MySQLSpatialDialect,
+                OracleDialect: OracleSpatialDialect
                 }
 
     @staticmethod
@@ -154,5 +197,5 @@ class DialectManager(object):
                 
             return DialectManager.__spatial_dialect_instances[spatial_dialect]
         else:
-            raise NotImplementedError
+            raise NotImplementedError('Dialect "%s" is not supported by GeoAlchemy' % (dialect.name))
         

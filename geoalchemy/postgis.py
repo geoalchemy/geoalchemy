@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from sqlalchemy import select, func
-from geoalchemy.base import SpatialComparator, PersistentSpatialElement
+from geoalchemy.base import SpatialComparator, PersistentSpatialElement,\
+    WKBSpatialElement
 from geoalchemy.dialect import SpatialDialect 
 from geoalchemy.functions import functions, BaseFunction
 
@@ -102,11 +103,8 @@ class PGSpatialDialect(SpatialDialect):
     def _get_function_mapping(self):
         return PGSpatialDialect.__functions
     
-    def get_comparator(self):
-        return PGComparator
-    
-    def process_result(self, wkb_element):
-        return PGPersistentSpatialElement(wkb_element)
+    def process_result(self, value, type):
+        return PGPersistentSpatialElement(WKBSpatialElement(value, type.srid))
     
     def handle_ddl_before_drop(self, bind, table, column):
         bind.execute(select([func.DropGeometryColumn((table.schema or 'public'), table.name, column.name)]).execution_options(autocommit=True))

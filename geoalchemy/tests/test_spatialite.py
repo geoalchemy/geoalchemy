@@ -5,6 +5,7 @@ from sqlalchemy import (create_engine, MetaData, Column, Integer, String,
 from sqlalchemy.orm import sessionmaker, mapper
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.exceptions import IntegrityError
+from sqlalchemy.sql.expression import Select, select
 
 from pysqlite2 import dbapi2 as sqlite
 from geoalchemy import (GeometryColumn, Point, Polygon,
@@ -234,8 +235,8 @@ class TestGeometry(TestCase):
         l = session.query(Lake).get(1)
         r = session.query(Road).get(1)
         s = session.query(Spot).get(1)
-        eq_(session.scalar(l.lake_geom.length), 0.30157858985653774)
-        eq_(session.scalar(r.road_geom.length), 0.8551694164147895)
+        assert_almost_equal(session.scalar(l.lake_geom.length), 0.30157858985653774)
+        assert_almost_equal(session.scalar(r.road_geom.length), 0.8551694164147895)
         ok_(not session.scalar(s.spot_location.length))
 
     def test_is_closed(self):
@@ -290,9 +291,9 @@ class TestGeometry(TestCase):
         l = session.query(Lake).get(1)
         r = session.query(Road).get(1)
         s = session.query(Spot).get(1)
-        eq_(session.scalar(l.lake_geom.area), 0.0056748625704927669)
-        eq_(session.scalar(r.road_geom.area), 0.0)
-        eq_(session.scalar(s.spot_location.area), 0.0)
+        assert_almost_equal(session.scalar(l.lake_geom.area), 0.0056748625704927669)
+        assert_almost_equal(session.scalar(r.road_geom.area), 0.0)
+        assert_almost_equal(session.scalar(s.spot_location.area), 0.0)
 
     def test_equals(self):
         r1 = session.query(Road).filter(Road.road_name=='Jeff Rd').one()
@@ -307,8 +308,8 @@ class TestGeometry(TestCase):
         r1 = session.query(Road).filter(Road.road_name=='Jeff Rd').one()
         r2 = session.query(Road).filter(Road.road_name=='Geordie Rd').one()
         r3 = session.query(Road).filter(Road.road_name=='Peter Rd').one()
-        eq_(session.scalar(r1.road_geom.distance(r2.road_geom)), 0.3369972386828412)
-        eq_(session.scalar(r1.road_geom.distance(r3.road_geom)), 0.0)
+        assert_almost_equal(session.scalar(r1.road_geom.distance(r2.road_geom)), 0.3369972386828412)
+        assert_almost_equal(session.scalar(r1.road_geom.distance(r3.road_geom)), 0.0)
 
     def test_disjoint(self):
         r1 = session.query(Road).filter(Road.road_name=='Jeff Rd').one()
@@ -476,4 +477,25 @@ class TestGeometry(TestCase):
         query = Query(Road.road_geom).filter(Road.road_geom == '..').__str__()
         ok_('AsBinary(roads.road_geom)' in query, 'table name is part of the column expression (select clause)')
         ok_('WHERE Equals(roads.road_geom' in query, 'table name is part of the column expression (where clause)')
+        
+        query_wkb = Select([Road.road_geom]).where(Road.road_geom == 'POINT(0 0)').__str__()
+        ok_('SELECT AsBinary(roads.road_geom)' in query_wkb, 'AsBinary is added')
+        ok_('WHERE Equals(roads.road_geom' in query_wkb, 'AsBinary is not added in where clause')
+        
+        # test for RAW attribute
+        query_wkb = Select([Road.road_geom.RAW]).__str__()
+        ok_('SELECT roads.road_geom' in query_wkb, 'AsBinary is not added')
+        
+        ok_(session.query(Road.road_geom.RAW).first())
+        
+        query_srid = Query(func.SRID(Road.road_geom.RAW))
+        ok_('SRID(roads.road_geom)' in query_srid.__str__(), 'AsBinary is not added')
+        ok_(session.scalar(query_srid))
+        
+        eq_(session.scalar(Select([func.SRID(Spot.spot_location)]).where(Spot.spot_id == 1)), 
+                None,
+                'AsBinary is added and the SRID is not returned')
+        eq_(str(session.scalar(Select([func.SRID(Spot.spot_location.RAW)]).where(Spot.spot_id == 1))), 
+                '4326',
+                'AsBinary is not added and the SRID is returned')
         

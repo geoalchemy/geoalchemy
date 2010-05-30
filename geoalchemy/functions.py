@@ -62,8 +62,8 @@ def _get_function(element, compiler, params, within_column_clause):
                 args = [function]
                 
             function = Function(packages.pop(-1), 
-                        *args, 
-                        packagenames=packages
+                        packagenames=packages,
+                        *args
                         )
         
         return function

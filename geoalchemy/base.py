@@ -5,7 +5,7 @@ from sqlalchemy.types import TypeEngine
 from sqlalchemy.ext.compiler import compiles
 
 from utils import from_wkt
-from functions import functions, _get_function
+from functions import functions, _get_function, BaseFunction
 
 # Base classes for geoalchemy
 
@@ -191,7 +191,8 @@ def _check_srid(spatial_element, srid_db):
     into the database equals the SRID used for the geometry column.
     If not, a transformation is added.
     """
-    if srid_db is None or not hasattr(spatial_element, 'srid'):
+    if srid_db is None or not hasattr(spatial_element, 'srid') or \
+            isinstance(spatial_element.srid, BaseFunction):
         return spatial_element
     
     if spatial_element.srid == srid_db:

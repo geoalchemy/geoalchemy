@@ -15,6 +15,7 @@ from geoalchemy.functions import functions
 from nose.tools import ok_, eq_, assert_almost_equal, raises
 
 from geoalchemy.spatialite import SQLiteComparator, sqlite_functions
+from geoalchemy.base import PersistentSpatialElement
 
 engine = create_engine('sqlite://', module=sqlite, echo=True)
 connection = engine.raw_connection().connection
@@ -139,6 +140,9 @@ class TestGeometry(TestCase):
         session.commit();
         assert_almost_equal(session.scalar(spot.spot_location.x), 0)
         assert_almost_equal(session.scalar(spot.spot_location.y), 0)
+        
+        spot.spot_location = PersistentSpatialElement(None)
+        ok_(isinstance(spot.spot_location, PersistentSpatialElement))
 
     def test_svg(self):
         eq_(session.scalar(self.r.road_geom.svg), 'M -88.674841 -43.103503 -88.646417 -42.998169 -88.607962 -42.968073 -88.516003 -42.936306 -88.439093 -43.003185 ')

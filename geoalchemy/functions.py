@@ -78,8 +78,8 @@ def _get_function(element, compiler, params, within_column_clause):
         packages = function_data.split('.')
         
         return Function(packages.pop(-1), 
-                        *params, 
-                        packagenames=packages
+                        packagenames=packages, 
+                        *params
                         )
 
     
@@ -142,7 +142,7 @@ class functions:
     class wkb(BaseFunction):
         """AsBinary(g)"""
         def __init__(self, *arguments):
-            BaseFunction.__init__(self, *arguments, type_=_WKBType)
+            BaseFunction.__init__(self, type_=_WKBType, *arguments)
         
     class dimension(BaseFunction):
         """Dimension(g)"""

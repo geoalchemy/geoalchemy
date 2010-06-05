@@ -1,6 +1,11 @@
 GeoAlchemy Change Log
 =====================
 
+0.3.1
+-----
+
+* Fix for py2.5 syntax errors
+
 0.3
 -----
 

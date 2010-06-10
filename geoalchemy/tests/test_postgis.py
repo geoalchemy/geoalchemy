@@ -21,7 +21,7 @@ session = sessionmaker(bind=engine)()
 Base = declarative_base(metadata=metadata)
 
 class Road(Base):
-    __tablename__ = 'roads'
+    __tablename__ = 'ROADS'
 
     road_id = Column(Integer, primary_key=True)
     road_name = Column(String)

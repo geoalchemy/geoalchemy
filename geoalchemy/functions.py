@@ -122,14 +122,23 @@ def __compile_base_function(element, compiler, **kw):
         return compiler.process(function)
     else:
         geometry = params.pop(0)
+        function = _get_function(element, compiler, params, kw.get('within_columns_clause', False))
         
-        function_name = database_dialect.get_function(element.__class__)
+        functionCall = "%s.%s"
+        if len(params) <= 0:
+            """If a function receives no parameters, SQLAlchemy
+            does not add parenthesis, so we are adding them manually.
+            
+            Note that this won't work correctly if using a BooleanFunction
+            that also adds a comparison (results in 'geoom.isValid = 1()').
+            """
+            functionCall = "%s.%s()"
         
-        return "%s.%s(%s)" % (
+        return functionCall % (
             compiler.process(geometry),
-            function_name,
-            ", ".join([compiler.process(e) for e in params]) 
-            ) 
+            compiler.process(function)
+            )      
+
 
 class functions:
     """Functions that implement OGC SFS or SQL/MM and that are supported by most databases

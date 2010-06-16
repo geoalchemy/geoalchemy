@@ -116,11 +116,8 @@ def __compile_base_function(element, compiler, **kw):
     
     from geoalchemy.dialect import DialectManager 
     database_dialect = DialectManager.get_spatial_dialect(compiler.dialect)
-
-    if not database_dialect.is_member_function(element.__class__):
-        function = _get_function(element, compiler, params, kw.get('within_columns_clause', False))
-        return compiler.process(function)
-    else:
+    
+    if database_dialect.is_member_function(element.__class__):
         geometry = params.pop(0)
         function_name = database_dialect.get_function(element.__class__)
         
@@ -144,6 +141,19 @@ def __compile_base_function(element, compiler, **kw):
                         compiler.process(geometry),
                         compiler.process(function)      
                         )
+            
+    elif database_dialect.is_property(element.__class__):
+        geometry = params.pop(0)
+        function_name = database_dialect.get_function(element.__class__)
+        
+        return "%s.%s" % (
+                        compiler.process(geometry),
+                        function_name 
+                        )
+        
+    else:
+        function = _get_function(element, compiler, params, kw.get('within_columns_clause', False))
+        return compiler.process(function)
 
 class functions:
     """Functions that implement OGC SFS or SQL/MM and that are supported by most databases

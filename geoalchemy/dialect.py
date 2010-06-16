@@ -94,6 +94,15 @@ class SpatialDialect(object):
         """
         return False
     
+    def is_property(self, function_class):   
+        """Returns True if the passed-in function should be called as property, e.g.::
+        
+            Point.the_geom.x is compiled as (for MS Server):
+            points.the_geom.x
+            
+        """
+        return False
+    
     def _get_function_mapping(self):
         """This method can be overridden in subclasses, to set a database specific name
         for a function, or to add new functions, that are only supported by the database.

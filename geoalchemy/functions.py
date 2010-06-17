@@ -72,7 +72,13 @@ def _get_function(element, compiler, params, within_column_clause):
         """if we have a function, call this function with the parameters and return the
         created Function object
         """
-        return function_data(params, within_column_clause, **(element.flags))
+        if hasattr(element, 'flags'):
+            # when element is a BaseFunction
+            flags = element.flags
+        else:
+            flags = {}
+            
+        return function_data(params, within_column_clause, **flags)
     
     else:
         packages = function_data.split('.')

@@ -172,6 +172,11 @@ class GeometryBase(TypeEngine):
             else:
                 return value
         return process
+    
+    def _compiler_dispatch(self, *args):
+        """Required for the Cast() operator when used for the compilation
+        of DBSpatialElement"""
+        return self.name
 
 # ORM integration
 

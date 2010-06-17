@@ -1,6 +1,6 @@
 from sqlalchemy.orm.properties import ColumnProperty
 from sqlalchemy.sql import expression
-from sqlalchemy.sql.expression import ColumnClause
+from sqlalchemy.sql.expression import ColumnClause, literal
 from sqlalchemy.types import TypeEngine
 from sqlalchemy.ext.compiler import compiles
 
@@ -114,6 +114,13 @@ class DBSpatialElement(SpatialElement, expression.Function):
     def __init__(self, desc):
         self.desc = desc
         expression.Function.__init__(self, "", desc)
+
+@compiles(DBSpatialElement)
+def __compile_dbspatialelement(element, compiler, **kw):
+    function = _get_function(element, compiler, [literal(element.desc)], 
+                                        kw.get('within_columns_clause', False))
+    
+    return compiler.process(function)
 
 class PersistentSpatialElement(SpatialElement):
     """Represents a Geometry value loaded from the database."""

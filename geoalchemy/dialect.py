@@ -3,7 +3,8 @@ from sqlalchemy.dialects.sqlite.base import SQLiteDialect
 from sqlalchemy.dialects.mysql.base import MySQLDialect
 from sqlalchemy.dialects.oracle.base import OracleDialect
 from geoalchemy.functions import functions
-from geoalchemy.base import WKTSpatialElement, WKBSpatialElement
+from geoalchemy.base import WKTSpatialElement, WKBSpatialElement,\
+    DBSpatialElement
 
 class SpatialDialect(object):
     """This class bundles all required classes and methods to support 
@@ -18,6 +19,7 @@ class SpatialDialect(object):
                    WKTSpatialElement : 'GeomFromText',
                    functions.wkb: 'AsBinary',
                    WKBSpatialElement : 'GeomFromWKB',
+                   DBSpatialElement : '',
                    functions.dimension : 'Dimension',
                    functions.srid : 'SRID',
                    functions.geometry_type : 'GeometryType',

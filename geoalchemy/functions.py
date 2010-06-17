@@ -107,7 +107,27 @@ class BaseFunction(Function):
             self.flags.update(kwargs)
         
         return self
+
+class ReturnsGeometryFunction(BaseFunction):
+    """Represents a database function which returns a new geometry.
     
+    This class adds support for "function chaining", so that a new function
+    can called on a function that returns a geometry, for example::
+    
+        session.scalar(r.road_geom.point_n(5).wkt)
+        
+    Note that only database generic functions (in package 'functions') can be
+    called, but no database specific functions, like::
+    
+         session.scalar(r.road_geom.point_n(5).sdo_geom_sdo_centroid)
+    """
+    
+    def __getattr__(self, name):
+        return getattr(functions, name)(self)
+    
+    # override the __eq__() operator (allows to use '==' on geometries)
+    def __eq__(self, other): 
+        return functions.equals(self, other)
 
 @compiles(BaseFunction)
 def __compile_base_function(element, compiler, **kw):
@@ -200,7 +220,7 @@ class functions:
         """NumPoints(g)"""
         pass
     
-    class point_n(BaseFunction):
+    class point_n(ReturnsGeometryFunction):
         """PointN(g, n)"""
         pass
     
@@ -220,35 +240,35 @@ class functions:
         """Y(g)"""
         pass
     
-    class centroid(BaseFunction):
+    class centroid(ReturnsGeometryFunction):
         """Centroid(g)"""
         pass
     
-    class boundary(BaseFunction):
+    class boundary(ReturnsGeometryFunction):
         """Boundary"""
         pass
     
-    class buffer(BaseFunction):
+    class buffer(ReturnsGeometryFunction):
         """Buffer(g, n)"""
         pass
     
-    class convex_hull(BaseFunction):
+    class convex_hull(ReturnsGeometryFunction):
         """ConvexHull(g)"""
         pass
     
-    class envelope(BaseFunction):
+    class envelope(ReturnsGeometryFunction):
         """Envelope(g)"""
         pass
     
-    class start_point(BaseFunction):
+    class start_point(ReturnsGeometryFunction):
         """StartPoint(g)"""
         pass
     
-    class end_point(BaseFunction):
+    class end_point(ReturnsGeometryFunction):
         """EndPoint(g)"""
         pass
     
-    class transform(BaseFunction):
+    class transform(ReturnsGeometryFunction):
         """Transform(g, srid)"""
         pass
 
@@ -300,7 +320,7 @@ class functions:
         """CoveredBy(g1, g2)"""
         pass
     
-    class intersection(BaseFunction):
+    class intersection(ReturnsGeometryFunction):
         """Intersection(g1, g2)"""
         pass
 

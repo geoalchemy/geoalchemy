@@ -223,7 +223,7 @@ class TestGeometry(TestCase):
         r = session.query(Road).get(1)
         ok_(not session.scalar(l.lake_geom.point_n(1)))
         ok_(session.query(Road).filter(Road.road_geom.point_n(5) == WKTSpatialElement('POINT(-88.3655256496815 43.1402866687898)')).first() is not None)
-        eq_(session.scalar(functions.wkt(r.road_geom.point_n(5))), u'POINT(-88.3655256496815 43.1402866687898)')
+        eq_(session.scalar(r.road_geom.point_n(5).wkt), u'POINT(-88.3655256496815 43.1402866687898)')
         eq_(session.scalar(functions.wkt(functions.point_n('LINESTRING(77.29 29.07,77.42 29.26,77.27 29.31,77.29 29.07)', 1)))
                            , u'POINT(77.29 29.07)')
 
@@ -331,7 +331,7 @@ class TestGeometry(TestCase):
         # compare the coordinates using a tolerance, because they may vary on different systems
         assert_almost_equal(session.scalar(functions.x(spot.spot_location.transform(2249))), -3890517.6109559298)
         assert_almost_equal(session.scalar(functions.y(spot.spot_location.transform(2249))), 3627658.6746507999)
-        ok_(session.query(Spot).filter(Spot.spot_location.transform(2249) == WKTSpatialElement('POINT(-3890517.61095593 3627658.6746508)', 2249)).first() is not None)
+        ok_(session.query(Spot).filter(Spot.spot_location.transform(2249).wkt == 'POINT(-3890517.61095593 3627658.6746508)').first() is not None)
         eq_(session.scalar(functions.wkt(functions.transform(WKTSpatialElement('POLYGON((743238 2967416,743238 2967450,743265 2967450,743265.625 2967416,743238 2967416))', 2249), 4326))), 
             u'POLYGON((-71.1776848522251 42.3902896512902,-71.1776843766326 42.3903829478009,-71.1775844305465 42.3903826677917,-71.1775825927231 42.3902893647987,-71.1776848522251 42.3902896512902))')
 
@@ -487,7 +487,7 @@ class TestGeometry(TestCase):
         l = session.query(Lake).filter(Lake.lake_name=='Lake White').one()
         r = session.query(Road).filter(Road.road_name=='Paul St').one()
         eq_(session.scalar(func.ST_AsText(session.scalar(l.lake_geom.intersection(r.road_geom)))), 'LINESTRING(-88.1430673666454 42.6255500261493,-88.1140839697546 42.6230657349872)')
-        ok_(session.query(Lake).filter(Lake.lake_geom.intersection(r.road_geom) == WKTSpatialElement('LINESTRING(-88.1430673666454 42.6255500261493,-88.1140839697546 42.6230657349872)')).first() is not None)
+        ok_(session.query(Lake).filter(Lake.lake_geom.intersection(r.road_geom).wkt == 'LINESTRING(-88.1430673666454 42.6255500261493,-88.1140839697546 42.6230657349872)').first() is not None)
  
     @raises(IntegrityError)
     def test_constraint_nullable(self):

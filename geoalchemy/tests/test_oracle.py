@@ -285,7 +285,7 @@ class TestGeometry(TestCase):
         ok_(session.query(Road).filter(and_(Road.road_geom.point_n(5) <> None,  
                                             functions.wkt(Road.road_geom.point_n(5)) == 'POINT (-88.3655256496815 43.1402866687898)')).first() 
                                             is not None)
-        eq_(session.scalar(functions.wkt(r.road_geom.point_n(5))), u'POINT (-88.3655256496815 43.1402866687898)')
+        eq_(session.scalar(r.road_geom.point_n(5).wkt), u'POINT (-88.3655256496815 43.1402866687898)')
         eq_(session.scalar(functions.wkt(functions.point_n(
                                                 WKTSpatialElement('LINESTRING(77.29 29.07,77.42 29.26,77.27 29.31,77.29 29.07)', geometry_type=LineString.name), 1))), 
             u'POINT (77.29 29.07)')
@@ -354,8 +354,8 @@ class TestGeometry(TestCase):
 
     def test_boundary(self):
         r = session.query(Road).filter(Road.road_name=='Graeme Ave').one()
-        eq_(session.scalar(functions.wkt(r.road_geom.boundary)), u'MULTIPOINT ((-88.5477708726115 42.6988853949045), (-88.5912422101911 43.187101955414))')
-        ok_(session.query(Road).filter(functions.wkt(Road.road_geom.boundary) == 'MULTIPOINT ((-88.9139332929936 42.5082802993631), (-88.3655256496815 43.1402866687898))').first() is not None)
+        eq_(session.scalar(r.road_geom.boundary.wkt), u'MULTIPOINT ((-88.5477708726115 42.6988853949045), (-88.5912422101911 43.187101955414))')
+        ok_(session.query(Road).filter(Road.road_geom.boundary.wkt == 'MULTIPOINT ((-88.9139332929936 42.5082802993631), (-88.3655256496815 43.1402866687898))').first() is not None)
         eq_(session.scalar(functions.wkt(functions.boundary(WKTSpatialElement('POLYGON((1 1,0 0, -1 1, 1 1))', geometry_type=Polygon.name)))), 
             u'LINESTRING (1.0 1.0, 0.0 0.0, -1.0 1.0, 1.0 1.0)')
        

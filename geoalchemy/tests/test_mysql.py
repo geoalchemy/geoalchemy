@@ -144,6 +144,10 @@ class TestGeometry(TestCase):
         eq_(session.scalar(s.spot_location.geometry_type), 'POINT')
         eq_(session.scalar(functions.geometry_type(r.road_geom)), 'LINESTRING')
         ok_(session.query(Road).filter(Road.road_geom.geometry_type == 'LINESTRING').first())
+        
+    @raises(NotImplementedError)
+    def test_is_valid(self):
+        session.scalar(self.r.road_geom.is_valid)
 
     def test_is_empty(self):
         ok_(not session.scalar(self.r.road_geom.is_empty))

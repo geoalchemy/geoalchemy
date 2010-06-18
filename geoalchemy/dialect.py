@@ -24,6 +24,7 @@ class SpatialDialect(object):
                    functions.dimension : 'Dimension',
                    functions.srid : 'SRID',
                    functions.geometry_type : 'GeometryType',
+                   functions.is_valid : 'IsValid',
                    functions.is_empty : 'IsEmpty',
                    functions.is_simple : 'IsSimple',
                    functions.is_closed : 'IsClosed',

@@ -206,6 +206,10 @@ class functions:
         """GeometryType(g)"""
         pass
     
+    class is_valid(BaseFunction):
+        """IsValid(g)"""
+        pass
+    
     class is_empty(BaseFunction):
         """IsEmpty(g)"""
         pass

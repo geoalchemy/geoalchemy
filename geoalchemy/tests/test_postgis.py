@@ -178,6 +178,10 @@ class TestGeometry(TestCase):
         ok_(session.query(Spot).filter(Spot.spot_location.srid == 4326).first() is not None)
         eq_(session.scalar(functions.srid('POINT(-88.5945861592357 42.9480095987261)')), 4326)
 
+    def test_is_valid(self):
+        ok_(session.query(Spot).filter(Spot.spot_location.is_valid == True).first() is not None)
+        eq_(session.scalar(functions.is_valid('POINT(-88.5945861592357 42.9480095987261)')), True)
+
     def test_is_empty(self):
         r = session.query(Road).filter(Road.road_name=='Graeme Ave').one()
         l = session.query(Lake).filter(Lake.lake_name=='My Lake').one()

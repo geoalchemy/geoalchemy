@@ -65,6 +65,7 @@ class MySQLSpatialDialect(SpatialDialect):
     
     __functions = {
                    functions.length : 'GLength',
+                   functions.is_valid : None,
                    functions.is_simple : None,
                    functions.boundary : None,
                    functions.is_ring : None,

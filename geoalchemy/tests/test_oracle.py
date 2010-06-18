@@ -240,6 +240,10 @@ class TestGeometry(TestCase):
         eq_(session.scalar(r.road_geom.srid), 4326)
         ok_(session.query(Spot).filter(Spot.spot_location.srid == 4326).first() is not None)
         eq_(session.scalar(functions.srid('POINT(-88.5945861592357 42.9480095987261)')), 4326)
+        
+    @raises(NotImplementedError)
+    def test_is_valid(self):
+        session.scalar(self.r.road_geom.is_valid)
 
     def test_is_empty(self):
         r = session.query(Road).filter(Road.road_name=='Graeme Ave').one()

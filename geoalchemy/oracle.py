@@ -351,6 +351,7 @@ class OracleSpatialDialect(SpatialDialect):
                    functions.dimension : ['MDSYS.ST_GEOMETRY.ST_DIMENSION', 'MDSYS.ST_GEOMETRY'],
                    functions.srid : ['MDSYS.OGC_SRID', 'MDSYS.ST_GEOMETRY'],
                    functions.geometry_type : ['MDSYS.OGC_GeometryType', 'MDSYS.ST_GEOMETRY'],
+                   functions.is_valid : None,
                    functions.is_empty : ST_GeometryFunction(func.MDSYS.OGC_IsEmpty, returns_boolean=True, default_cast=True),
                    functions.is_simple : ST_GeometryFunction(func.MDSYS.OGC_IsSimple, returns_boolean=True, default_cast=True),
                    functions.is_closed : ST_GeometryFunction(func.MDSYS.OGC_IsClosed, returns_boolean=True),

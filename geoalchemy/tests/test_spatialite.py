@@ -171,6 +171,9 @@ class TestGeometry(TestCase):
         eq_(session.scalar(r.road_geom.geometry_type), 'LINESTRING')
         eq_(session.scalar(s.spot_location.geometry_type), 'POINT')
 
+    def test_is_valid(self):
+        ok_(not session.scalar(self.r.road_geom.is_valid))
+
     def test_is_empty(self):
         ok_(not session.scalar(self.r.road_geom.is_empty))
 

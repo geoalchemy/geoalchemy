@@ -41,10 +41,6 @@ class sqlite_functions(mysql_functions):
     class fgf(BaseFunction):
         """AsFGF(g)"""
         pass
-    
-    class is_valid(BaseFunction):
-        """IsValid(g)"""
-        pass
 
 
 class SQLiteSpatialDialect(SpatialDialect):
@@ -55,7 +51,6 @@ class SQLiteSpatialDialect(SpatialDialect):
                    functions.length : 'GLength',
                    sqlite_functions.svg : 'AsSVG',
                    sqlite_functions.fgf : 'AsFGF',
-                   sqlite_functions.is_valid : 'IsValid',
                    mysql_functions.mbr_equal : 'MBREqual',
                    mysql_functions.mbr_disjoint : 'MBRDisjoint',
                    mysql_functions.mbr_intersects : 'MBRIntersects',

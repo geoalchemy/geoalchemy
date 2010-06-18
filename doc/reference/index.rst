@@ -23,4 +23,5 @@ Dialects
    mysql
    spatialite
    oracle
+   mssql
    

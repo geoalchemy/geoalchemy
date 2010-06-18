@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 
-from sqlalchemy import func, cast, exc
 import warnings
-from sqlalchemy.dialects.mssql import VARBINARY
+from sqlalchemy import func, cast, exc
+from sqlalchemy.dialects.mssql.base import MSVarBinary
 from sqlalchemy.sql.expression import text
+from geoalchemy.base import WKBSpatialElement, WKTSpatialElement, PersistentSpatialElement, DBSpatialElement, SpatialComparator
 from geoalchemy.dialect import SpatialDialect
-from geoalchemy.base import WKBSpatialElement, WKTSpatialElement, PersistentSpatialElement, DBSpatialElement
-from geoalchemy.geometry import Geometry
 from geoalchemy.functions import functions, BaseFunction
+from geoalchemy.geometry import Geometry
 
 u"""
 :mod:`geoalchemy.mssql` -- MS SQL Server 2008 Spatial Dialect
@@ -37,11 +37,8 @@ There is also currently no support for inserting `None` geometries. You must
 use :data:`geoalchemy.mssql.MS_SPATIAL_NULL` to explicitly insert NULL
 geometries.
 
-There are also occasional problems with using :class:`~geoalchemy.base.DBSpatialElement`
-directly in queries. Most will work, but occasionally an error will occur
-indicating that a cast "from image to geometry" is not possible. This bug is
-being investigated, in the meantime only pass WKB or WKT geometries between
-queries.
+It is not possible to restrict the geometry columns to a specific geometry
+type.
 
 .. moduleauthor:: Mark Hall <Mark.Hall@nationalarchives.gov.uk>
 """
@@ -49,6 +46,15 @@ queries.
 MS_SPATIAL_NULL = text('null')
 """There is a bug causing errors when trying to insert None values into
 nullable columns. Use this constant instead."""
+
+class MSComparator(SpatialComparator):
+    """Comparator class used for MS SQL Server 2008
+    """
+    def __getattr__(self, name):
+        try:
+            return SpatialComparator.__getattr__(self, name)
+        except AttributeError:
+            return getattr(ms_functions, name)(self)
 
 class MSPersistentSpatialElement(PersistentSpatialElement):
     """Represents a Geometry as loaded from an MS SQL Server 2008 database.
@@ -98,6 +104,7 @@ def CastDBSpatialElementFunction():
     this function guarantees that SQL Server knows the data is a geometry.
     """
     def function_handler(params, within_column_clause):
+        #return cast(cast(params[0], MSVarBinary('MAX')), Geometry)
         return cast(params[0], Geometry)
     
     return function_handler
@@ -136,14 +143,14 @@ class ms_functions(functions):
         """
         pass
     
-    class instance_of():
-        """g.instance_of(geometry_type_name)
+    class instance_of(BaseFunction):
+        """g.InstanceOf(geometry_type_name)
         
         Tests whether the geometry is of the given geometry type.
         """
         pass
     
-    class m():
+    class m(BaseFunction):
         """p.M
         
         Returns the M value for the given :class:`~geoalchemy.geometry.Point`.
@@ -151,7 +158,7 @@ class ms_functions(functions):
         """
         pass
     
-    class make_valid():
+    class make_valid(BaseFunction):
         """g.MakeValid()
         
         Converts an invalid :class:`~geoalchemy.geometry.Geometry` into a
@@ -160,7 +167,7 @@ class ms_functions(functions):
         """
         pass
     
-    class reduce():
+    class reduce(BaseFunction):
         """g.Reduce(tolerance)
         
         Returns an approximation of the :class:`~geoalchemy.geometry.Geometry`
@@ -168,7 +175,7 @@ class ms_functions(functions):
         """
         pass
     
-    class to_string():
+    class to_string(BaseFunction):
         """g.ToString()
         
         Equivalent to :class:`~geoalchemy.mssql.ms_functions.text_zm` except
@@ -176,7 +183,7 @@ class ms_functions(functions):
         """
         pass
     
-    class z():
+    class z(BaseFunction):
         """p.Z
         
         Returns the M value for the given :class:`~geoalchemy.geometry.Point`.
@@ -198,6 +205,14 @@ class MSSpatialDialect(SpatialDialect):
       regardless of the type of :class:`~geoalchemy.geometry.Geometry` it
       was called on
     * g.buffer -- Only supports the buffer distance as a parameter
+    
+    Some standard functions are not available:
+    
+    * g.transform
+    * g.within_distance
+    * g.covers
+    * g.covers_by
+    * g.intersection
     
     For SQL Server 2008 specific functions see :class:`~geoalchemy.mssql.ms_functions`.
     """
@@ -241,7 +256,17 @@ class MSSpatialDialect(SpatialDialect):
                    functions.covers : None,
                    functions.covered_by : None,
                    functions.intersection : None,
-                   ms_functions.gml : 'AsGml'
+                   functions.is_valid : BooleanFunction(func.STIsValid),
+                   ms_functions.gml : 'AsGml',
+                   ms_functions.text_zm : 'AsTextZM',
+                   ms_functions.buffer_with_tolerance : 'BufferWithTolerance',
+                   ms_functions.filter : BooleanFunction(func.Filter),
+                   ms_functions.instance_of : BooleanFunction(func.InstanceOf),
+                   ms_functions.m : 'M',
+                   ms_functions.make_valid : 'MakeValid',
+                   ms_functions.reduce : 'Reduce',
+                   ms_functions.to_string : 'ToString',
+                   ms_functions.z : 'Z'
                   }
     
     __member_functions = (
@@ -273,13 +298,23 @@ class MSSpatialDialect(SpatialDialect):
                           functions.within,
                           functions.overlaps,
                           functions.gcontains,
-                          ms_functions.gml
+                          functions.is_valid,
+                          ms_functions.gml,
+                          ms_functions.text_zm,
+                          ms_functions.buffer_with_tolerance,
+                          ms_functions.filter,
+                          ms_functions.instance_of,
+                          ms_functions.make_valid,
+                          ms_functions.reduce,
+                          ms_functions.to_string
                          )
     
     __properties = (
                     functions.srid,
                     functions.x,
-                    functions.y
+                    functions.y,
+                    ms_functions.m,
+                    ms_functions.z
                    )
     
     def _get_function_mapping(self):
@@ -301,8 +336,8 @@ class MSSpatialDialect(SpatialDialect):
                 bind.execute("CREATE SPATIAL INDEX [%s_%s] ON [%s].[%s]([%s]) WITH (BOUNDING_BOX = %s)" %
                              (table.name, column.name, table.schema or 'dbo', table.name, column.name, column.type.kwargs["bounding_box"]))
             else:
-                warnings.warn("No bounding_box given for '[%s].[%s].[%s]', no entry in USER_SDO_GEOM_METADATA will be made "\
-                              "and no spatial index will be created." % (table.schema or 'dbo', table.name, column.name), 
+                warnings.warn("No bounding_box given for '[%s].[%s].[%s]' no spatial index will be created." %
+                              (table.schema or 'dbo', table.name, column.name), 
                               exc.SAWarning, stacklevel=3)
             
     def is_member_function(self, function_class):

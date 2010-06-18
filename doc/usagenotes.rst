@@ -251,6 +251,101 @@ For Oracle the returned geometry is an object of ``SDO_Geometry``. cx_Oracle cur
 Oracle objects as argument in queries, so ``DBSpatialElement`` can not be used for Oracle.
 
 
+Notes for MS Sql Server
+-----------------------
+
+The MS Sql Server spatial support has been tested using MS SQL Server 2008, connecting to it via pyODBC on Windows.
+
+There is one important difference between SQL Server 2008 spatial support and PostGIS in that it is **not** possible
+to restrict the spatial column to a specific type of geometry. All columns will be :class:`geoalchemy.geometry.Geometry`.
+
+:class:`geoalchemy.base.DBSpatialElement` issues
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+In some cases when using a :class:`~geoalchemy.base.DBSpatialElement` to store a geometry in the database-specific
+format between queries an error will appear when the :class:`~geoalchemy.base.DBSpatialElement` is used next.
+The error message is "Explicit conversion from data type image to TNAGazetteer.sys.geometry is not allowed". This
+is a known problem and a fix is being submitted to SqlAlchemy to correct this problem. In the meantime to store
+geometries between queries use :class:`~geoalchemy.base.WKBSpatialElement` or :class:`~geoalchemy.base.WKTSpatialElement`.
+
+Supported functions
+~~~~~~~~~~~~~~~~~~~
+
+Most of the standard functions defined in GeoAlchemy are available and work as expected, but there are a few exceptions:
+
+* g.centroid -- Only returns results for :class:`~geoalchemy.geometry.Polygon`
+  and :class:`~geoalchemy.geometry.MultiPolygon`. Returns 'NULL' for all
+  other :class:`~geoalchemy.geometry.Geometry`
+* g.envelope -- Will always return a :class:`~geoalchemy.geometry.Polygon`
+  regardless of the type of :class:`~geoalchemy.geometry.Geometry` it
+  was called on
+* g.buffer -- Only supports the buffer distance as a parameter
+* g.transform -- Not defined
+* g.within_distance -- Not defined
+* g.covers -- Not defined
+* g.covers_by -- Not defined
+* g.intersection -- Not defined
+
+MS Sql Server specific functions
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Sql Server provides a number of additional spatial functions, details of which can be found in the documentation of
+:class:`geoalchemy.mssql.ms_functions`. These additional functions can be used like any other function, or via
+`ms_functions.function_name`.
+
+.. code-block:: python
+
+    session.query(Road).filter(Road.road_geom.instance_of('LINESTRING'))
+    
+    from geoalchemy.mssql import ms_functions
+    ms_functions.buffer_with_tolerance('POINT(-88.5945861592357 42.9480095987261)', 10, 2, 0)
+    
+* :class:`~geoalchemy.mssql.ms_functions.text_zm`
+* :class:`~geoalchemy.mssql.ms_functions.buffer_with_tolerance`
+* :class:`~geoalchemy.mssql.ms_functions.filter`
+* :class:`~geoalchemy.mssql.ms_functions.instance_of`
+* :class:`~geoalchemy.mssql.ms_functions.m`
+* :class:`~geoalchemy.mssql.ms_functions.make_valid`
+* :class:`~geoalchemy.mssql.ms_functions.reduce`
+* :class:`~geoalchemy.mssql.ms_functions.to_string`
+* :class:`~geoalchemy.mssql.ms_functions.z`
+
+Creating a spatial index
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+Sql Server requires a bounding box that is equal to the extent of the data in the indexed spatial column.
+As the necessary information is not available when the DDL statements are executed no spatial indexes
+are created by default. To create a spatial index the bounding box must be specified explicitly when the
+:class:`~geoalchemy.geometry.GeometryColumn` is defined:
+
+.. code-block:: python
+
+    class Road(Base):
+       __tablename__ = 'ROADS'
+   
+       road_id = Column(Integer, primary_key=True)
+       road_name = Column(String(255))
+       road_geom = GeometryColumn(Geometry(2, bounding_box='(xmin=-180, ymin=-90, xmax=180, ymax=90)'), nullable=False)
+
+Inserting NULL geometries
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Due to a bug in the underlying libraries there is currently no support for inserting NULL geometries that have a `None`
+geometry. The following code will not work:
+
+.. code-block:: python
+
+    session.add(Road(road_name=u'Destroyed road', road_geom=None))
+
+To insert NULL you must use :data:`geoalchemy.mssql.MS_SPATIAL_NULL` to explicitly specify the NULL geometry.
+
+.. code-block:: python
+
+    session.add(Road(road_name=u'Destroyed road', road_geom=MS_SPATIAL_NULL))
+
+This is an issue with pyODBC and is being investigated.
+
+
 Notes on non-declarative mapping
 --------------------------------
 

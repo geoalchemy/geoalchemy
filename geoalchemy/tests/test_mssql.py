@@ -5,9 +5,9 @@ from sqlalchemy import (create_engine, MetaData, Column, Integer, String,
 from sqlalchemy.orm import sessionmaker, mapper
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.exceptions import IntegrityError
-from geoalchemy import GeometryColumn, Geometry, GeometryDDL, GeometryExtensionColumn, GeometryCollection, DBSpatialElement, WKTSpatialElement, WKBSpatialElement
+from geoalchemy import GeometryColumn, Geometry, LineString, Polygon, GeometryDDL, GeometryExtensionColumn, GeometryCollection, DBSpatialElement, WKTSpatialElement, WKBSpatialElement
 from geoalchemy.functions import functions
-from geoalchemy.mssql import MS_SPATIAL_NULL
+from geoalchemy.mssql import MS_SPATIAL_NULL, ms_functions, MSComparator
 from unittest import TestCase
 from nose.tools import eq_, ok_, raises, assert_almost_equal
 
@@ -25,14 +25,14 @@ class Road(Base):
 
     road_id = Column(Integer, primary_key=True)
     road_name = Column(String(255))
-    road_geom = GeometryColumn(Geometry(2, bounding_box='(xmin=-180, ymin=-90, xmax=180, ymax=90)'), nullable=False)
+    road_geom = GeometryColumn(LineString(2, bounding_box='(xmin=-180, ymin=-90, xmax=180, ymax=90)'), comparator=MSComparator, nullable=False)
 
 class Lake(Base):
     __tablename__ = 'lakes'
 
     lake_id = Column(Integer, primary_key=True)
     lake_name = Column(String(255))
-    lake_geom = GeometryColumn(Geometry(2))
+    lake_geom = GeometryColumn(Polygon(2), comparator=MSComparator)
 
 spots_table = Table('spots', metadata,
                     Column('spot_id', Integer, primary_key=True),
@@ -47,7 +47,7 @@ class Spot(object):
 
         
 mapper(Spot, spots_table, properties={
-            'spot_location': GeometryColumn(spots_table.c.spot_location)}) 
+            'spot_location': GeometryColumn(spots_table.c.spot_location, comparator=MSComparator)}) 
                          
 class Shape(Base):
     __tablename__ = 'shapes'
@@ -97,7 +97,6 @@ class TestGeometry(TestCase):
     def tearDown(self):
         session.rollback()
         #metadata.drop_all()
-    
     
     def test_geometry_type(self):
         r = session.query(Road).get(1)
@@ -488,4 +487,68 @@ class TestGeometry(TestCase):
         road_null = Road(road_name='Jeff Rd', road_geom=MS_SPATIAL_NULL)
         session.add(road_null)
         session.commit();
+    
+    # Test SQL Server specific functions
+    
+    def test_text_zm(self):
+        engine.execute('INSERT INTO [spots] VALUES(%f, geometry::STGeomFromText(%s, %i))' % (130.23, "'POINT (-88.5945861592357 42.9480095987261 130.23 1)'", 4326))
+        eq_(session.query(Spot.spot_location.text_zm.label('text_zm')).filter(Spot.spot_height==130.23).first().text_zm, u'POINT (-88.5945861592357 42.9480095987261 130.23 1)')
+        eq_(session.query(Spot.spot_location.text_zm.label('text_zm')).filter(Spot.spot_height==420.40).first().text_zm, u'POINT (-88.5945861592357 42.9480095987261)')
+    
+    
+    def test_buffer_with_tolerance(self):
+        r = session.query(Road).filter(Road.road_name=='Graeme Ave').one()
+        assert_almost_equal(session.scalar(functions.area(r.road_geom.buffer_with_tolerance(10.0, 20, 1))), 214.63894668789601)
+        assert_almost_equal(session.scalar(functions.area(r.road_geom.buffer_with_tolerance(10.0, 20, 0))), 214.63894668789601)
+        ok_(session.query(Spot).filter(functions.within('POINT(-88.5945861592357 42.9480095987261)', Spot.spot_location.buffer(10))).first() is not None)
+        assert_almost_equal(session.scalar(functions.area(ms_functions.buffer_with_tolerance('POINT(-88.5945861592357 42.9480095987261)', 10, 2, 0))), 306.21843345678644)
+    
+    def test_filter(self):
+        r1 = session.query(Road).filter(Road.road_name=='Jeff Rd').one()
+        r2 = session.query(Road).filter(Road.road_name=='Graeme Ave').one()
+        r3 = session.query(Road).filter(Road.road_name=='Geordie Rd').one()
+        intersecting_roads = session.query(Road).filter(Road.road_geom.filter(r1.road_geom)).all()
+        ok_(r2 in intersecting_roads)
+        ok_(r3 not in intersecting_roads)
+        eq_(session.scalar(ms_functions.filter('POINT(0 0)', 'LINESTRING ( 2 0, 0 2 )')), False)
+    
+    def test_instance_of(self):
+        ok_(session.query(Road).filter(Road.road_geom.instance_of('LINESTRING')).first() is not None)
+        ok_(session.query(Lake).filter(Lake.lake_geom.instance_of('POLYGON')).first() is not None)
+        ok_(session.query(Spot).filter(Spot.spot_location.instance_of('POINT')).first() is not None)
+    
+    def test_extended_coords(self):
+        engine.execute('INSERT INTO [spots] VALUES(%f, geometry::STGeomFromText(%s, %i))' % (130.23, "'POINT (-88.5945861592357 42.9480095987261 130.23 1)'", 4326))
+        p = session.query(Spot.spot_location.z.label('z'), Spot.spot_location.m.label('m')).filter(Spot.spot_height==130.23).first()
+        eq_(p.z, 130.23)
+        eq_(p.m, 1)
+        p = session.query(Spot.spot_location.z.label('z'), Spot.spot_location.m.label('m')).filter(Spot.spot_height==420.40).first()
+        ok_(p.z is None)
+        ok_(p.m is None)
+    
+    def test_make_valid(self):
+        session.add(Shape(shape_name=u'Invalid Shape', shape_geom=WKTSpatialElement(u'LINESTRING(0 2, 1 1, 1 0, 1 1, 2 2)')))
+        invalid_line = session.query(Shape).filter(Shape.shape_name==u'Invalid Shape').first()
+        eq_(session.scalar(invalid_line.shape_geom.is_valid), 0)
+        invalid_line.shape_geom = DBSpatialElement(session.scalar(invalid_line.shape_geom.make_valid))
+        valid_line = session.query(Shape).filter(Shape.shape_name==u'Invalid Shape').first()
+        eq_(session.scalar(valid_line.shape_geom.is_valid), 1)
+        
+    
+    def test_reduce(self):
+        r = session.query(Road).first()
+        eq_(session.scalar(DBSpatialElement(session.scalar(r.road_geom.reduce(0.5))).wkt),
+            u'LINESTRING (-88.9139332929936 42.5082802993631, -88.3655256496815 43.1402866687898)')
+        eq_(session.scalar(DBSpatialElement(session.scalar(r.road_geom.reduce(0.05))).wkt),
+            u'LINESTRING (-88.9139332929936 42.5082802993631, -88.6113059044586 42.9680732929936, -88.3655256496815 43.1402866687898)')
+        eq_(session.scalar(DBSpatialElement(session.scalar(r.road_geom.reduce(0.0000000000001))).wkt),
+            session.scalar(r.road_geom.wkt))
+        
+    
+    def test_to_string(self):
+        engine.execute('INSERT INTO [spots] VALUES(%f, geometry::STGeomFromText(%s, %i))' % (130.23, "'POINT (-88.5945861592357 42.9480095987261 130.23 1)'", 4326))
+        session.add(Lake(lake_name=u'Vanished lake', lake_geom=MS_SPATIAL_NULL))
+        eq_(session.query(Spot.spot_location.text_zm.label('to_string')).filter(Spot.spot_height==130.23).first().to_string, u'POINT (-88.5945861592357 42.9480095987261 130.23 1)')
+        eq_(session.query(Spot.spot_location.text_zm.label('to_string')).filter(Spot.spot_height==420.40).first().to_string, u'POINT (-88.5945861592357 42.9480095987261)')
+        ok_(session.query(Lake.lake_geom.to_string.label('to_string')).filter(Lake.lake_name==u'Vanished lake').first().to_string is None)
     

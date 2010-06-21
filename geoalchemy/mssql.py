@@ -2,11 +2,11 @@
 
 import warnings
 from sqlalchemy import func, cast, exc
-from sqlalchemy.dialects.mssql.base import MSVarBinary
+#from sqlalchemy.dialects.mssql.base import MSVarBinary
 from sqlalchemy.sql.expression import text
 from geoalchemy.base import WKBSpatialElement, WKTSpatialElement, PersistentSpatialElement, DBSpatialElement, SpatialComparator
 from geoalchemy.dialect import SpatialDialect
-from geoalchemy.functions import functions, BaseFunction
+from geoalchemy.functions import functions, BaseFunction, BooleanFunction
 from geoalchemy.geometry import Geometry
 
 u"""
@@ -71,28 +71,6 @@ class MSPersistentSpatialElement(PersistentSpatialElement):
             except AttributeError:
                 raise NotImplementedError("Operation '%s' is not supported for '%s'" 
                     % (name, self.__class__.__name__)) 
-
-        
-
-def BooleanFunction(function, compare_value = 1):
-    """Wrapper required for the spatial comparison functions.
-    
-    SQL Server returns 0 or 1 when using any of the spatial comparison
-    functions (STEquals, STContains, ...), but in a WHERE clause a boolean
-    value is required. This function adds the necessary comparison to ensure
-    that in the WHERE clause the function is compared to `compare_value`
-    while in the SELECT clause the function result is returned.
-    
-    :param function: The function that needs boolean wrapping
-    :param compare_value: The value that the function should be compare to
-    """
-    def function_handler(params, within_column_clause):
-        if within_column_clause:
-            return function(*params)
-        else:
-            return (function(*params) == compare_value)
-    
-    return function_handler
 
 def CastDBSpatialElementFunction():
     """Wrapper required for handling the :class:`geoalchemy.base.DBSpatialElement`.
@@ -243,25 +221,25 @@ class MSSpatialDialect(SpatialDialect):
                    functions.start_point : 'STStartPoint',
                    functions.end_point : 'STEndPoint',
                    functions.transform : None,
-                   functions.equals : BooleanFunction(func.STEquals),
+                   functions.equals : BooleanFunction(func.STEquals, 1),
                    functions.distance : 'STDistance',
                    functions.within_distance : None,
-                   functions.disjoint : BooleanFunction(func.STDisjoint),
-                   functions.intersects : BooleanFunction(func.STIntersects),
-                   functions.touches : BooleanFunction(func.STTouches),
-                   functions.crosses : BooleanFunction(func.STCrosses),
-                   functions.within : BooleanFunction(func.STWithin),
-                   functions.overlaps : BooleanFunction(func.STOverlaps),
-                   functions.gcontains : BooleanFunction(func.STContains),
+                   functions.disjoint : BooleanFunction(func.STDisjoint, 1),
+                   functions.intersects : BooleanFunction(func.STIntersects, 1),
+                   functions.touches : BooleanFunction(func.STTouches, 1),
+                   functions.crosses : BooleanFunction(func.STCrosses, 1),
+                   functions.within : BooleanFunction(func.STWithin, 1),
+                   functions.overlaps : BooleanFunction(func.STOverlaps, 1),
+                   functions.gcontains : BooleanFunction(func.STContains, 1),
                    functions.covers : None,
                    functions.covered_by : None,
                    functions.intersection : None,
-                   functions.is_valid : BooleanFunction(func.STIsValid),
+                   functions.is_valid : BooleanFunction(func.STIsValid, 1),
                    ms_functions.gml : 'AsGml',
                    ms_functions.text_zm : 'AsTextZM',
                    ms_functions.buffer_with_tolerance : 'BufferWithTolerance',
-                   ms_functions.filter : BooleanFunction(func.Filter),
-                   ms_functions.instance_of : BooleanFunction(func.InstanceOf),
+                   ms_functions.filter : BooleanFunction(func.Filter, 1),
+                   ms_functions.instance_of : BooleanFunction(func.InstanceOf, 1),
                    ms_functions.m : 'M',
                    ms_functions.make_valid : 'MakeValid',
                    ms_functions.reduce : 'Reduce',

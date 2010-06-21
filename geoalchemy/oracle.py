@@ -3,7 +3,7 @@ from sqlalchemy import select, func, exc
 from geoalchemy.base import SpatialComparator, PersistentSpatialElement,\
     GeometryBase
 from geoalchemy.dialect import SpatialDialect 
-from geoalchemy.functions import functions, BaseFunction
+from geoalchemy.functions import functions, BaseFunction, check_comparison, BooleanFunction
 from geoalchemy.geometry import LineString, MultiLineString, GeometryCollection,\
     Geometry
 from geoalchemy.base import WKTSpatialElement, WKBSpatialElement
@@ -108,19 +108,10 @@ def ST_GeometryFunction(function, returns_geometry = False, relation_function = 
         if len(params) > 0:
             geom_cast = cast_param(params)
             if geom_cast is not None:
-                return __check_comparison(get_function(function, geom_cast, params, returns_geometry, relation_function),
+                return check_comparison(get_function(function, geom_cast, params, returns_geometry, relation_function),
                                           within_column_clause, returns_boolean, compare_value)
             
-        return __check_comparison(function(*params), within_column_clause, returns_boolean, compare_value)
-    
-    return function_handler
-
-def BooleanFunction(function, compare_value = 'TRUE'):
-    """Wrapper for SDO_GEOMETRY database function that return 'Boolean-like' values, for example
-    SDO_EQUAL returns the string 'TRUE'.
-    """
-    def function_handler(params, within_column_clause):
-        return __check_comparison(function(*params), within_column_clause, True, compare_value)
+        return check_comparison(function(*params), within_column_clause, returns_boolean, compare_value)
     
     return function_handler
 
@@ -167,24 +158,9 @@ def DimInfoFunction(function, returns_boolean = False, compare_value = 'TRUE'):
                     
                 i += 1
 
-        return __check_comparison(function(*params), within_column_clause, returns_boolean, compare_value)
+        return check_comparison(function(*params), within_column_clause, returns_boolean, compare_value)
     
     return function_handler
-
-def __check_comparison(function, within_column_clause, returns_boolean, compare_value):
-    """Because Oracle does not want to know Boolean and functions return 0/1 or the string 'TRUE',
-    we manually have to add a comparison, but only if the function is called inside the where-clause, 
-    not in the select clause.
-    
-    For example:
-    select .. from .. where SDO_EQUAL(.., ..) = 'TRUE'
-    select SDO_EQUAL(.., ..) from ..
-    
-    """
-    if returns_boolean and not within_column_clause:
-        return (function == compare_value)
-    else: 
-        return function
 
 class oracle_functions(functions):
     """Functions only supported by Oracle

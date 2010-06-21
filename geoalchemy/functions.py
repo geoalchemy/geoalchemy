@@ -181,6 +181,37 @@ def __compile_base_function(element, compiler, **kw):
         function = _get_function(element, compiler, params, kw.get('within_columns_clause', False))
         return compiler.process(function)
 
+def BooleanFunction(function, compare_value = 'TRUE'):
+    """Wrapper for database function that return 'Boolean-like' values, for example
+    SDO_EQUAL returns the string 'TRUE'.
+    
+    This function adds the necessary comparison to ensure
+    that in the WHERE clause the function is compared to `compare_value`
+    while in the SELECT clause the function result is returned.
+    
+    :param function: The function that needs boolean wrapping
+    :param compare_value: The value that the function should be compare to
+    """
+    def function_handler(params, within_column_clause):
+        return check_comparison(function(*params), within_column_clause, True, compare_value)
+    
+    return function_handler
+  
+def check_comparison(function, within_column_clause, returns_boolean, compare_value):
+    """Because Oracle and MS SQL do not want to know Boolean and functions return 0/1 or the string 'TRUE',
+    we manually have to add a comparison, but only if the function is called inside the where-clause, 
+    not in the select clause.
+    
+    For example:
+    select .. from .. where SDO_EQUAL(.., ..) = 'TRUE'
+    select SDO_EQUAL(.., ..) from ..
+    
+    """
+    if returns_boolean and not within_column_clause:
+        return (function == compare_value)
+    else: 
+        return function
+
 class functions:
     """Functions that implement OGC SFS or SQL/MM and that are supported by most databases
     """

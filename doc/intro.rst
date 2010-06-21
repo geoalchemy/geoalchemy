@@ -16,8 +16,9 @@ requires a supported spatial database.
 Supported Spatial Databases
 ---------------------------
 At present `PostGIS <http://postgis.refractions.net/>`_, `Spatialite
-<http://www.gaia-gis.it/spatialite/>`_, `MySQL <http://www.mysql.com/>`_
-and `Oracle <http://www.oracle.com/technology/software/products/database/index.html>`_
+<http://www.gaia-gis.it/spatialite/>`_, `MySQL <http://www.mysql.com/>`_,
+`Oracle <http://www.oracle.com/technology/software/products/database/index.html>`_,
+and `MS SQL Server 2008 <http://www.microsoft.com/sqlserver/2008/en/us/spatial-data.aspx?pf=true>`_
 are supported.
 
 Support

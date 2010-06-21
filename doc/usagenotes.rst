@@ -268,6 +268,9 @@ The error message is "Explicit conversion from data type image to TNAGazetteer.s
 is a known problem and a fix is being submitted to SqlAlchemy to correct this problem. In the meantime to store
 geometries between queries use :class:`~geoalchemy.base.WKBSpatialElement` or :class:`~geoalchemy.base.WKTSpatialElement`.
 
+To finally fix this problem a change in SQLAlchemy is required which can be tracked here
+`<http://www.sqlalchemy.org/trac/ticket/1833>`_.
+
 Supported functions
 ~~~~~~~~~~~~~~~~~~~
 
@@ -343,7 +346,7 @@ To insert NULL you must use :data:`geoalchemy.mssql.MS_SPATIAL_NULL` to explicit
 
     session.add(Road(road_name=u'Destroyed road', road_geom=MS_SPATIAL_NULL))
 
-This is an issue with pyODBC and is being investigated.
+This is an issue with pyODBC and can be tracked via `<http://code.google.com/p/pyodbc/issues/detail?id=103>`_.
 
 
 Notes on non-declarative mapping

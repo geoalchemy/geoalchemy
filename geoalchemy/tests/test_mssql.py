@@ -96,7 +96,7 @@ class TestGeometry(TestCase):
 
     def tearDown(self):
         session.rollback()
-        #metadata.drop_all()
+        metadata.drop_all()
     
     def test_geometry_type(self):
         r = session.query(Road).get(1)

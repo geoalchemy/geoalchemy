@@ -259,18 +259,6 @@ The MS Sql Server spatial support has been tested using MS SQL Server 2008, conn
 There is one important difference between SQL Server 2008 spatial support and PostGIS in that it is **not** possible
 to restrict the spatial column to a specific type of geometry. All columns will be :class:`geoalchemy.geometry.Geometry`.
 
-:class:`geoalchemy.base.DBSpatialElement` issues
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-In some cases when using a :class:`~geoalchemy.base.DBSpatialElement` to store a geometry in the database-specific
-format between queries an error will appear when the :class:`~geoalchemy.base.DBSpatialElement` is used next.
-The error message is "Explicit conversion from data type image to TNAGazetteer.sys.geometry is not allowed". This
-is a known problem and a fix is being submitted to SqlAlchemy to correct this problem. In the meantime to store
-geometries between queries use :class:`~geoalchemy.base.WKBSpatialElement` or :class:`~geoalchemy.base.WKTSpatialElement`.
-
-To finally fix this problem a change in SQLAlchemy is required which can be tracked here
-`<http://www.sqlalchemy.org/trac/ticket/1833>`_.
-
 Supported functions
 ~~~~~~~~~~~~~~~~~~~
 

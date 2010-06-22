@@ -2,8 +2,9 @@
 
 import warnings
 from sqlalchemy import func, cast, exc
-#from sqlalchemy.dialects.mssql.base import MSVarBinary
+from sqlalchemy.types import VARBINARY
 from sqlalchemy.sql.expression import text
+from sqlalchemy.ext.compiler import compiles
 from geoalchemy.base import WKBSpatialElement, WKTSpatialElement, PersistentSpatialElement, DBSpatialElement, SpatialComparator
 from geoalchemy.dialect import SpatialDialect
 from geoalchemy.functions import functions, BaseFunction, BooleanFunction
@@ -68,6 +69,17 @@ class MSPersistentSpatialElement(PersistentSpatialElement):
         except AttributeError:
             return getattr(ms_functions, name)(self)
 
+@compiles(VARBINARY, 'mssql')
+def compile_varbinary(element, compiler, **kw):
+    """Compiler function to handle VARBINARY(max).
+    
+    Should be removed when SQLAlchemy supports this natively.
+    """
+    if str(element.length).lower() == 'max':
+        return "VARBINARY(max)"
+    else:
+        return compiler.visit_VARBINARY(element, **kw)
+
 def CastDBSpatialElementFunction():
     """Wrapper required for handling the :class:`geoalchemy.base.DBSpatialElement`.
     
@@ -78,8 +90,7 @@ def CastDBSpatialElementFunction():
     this function guarantees that SQL Server knows the data is a geometry.
     """
     def function_handler(params, within_column_clause):
-        #return cast(cast(params[0], MSVarBinary('MAX')), Geometry)
-        return cast(params[0], Geometry)
+        return cast(cast(params[0], VARBINARY('max')), Geometry)
     
     return function_handler
 

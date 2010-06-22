@@ -136,7 +136,7 @@ class TestGeometry(TestCase):
         centroid_geom = DBSpatialElement(session.scalar(session.query(Lake).first().lake_geom.centroid))
         eq_(session.scalar(WKBSpatialElement(session.scalar(centroid_geom.wkb)).wkt), u'POINT (-88.757840057564835 43.193797540630335)')
     
-    @raises(NotImplementedError)
+    @raises(AttributeError)
     def test_svg(self):
         eq_(session.scalar(self.r.road_geom.svg), 'M -88.674840936305699 -43.103503229299399 -88.6464173694267 -42.998168834394903 -88.607961955413998 -42.968073292993601 -88.516003356687904 -42.936305777070103 -88.4390925286624 -43.003184757961797')
         ok_(self.r is session.query(Road).filter(Road.road_geom.svg == 'M -88.674840936305699 -43.103503229299399 -88.6464173694267 -42.998168834394903 -88.607961955413998 -42.968073292993601 -88.516003356687904 -42.936305777070103 -88.4390925286624 -43.003184757961797').first())
@@ -146,12 +146,12 @@ class TestGeometry(TestCase):
     def test_gml(self):
         eq_(session.scalar(self.r.road_geom.gml), '<LineString xmlns="http://www.opengis.net/gml"><posList>-88.6748409363057 43.1035032292994 -88.6464173694267 42.9981688343949 -88.607961955414 42.9680732929936 -88.5160033566879 42.9363057770701 -88.4390925286624 43.0031847579618</posList></LineString>')
     
-    @raises(NotImplementedError)
+    @raises(AttributeError)
     def test_kml(self):
         s = session.query(Spot).filter(Spot.spot_height==420.40).one()
         eq_(session.scalar(s.spot_location.kml), u'<Point><coordinates>-88.5945861592357,42.9480095987261</coordinates></Point>')
 
-    @raises(NotImplementedError)
+    @raises(AttributeError)
     def test_geojson(self):
         s = session.query(Spot).filter(Spot.spot_height==420.40).one()
         session.scalar(s.spot_location.geojson)

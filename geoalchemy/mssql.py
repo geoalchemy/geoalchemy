@@ -66,11 +66,7 @@ class MSPersistentSpatialElement(PersistentSpatialElement):
         try:
             return PersistentSpatialElement.__getattr__(self, name)
         except AttributeError:
-            try:
-                return getattr(ms_functions, name)(self)
-            except AttributeError:
-                raise NotImplementedError("Operation '%s' is not supported for '%s'" 
-                    % (name, self.__class__.__name__)) 
+            return getattr(ms_functions, name)(self)
 
 def CastDBSpatialElementFunction():
     """Wrapper required for handling the :class:`geoalchemy.base.DBSpatialElement`.

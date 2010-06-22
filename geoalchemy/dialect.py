@@ -99,7 +99,8 @@ class SpatialDialect(object):
         return False
     
     def is_property(self, function_class):   
-        """Returns True if the passed-in function should be called as property, e.g.::
+        """Returns True if the passed-in function should be called as property, 
+        e.g.::
         
             Point.the_geom.x is compiled as (for MS Server):
             points.the_geom.x

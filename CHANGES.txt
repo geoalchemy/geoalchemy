@@ -1,7 +1,7 @@
 GeoAlchemy Change Log
 =====================
 
-0.3.2
+0.4
 -----
 
 * GeoAlchemy supports MS SQL Server 2008

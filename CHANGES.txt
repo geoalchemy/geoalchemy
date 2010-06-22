@@ -1,6 +1,11 @@
 GeoAlchemy Change Log
 =====================
 
+0.4.1
+-----
+
+* DBSpatialElement now working properly for MS SQL Server 2008
+
 0.4
 -----
 

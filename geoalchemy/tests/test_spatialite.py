@@ -16,6 +16,7 @@ from nose.tools import ok_, eq_, assert_almost_equal, raises
 
 from geoalchemy.spatialite import SQLiteComparator, sqlite_functions
 from geoalchemy.base import PersistentSpatialElement
+from sqlalchemy.orm.query import aliased
 
 engine = create_engine('sqlite://', module=sqlite, echo=True)
 connection = engine.raw_connection().connection
@@ -505,4 +506,10 @@ class TestGeometry(TestCase):
         eq_(str(session.scalar(Select([func.SRID(Spot.spot_location.RAW)]).where(Spot.spot_id == 1))), 
                 '4326',
                 'AsBinary is not added and the SRID is returned')
+        
+        spot_alias = aliased(Spot)
+        query_wkt = Select([func.wkt(spot_alias.spot_location.RAW)]).__str__()
+        ok_('SELECT wkt(spots_1.spot_location' in query_wkt, 'Table alias is used in select clause')
+        ok_('FROM spots AS spots_1' in query_wkt, 'Table alias is used in from clause')
+        
         

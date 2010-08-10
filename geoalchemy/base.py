@@ -244,7 +244,7 @@ class SpatialComparator(ColumnProperty.ColumnComparator):
             session.query(func.extent(Spot.spot_location.RAW)).first() 
         
         """
-        return RawColumn(self.property.columns[0])
+        return RawColumn(self.__clause_element__())
     
     def __getattr__(self, name):
         return getattr(functions, name)(self)

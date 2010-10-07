@@ -116,7 +116,7 @@ the database.
 
 In the above model definition we have defined an `id` field for each class
 which is also the primary key in the database. We have defined a set of
-standard attributes using datatyes availabe under `sqlalchemy.types`. We
+standard attributes using datatypes availabe under `sqlalchemy.types`. We
 have also created a `geometry attribute` for each class using `GeometryColumn`
 and Point, LineString and Polygon datatypes of GeoAlchemy. Here we pass the
 dimension parameter to `GeometryColumn`. We leave out the `srid` parameter which

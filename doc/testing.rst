@@ -4,13 +4,13 @@ Testing GeoAlchemy
 Requirements
 ------------
 
-In order to test GeoAlchemy you must have nose tools installed. Also you shoud
+In order to test GeoAlchemy you must have nose tools installed. Also you should
 have installed SQLAlchemy, GeoAlchemy and all the DB-APIs. Refer the
 `installation docs`_ for details. In case you are interested in
 testing against only one DB-API (say Postgres), you need not have the other
 APIs installed. However, you will be able to run those specific tests only.
 
-If you intend to run the tests for Spatialte, you must also have Spatialite
+If you intend to run the tests for Spatialite, you must also have Spatialite
 extension installed. Also make you have enabled extension loading in your
 pysqlite build. Refer the `Spatialite specific notes`_ for details.
 

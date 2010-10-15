@@ -22,7 +22,7 @@ Now save the file and then build and install pysqlite2:
 
     $ python setup.py install
 
-Now, we are ready to use spatialte in our code. While importing pysqlite
+Now, we are ready to use spatialite in our code. While importing pysqlite
 in our code we must ensure that we are importing from the newly installed
 pysqlite2 and not from the pysqlite library included in python. Also pass
 the imported module as a parameter to sqlalchemy create_engine function

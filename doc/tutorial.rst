@@ -4,7 +4,7 @@ GeoAlchemy Tutorial
 This is a short tutorial to illustrate the use of GeoAlchemy and to get
 you started quickly. In this tutorial we will create a simple model using
 three vector layers in PostGIS. The same tutorial will be applicable for
-MySQL. Minor changes are required for spatialte as the spatialite extension
+MySQL. Minor changes are required for spatialite as the spatialite extension
 needs to be loaded. Spatialite specific details are given `here
 <usagenotes.html#notes-for-spatialite>`_.
 
@@ -116,7 +116,7 @@ the database.
 
 In the above model definition we have defined an `id` field for each class
 which is also the primary key in the database. We have defined a set of
-standard attributes using datatypes availabe under `sqlalchemy.types`. We
+standard attributes using datatypes available under `sqlalchemy.types`. We
 have also created a `geometry attribute` for each class using `GeometryColumn`
 and Point, LineString and Polygon datatypes of GeoAlchemy. Here we pass the
 dimension parameter to `GeometryColumn`. We leave out the `srid` parameter which
@@ -224,7 +224,7 @@ in the `examples directory
 <http://bitbucket.org/sanjiv/geoalchemy/src/tip/examples/>`_. You could run those scripts to create the
 database tables and the gis objects. Running them with -i option to
 the interpreter will drop you at the interactive interpreter
-promt. You can then follow the rest of the tutorial on the
+prompt. You can then follow the rest of the tutorial on the
 interpreter.
 
 .. code-block:: python

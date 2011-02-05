@@ -1,0 +1,12 @@
+To release a new version of GeoAlchemy:
+
+Create a tag:
+
+$ hg tag <x.y.z>
+$ hg push
+
+Upload new version to pypi:
+
+$ python setup.py release
+
+(see the "release" alias in setup.cfg)

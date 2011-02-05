@@ -492,7 +492,19 @@ class TestGeometry(TestCase):
         r = session.query(Road).filter(Road.road_name=='Paul St').one()
         eq_(session.scalar(func.ST_AsText(session.scalar(l.lake_geom.intersection(r.road_geom)))), 'LINESTRING(-88.1430673666454 42.6255500261493,-88.1140839697546 42.6230657349872)')
         ok_(session.query(Lake).filter(Lake.lake_geom.intersection(r.road_geom).wkt == 'LINESTRING(-88.1430673666454 42.6255500261493,-88.1140839697546 42.6230657349872)').first() is not None)
- 
+
+    def test_within_distance(self):
+        ok_(session.scalar(functions._within_distance('POINT(-88.9139332929936 42.5082802993631)', 'POINT(-88.9139332929936 35.5082802993631)', 10)))
+        ok_(session.scalar(functions._within_distance('Point(0 0)', 'Point(0 0)', 0)))
+        ok_(session.scalar(functions._within_distance('Point(0 0)', 
+                                                      'Polygon((-5 -5, 5 -5, 5 5, -5 5, -5 -5))', 0)))
+        ok_(session.scalar(functions._within_distance('Point(5 5)', 
+                                                      'Polygon((-5 -5, 5 -5, 5 5, -5 5, -5 -5))', 0)))
+        ok_(session.scalar(functions._within_distance('Point(6 5)', 
+                                                      'Polygon((-5 -5, 5 -5, 5 5, -5 5, -5 -5))', 1)))
+        ok_(session.scalar(functions._within_distance('Polygon((0 0, 1 0, 1 8, 0 8, 0 0))', 
+                                                      'Polygon((-5 -5, 5 -5, 5 5, -5 5, -5 -5))', 0)))
+
     @raises(IntegrityError)
     def test_constraint_nullable(self):
         spot_null = Spot(spot_height=420.40, spot_location=None)

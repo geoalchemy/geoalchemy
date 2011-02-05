@@ -365,6 +365,24 @@ class functions:
         """Intersection(g1, g2)"""
         pass
 
+    class _within_distance(BaseFunction):
+        """A specific DWithin(g1, g2, d) implementation, for dialects
+           that either don't support DWithin (MySQL, Spatialite), or
+           don't support it correctly (PostGIS 1.3), or provide multiple
+           implementations (Oracle)."""
+        pass
+
+@compiles(functions._within_distance)
+def __compile__within_distance(element, compiler, **kw):
+    from geoalchemy.dialect import DialectManager 
+    database_dialect = DialectManager.get_spatial_dialect(compiler.dialect)
+    function = database_dialect.get_function(element.__class__)
+    arguments = list(element.arguments)
+    return compiler.process(
+        function(compiler,
+                 parse_clause(arguments.pop(0), compiler),
+                 parse_clause(arguments.pop(0), compiler),
+                 arguments.pop(0), *arguments))
 
 class _WKBType(TypeDecorator):
     """A helper type which makes sure that the WKB sequence returned from queries like 

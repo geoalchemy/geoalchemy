@@ -315,7 +315,109 @@ class oracle_functions(functions):
     class sdo_geom_sdo_within_distance(BaseFunction):
         """SDO_GEOM.WITHIN_DISTANCE()"""
         pass
-        
+ 
+    @staticmethod
+    def _within_distance(compiler, geom1, geom2, distance, additional_params={}):
+        """If the first parameter is a geometry column, then the Oracle operator
+        SDO_WITHIN_DISTANCE is called and Oracle makes use of the spatial index of
+        this column.
+
+        If the first parameter is not a geometry column but a function, which is
+        the case when a coordinate transformation had to be added by the spatial
+        filter, then the function SDO_GEOM.WITHIN_DISTANCE is called.
+        SDO_GEOM.WITHIN_DISTANCE does not make use of a spatial index and requires
+        additional parameters: either a tolerance value or a dimension information
+        array (DIMINFO) for both geometries. These parameters can be specified when
+        defining the spatial filter, e.g.::
+
+            additional_params={'tol': '0.005'}
+
+            or
+
+            from sqlalchemy.sql.expression import text
+            diminfo = text("MDSYS.SDO_DIM_ARRAY("\
+                "MDSYS.SDO_DIM_ELEMENT('LONGITUDE', -180, 180, 0.000000005),"\
+                "MDSYS.SDO_DIM_ELEMENT('LATITUDE', -90, 90, 0.000000005)"\
+                ")")
+            additional_params={'dim1': diminfo, 'dim2': diminfo}
+
+            filter = create_default_filter(request, Spot, additional_params=additional_params)
+            proto.count(request, filter=filter)
+
+        For its distance calculation Oracle by default uses meter as unit for
+        geodetic data (like EPSG:4326) and otherwise the 'unit of measurement
+        associated with the data'. The unit used for the 'distance' value can be
+        changed by adding an entry to 'additional_params'. Valid units are defined
+        in the view 'sdo_dist_units'::
+
+            additional_params={'params': 'unit=km'}
+
+        SDO_WITHIN_DISTANCE accepts further parameters, which can also be set using
+        the name 'params' together with the unit::
+
+            additional_params={'params': 'unit=km max_resolution=10'}
+
+
+        Valid options for 'additional_params' are:
+
+            params
+                A String containing additional parameters, for example the unit.
+
+            tol
+                The tolerance value used for the SDO_GEOM.WITHIN_DISTANCE function call.
+
+            dim1 and dim2
+                If the parameter 'tol' is not set, these two parameters have to be
+                set. 'dim1' is the DIMINFO for the first geometry (the reprojected
+                geometry column) and 'dim2' is the DIMINFO for the second geometry
+                (the input geometry from the request). Values for 'dim1' and 'dim2'
+                have to be SQLAlchemy expressions, either literal text (text(..))
+                or a select query.
+
+        Note that 'tol' or 'dim1'/'dim2' only have to be set when the input
+        geometry from the request uses a different CRS than the geometry column!
+
+
+        SDO_WITHIN_DISTANCE:
+        http://download.oracle.com/docs/cd/E11882_01/appdev.112/e11830/sdo_operat.htm#i77653
+
+        SDO_GEOM.WITHIN_DISTANCE:
+        http://download.oracle.com/docs/cd/E11882_01/appdev.112/e11830/sdo_objgeom.htm#i856373
+
+        DIMINFO:
+        http://download.oracle.com/docs/cd/E11882_01/appdev.112/e11830/sdo_objrelschema.htm#i1010905
+
+        TOLERANCE:
+        http://download.oracle.com/docs/cd/E11882_01/appdev.112/e11830/sdo_intro.htm#i884589
+        """
+
+        params = additional_params.get('params', '')
+        if isinstance(geom1, Column):
+            return (func.SDO_WITHIN_DISTANCE(
+                        geom1, geom2,
+                        'distance=%s %s' % (distance, params)) == 'TRUE')
+        else:
+            dim1 = additional_params.get('dim1', None)
+            dim2 = additional_params.get('dim2', None)
+            if dim1 is not None and dim2 is not None:
+                return (func.SDO_GEOM.WITHIN_DISTANCE(geom1, dim1,
+                                                 distance,
+                                                 geom2, dim2,
+                                                 params) == 'TRUE')
+            else:
+                tol = additional_params.get('tol', None)
+                if tol is not None:
+                    return (func.SDO_GEOM.WITHIN_DISTANCE(geom1,
+                                                 distance,
+                                                 geom2,
+                                                 tol,
+                                                 params) == 'TRUE')
+                else:
+                    raise Exception('No dimension information ("dim1" and "dim2") or '\
+                                    'tolerance value ("tol") specified for calling '\
+                                    'SDO_GEOM.WITHIN_DISTANCE on Oracle, which is '\
+                                    'required when reprojecting.')
+
 class OracleSpatialDialect(SpatialDialect):
     """Implementation of SpatialDialect for Oracle."""
     
@@ -405,8 +507,9 @@ class OracleSpatialDialect(SpatialDialect):
                    oracle_functions.sdo_geom_sdo_union : DimInfoFunction(func.SDO_GEOM.SDO_UNION), 
                    oracle_functions.sdo_geom_sdo_xor : DimInfoFunction(func.SDO_GEOM.SDO_XOR), 
                    # same as functions.within_distance
-                   oracle_functions.sdo_geom_sdo_within_distance : DimInfoFunction(func.SDO_GEOM.Within_Distance, returns_boolean=True) 
-                   
+                   oracle_functions.sdo_geom_sdo_within_distance : DimInfoFunction(func.SDO_GEOM.Within_Distance, returns_boolean=True),
+
+                   functions._within_distance : oracle_functions._within_distance
                   }
     
     __member_functions = (

@@ -3,6 +3,7 @@ from sqlalchemy.dialects.sqlite.base import SQLiteDialect
 from sqlalchemy.dialects.mysql.base import MySQLDialect
 from sqlalchemy.dialects.oracle.base import OracleDialect
 from sqlalchemy.dialects.mssql.base import MSDialect
+from sqlalchemy import func
 from geoalchemy.functions import functions
 from geoalchemy.base import WKTSpatialElement, WKBSpatialElement,\
     DBSpatialElement
@@ -55,7 +56,9 @@ class SpatialDialect(object):
                    functions.gcontains : 'Contains',
                    functions.covers : 'Covers',
                    functions.covered_by : 'CoveredBy',
-                   functions.intersection : 'Intersections'
+                   functions.intersection : 'Intersections',
+                   functions._within_distance: lambda compiler, geom1, geom2, dist:
+                                                   func.DWithin(geom1, geom2, dist)
                   }
     
     def get_function(self, function_class):

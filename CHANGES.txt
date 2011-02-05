@@ -1,6 +1,16 @@
 GeoAlchemy Change Log
 =====================
 
+0.5
+---
+
+* add within_distance support for MySQL and Spatialite
+  https://bitbucket.org/geoalchemy/geoalchemy/issue/3/add-within_distance-support
+* fix typo in util.py, patch from Roy Hyunjin Han
+* fix typos in the documentation, patch from vrutsky
+  https://bitbucket.org/geoalchemy/geoalchemy/issue/2/typos-in-documentation
+* support for table aliases when using RAW ('table_alias.geom_column.RAW')
+
 0.4.1
 -----
 

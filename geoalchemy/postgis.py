@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from sqlalchemy import select, func
+from sqlalchemy import select, func, and_
 from geoalchemy.base import SpatialComparator, PersistentSpatialElement,\
     WKBSpatialElement
 from geoalchemy.dialect import SpatialDialect 
@@ -52,6 +52,16 @@ class pg_functions(functions):
         """Expand(g)"""
         pass
 
+    @staticmethod
+    def _within_distance(compiler, geom1, geom2, distance, *args):
+        """ST_DWithin in early versions of PostGIS 1.3 does not work when
+        distance = 0. So we are directly using the (correct) internal
+        definition. Note that the definition changed in version 1.3.4, see also:
+        http://postgis.refractions.net/docs/ST_DWithin.html
+        """
+        return and_(func.ST_Expand(geom2, distance).op('&&')(geom1),
+                    func.ST_Expand(geom1, distance).op('&&')(geom2),
+                    func.ST_Distance(geom1, geom2) <= distance)
 
 class PGSpatialDialect(SpatialDialect):
     """Implementation of SpatialDialect for PostGIS."""
@@ -97,7 +107,8 @@ class PGSpatialDialect(SpatialDialect):
                    pg_functions.kml : 'ST_AsKML',
                    pg_functions.gml : 'ST_AsGML',
                    pg_functions.geojson : 'ST_AsGeoJSON',
-                   pg_functions.expand : 'ST_Expand'
+                   pg_functions.expand : 'ST_Expand',
+                   functions._within_distance : pg_functions._within_distance
                   }
     
     def _get_function_mapping(self):

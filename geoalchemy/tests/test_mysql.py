@@ -422,6 +422,19 @@ class TestGeometry(TestCase):
         ok_(l in containing_lakes)
         ok_(l1 not in containing_lakes)
 
+    def test_within_distance(self):
+        ok_(session.scalar(functions._within_distance('POINT(-88.9139332929936 42.5082802993631)', 
+                                                      'POINT(-88.9139332929936 35.5082802993631)', 10)))
+        ok_(session.scalar(functions._within_distance('Point(0 0)', 'Point(0 0)', 0)))
+        ok_(session.scalar(functions._within_distance('Point(0 0)', 
+                                                      'Polygon((-5 -5, 5 -5, 5 5, -5 5, -5 -5))', 0)))
+        ok_(session.scalar(functions._within_distance('Point(5 5)', 
+                                                      'Polygon((-5 -5, 5 -5, 5 5, -5 5, -5 -5))', 0)))
+        ok_(session.scalar(functions._within_distance('Point(6 5)', 
+                                                      'Polygon((-5 -5, 5 -5, 5 5, -5 5, -5 -5))', 1)))
+        ok_(session.scalar(functions._within_distance('Polygon((0 0, 1 0, 1 8, 0 8, 0 0))', 
+                                                      'Polygon((-5 -5, 5 -5, 5 5, -5 5, -5 -5))', 0)))
+
     @raises(OperationalError)
     def test_constraint_nullable(self):
         road_null = Road(road_name=u'Jeff Rd', road_geom=None)

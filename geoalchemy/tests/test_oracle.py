@@ -6,7 +6,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.exceptions import IntegrityError
 from geoalchemy.geometry import LineString, Point, Polygon
 from sqlalchemy.schema import Sequence
-from sqlalchemy.sql.expression import text
+from sqlalchemy.sql.expression import text, select
 
 from geoalchemy import (GeometryCollection, GeometryColumn,
         GeometryDDL, WKTSpatialElement, DBSpatialElement, GeometryExtensionColumn)
@@ -24,7 +24,7 @@ os.environ['LD_LIBRARY'] = '/usr/lib/oracle/xe/app/oracle/product/10.2.0/server/
 import cx_Oracle
 
 #engine = create_engine('oracle://gis:gis@localhost:1521/gis', echo=True)
-engine = create_engine('oracle://system:system@172.16.101.131:1521/gis', echo=True)
+engine = create_engine('oracle://system:system@172.16.103.136:1521/gis', echo=True)
 
 metadata = MetaData(engine)
 session = sessionmaker(bind=engine)()
@@ -66,7 +66,6 @@ class Spot(object):
         self.spot_height = spot_height
         self.spot_location = spot_location
 
-        
 mapper(Spot, spots_table, properties={
             'spot_location': GeometryColumn(spots_table.c.spot_location, 
                                             comparator=OracleComparator)}) 
@@ -118,10 +117,21 @@ class TestGeometry(TestCase):
                 Lake(lake_name='Lake White', lake_geom='POLYGON((-88.1147292993631 42.7540605095542,-88.1548566878981 42.7824840764331,-88.1799363057325 42.7707802547771,-88.188296178344 42.7323248407643,-88.1832802547771 42.6955414012739,-88.1565286624204 42.6771496815287,-88.1448248407643 42.6336783439491,-88.131449044586 42.5718152866242,-88.1013535031847 42.565127388535,-88.1080414012739 42.5868630573248,-88.1164012738854 42.6119426751592,-88.1080414012739 42.6520700636943,-88.0980095541401 42.6838375796178,-88.0846337579618 42.7139331210191,-88.1013535031847 42.7423566878981,-88.1147292993631 42.7540605095542))'),
                 Lake(lake_name='Lake Blue', lake_geom='POLYGON((-89.0694267515924 43.1335987261147,-89.1078821656051 43.1135350318471,-89.1329617834395 43.0884554140127,-89.1312898089172 43.0466560509554,-89.112898089172 43.0132165605096,-89.0694267515924 42.9898089171975,-89.0343152866242 42.953025477707,-89.0209394904459 42.9179140127389,-89.0042197452229 42.8961783439491,-88.9774681528663 42.8644108280255,-88.9440286624204 42.8292993630573,-88.9072452229299 42.8142515923567,-88.8687898089172 42.815923566879,-88.8687898089172 42.815923566879,-88.8102707006369 42.8343152866242,-88.7734872611465 42.8710987261147,-88.7517515923567 42.9145700636943,-88.7433917197452 42.9730891719745,-88.7517515923567 43.0299363057325,-88.7734872611465 43.0867834394905,-88.7885352038217 43.158678388535,-88.8738057324841 43.1620222929936,-88.947372611465 43.1937898089172,-89.0042197452229 43.2138535031847,-89.0410031847134 43.2389331210191,-89.0710987261147 43.243949044586,-89.0660828025478 43.2238853503185,-89.0543789808917 43.203821656051,-89.0376592356688 43.175398089172,-89.0292993630573 43.1519904458599,-89.0376592356688 43.1369426751592,-89.0393312101911 43.1386146496815,-89.0393312101911 43.1386146496815,-89.0510350318471 43.1335987261147,-89.0694267515924 43.1335987261147))'),
                 Lake(lake_name='Lake Deep', lake_geom='POLYGON((-88.9122611464968 43.038296178344,-88.9222929936306 43.0399681528663,-88.9323248407643 43.0282643312102,-88.9206210191083 43.0182324840764,-88.9105891719745 43.0165605095542,-88.9005573248408 43.0232484076433,-88.9072452229299 43.0282643312102,-88.9122611464968 43.038296178344))'),
+
                 Spot(spot_height=420.40, spot_location='POINT(-88.5945861592357 42.9480095987261)'),
                 Spot(spot_height=102.34, spot_location='POINT(-88.9055734203822 43.0048567324841)'),
                 Spot(spot_height=388.62, spot_location='POINT(-89.201512910828 43.1051752038217)'),
                 Spot(spot_height=454.66, spot_location='POINT(-88.3304141847134 42.6269904904459)'),
+                # the following spots are for test_within_distance
+                Spot(spot_height=420.40, spot_location='POINT(0 0)'),
+                Spot(spot_height=102.34, spot_location='POINT(10 10)'),
+                Spot(spot_height=388.62, spot_location='POINT(10 11)'),
+                Spot(spot_height=1454.66, spot_location='POINT(40 34)'),
+                Spot(spot_height=54.66, spot_location='POINT(5 5)'),
+                Spot(spot_height=333.12, spot_location='POINT(2 3)'),
+                Spot(spot_height=783.55, spot_location='POINT(38 34)'),
+                Spot(spot_height=3454.67, spot_location='POINT(-134 45)'),
+
                 Shape(shape_name='Bus Stop', shape_geom='GEOMETRYCOLLECTION(POINT(-88.3304141847134 42.6269904904459))'),
                 Shape(shape_name='Jogging Track', shape_geom='GEOMETRYCOLLECTION(LINESTRING(-88.2652071783439 42.5584395350319,-88.1598727834395 42.6269904904459,-88.1013536751592 42.621974566879,-88.0244428471338 42.6437102356688,-88.0110670509554 42.6771497261147))'),
                 Shape(shape_name='Play Ground', shape_geom='GEOMETRYCOLLECTION(POLYGON((-88.7968950764331 43.2305732929936,-88.7935511273885 43.1553344394904,-88.716640299363 43.1570064140127,-88.7250001719745 43.2339172420382,-88.7968950764331 43.2305732929936)))'),
@@ -304,6 +314,8 @@ class TestGeometry(TestCase):
         session.commit();
         assert_almost_equal(session.scalar(spot.spot_location.x), 0)
         assert_almost_equal(session.scalar(spot.spot_location.y), 0)
+        session.delete(spot)
+        session.commit()
         
     def test_eq(self):
         r1 = session.query(Road).filter(Road.road_name=='Graeme Ave').one()
@@ -707,7 +719,39 @@ class TestGeometry(TestCase):
     
     def test_sdo_geom_sdo_within_distance(self):
         ok_(self.test_within_distance, 'same as functions.within_distance')
- 
+
+    def test_within_distance(self):
+        """
+        Because SDO_WITHIN_DISTANCE requires a spatial index for the geometry used
+        as first parameter, we have to insert out test geometries into tables,
+        unlike to the other databases.
+        
+        Note that Oracle uses meter as unit for the tolerance value for geodetic coordinate
+        systems (like 4326)!
+        """
+        # test if SDO_functions._within_distance is called correctly
+        eq_(session.query(Spot).filter(functions._within_distance(Spot.spot_location, 'POINT(0 0)', 0)).count(), 1)
+        eq_(session.query(Spot).filter(functions._within_distance(Spot.spot_location, 'POINT(0 0)', 0.1)).count(), 1)
+        eq_(session.query(Spot).filter(functions._within_distance(Spot.spot_location, 'POINT(9 9)', 100000)).count(), 0)
+        
+        eq_(session.query(Spot).filter(functions._within_distance(Spot.spot_location, 
+                                                       'Polygon((-5 -5, 5 -5, 5 5, -5 5, -5 -5))', 0)).count(), 3)
+        
+        eq_(session.query(Spot).filter(functions._within_distance(Spot.spot_location, 
+                                                       'Polygon((-10 -10, 10 -10, 10 10, -10 10, -10 -10))', 0)).count(), 4)
+        
+        eq_(session.query(Spot).filter(functions._within_distance(Spot.spot_location, 
+                                                       'Polygon((-10 -10, 10 -10, 10 10, -10 10, -10 -10))', 200000)).count(), 5)
+
+        # test if SDO_GEOM.functions._within_distance is called correctly
+        eq_(session.scalar(select([text('1')], from_obj=['dual']).where(
+                                                    functions._within_distance('POINT(0 0)', 'POINT(0 0)', 0, 
+                                                                    {'tol' : 0.00000005}))), 1)
+        eq_(session.scalar(select([text('1')], from_obj=['dual']).where(
+                                                    functions._within_distance('POINT(0 0)', 'POINT(0 0)', 0, 
+                                                                    {'dim1' : text(diminfo),
+                                                                     'dim2' : text(diminfo)}))), 1)
+
 #todo: insert None
     @raises(IntegrityError)
     def test_constraint_nullable(self):

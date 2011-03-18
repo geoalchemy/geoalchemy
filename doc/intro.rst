@@ -11,10 +11,6 @@ The current supported spatial database systems are `PostGIS
 `MS SQL Server 2008
 <http://www.microsoft.com/sqlserver/2008/en/us/spatial-data.aspx?pf=true>`_.
 
-GeoAlchemy is an extension of SQLAlchemy. It provides support for
-Geospatial data types at the ORM layer using SQLAlchemy. It aims to
-support spatial operations and relations specified by the Open Geospatial
-Consortium (OGC). 
 Installation
 ------------
 

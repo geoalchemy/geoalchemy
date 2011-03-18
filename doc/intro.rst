@@ -60,9 +60,9 @@ GeoAlchemy is released under the MIT License.
 Authors
 -------
 
-Éric Lemoine (maintainer)
-Sanjiv Singh
-Tobias Sauerwein
+* Éric Lemoine (maintainer)
+* Sanjiv Singh
+* Tobias Sauerwein
 
 History
 -------

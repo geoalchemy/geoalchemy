@@ -308,7 +308,7 @@ class TestGeometry(TestCase):
     def test_envelope(self):
         r = session.query(Road).filter(Road.road_name=='Graeme Ave').one()
         eq_(session.scalar(functions.wkt(r.road_geom.envelope)), 
-            u'POLYGON((-88.6096343994141 42.6988830566406,-88.6096343994141 43.1871032714844,-88.5477676391602 43.1871032714844,-88.5477676391602 42.6988830566406,-88.6096343994141 42.6988830566406))')
+            u'POLYGON((-88.6096339299363 42.6988853949045,-88.6096339299363 43.187101955414,-88.5477708726115 43.187101955414,-88.5477708726115 42.6988853949045,-88.6096339299363 42.6988853949045))')
         eq_(session.scalar(functions.geometry_type(self.r.road_geom.envelope)), 'ST_Polygon')
         ok_(session.query(Spot).filter(Spot.spot_location.envelope == WKTSpatialElement('POINT(-88.5945861592357 42.9480095987261)')).first() is not None)
         eq_(session.scalar(functions.wkt(functions.envelope('POINT(-88.5945861592357 42.9480095987261)'))), 

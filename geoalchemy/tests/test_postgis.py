@@ -154,7 +154,7 @@ class TestGeometry(TestCase):
         ok_(session.query(Spot).filter(Spot.spot_location.svg == 'cx="-88.905573420382197" cy="-43.0048567324841"').first())
 
     def test_gml(self):
-        eq_(session.scalar(self.r.road_geom.gml), '<gml:LineString srsName="EPSG:4326"><gml:coordinates>-88.6748409363057,43.1035032292994 -88.6464173694267,42.9981688343949 -88.607961955414,42.9680732929936 -88.5160033566879,42.9363057770701 -88.4390925286624,43.0031847579618</gml:coordinates></gml:LineString>')
+        eq_(session.scalar(self.r.road_geom.gml), '<gml:LineString srsName="EPSG:4326"><gml:coordinates>-88.674840936305699,43.103503229299399 -88.6464173694267,42.998168834394903 -88.607961955413998,42.968073292993601 -88.516003356687904,42.936305777070103 -88.4390925286624,43.003184757961797</gml:coordinates></gml:LineString>')
 
     def test_kml(self):
         s = session.query(Spot).filter(Spot.spot_height==420.40).one()

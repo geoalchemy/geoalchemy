@@ -158,7 +158,7 @@ class TestGeometry(TestCase):
 
     def test_kml(self):
         s = session.query(Spot).filter(Spot.spot_height==420.40).one()
-        eq_(session.scalar(s.spot_location.kml), u'<Point><coordinates>-88.5945861592357,42.9480095987261</coordinates></Point>')
+        eq_(session.scalar(s.spot_location.kml), u'<Point><coordinates>-88.594586159235703,42.948009598726102</coordinates></Point>')
 
     def test_geojson(self):
         s = session.query(Spot).filter(Spot.spot_height==420.40).one()

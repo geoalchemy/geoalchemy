@@ -95,14 +95,14 @@ class TestGeometry(TestCase):
 
     def test_wkt(self):
         l = session.query(Lake).get(1)
-        eq_(session.scalar(self.r.road_geom.wkt), 'LINESTRING(-88.674840936306 43.103503229299,-88.646417369427 42.998168834395,-88.607961955414 42.968073292994,-88.516003356688 42.93630577707,-88.439092528662 43.003184757962)')
-        eq_(session.scalar(l.lake_geom.wkt),'POLYGON((-88.796895076433 43.230573292994,-88.793551127388 43.15533443949,-88.716640299363 43.157006414013,-88.725000171975 43.233917242038,-88.796895076433 43.230573292994))')
+        eq_(session.scalar(self.r.road_geom.wkt), 'LINESTRING(-88.6748409363057 43.1035032292994,-88.6464173694267 42.9981688343949,-88.607961955414 42.9680732929936,-88.5160033566879 42.9363057770701,-88.4390925286624 43.0031847579618)')
+        eq_(session.scalar(l.lake_geom.wkt),'POLYGON((-88.7968950764331 43.2305732929936,-88.7935511273885 43.1553344394904,-88.716640299363 43.1570064140127,-88.7250001719745 43.2339172420382,-88.7968950764331 43.2305732929936))')
         ok_(not session.query(Spot).filter(Spot.spot_location.wkt == 'POINT(0,0)').first())
         ok_(session.query(Spot).get(1) is 
             session.query(Spot).filter(Spot.spot_location == 'POINT(-88.5945861592357 42.9480095987261)').first())
         envelope_geom = DBSpatialElement(session.scalar(self.r.road_geom.envelope))
-        eq_(session.scalar(envelope_geom.wkt), 'POLYGON((-88.674840936306 42.93630577707,-88.439092528662 42.93630577707,-88.439092528662 43.103503229299,-88.674840936306 43.103503229299,-88.674840936306 42.93630577707))')
-        eq_(session.scalar(WKTSpatialElement('POINT(-88.5769371859941 42.9915634871979)').wkt), 'POINT(-88.576937185994 42.991563487198)')
+        eq_(session.scalar(envelope_geom.wkt), 'POLYGON((-88.6748409363057 42.9363057770701,-88.4390925286624 42.9363057770701,-88.4390925286624 43.1035032292994,-88.6748409363057 43.1035032292994,-88.6748409363057 42.9363057770701))')
+        eq_(session.scalar(WKTSpatialElement('POINT(-88.5769371859941 42.9915634871979)').wkt), 'POINT(-88.5769371859941 42.9915634871979)')
 
     def test_wkb(self):
         eq_(b2a_hex(session.scalar(self.r.road_geom.wkb)).upper(), '010200000005000000D7DB0998302B56C0876F04983F8D45404250F5E65E2956C068CE11FFC37F4540C8ED42D9E82656C0EFC45ED3E97B45407366F132062156C036C921DED877454078A18C171A1C56C053A5AF5B68804540')
@@ -111,11 +111,11 @@ class TestGeometry(TestCase):
         eq_(b2a_hex(session.scalar(envelope_geom.wkb)).upper(), '01030000000100000005000000D7DB0998302B56C036C921DED877454078A18C171A1C56C036C921DED877454078A18C171A1C56C0876F04983F8D4540D7DB0998302B56C0876F04983F8D4540D7DB0998302B56C036C921DED8774540')
         
     def test_coords(self):
-        eq_(self.r.road_geom.coords(session), [[-88.674840936305998, 43.103503229299001], [-88.646417369426999, 42.998168834395003], [-88.607961955413998, 42.968073292993999], [-88.516003356688003, 42.936305777069997], [-88.439092528662002, 43.003184757962003]])
+        eq_(self.r.road_geom.coords(session), [[-88.674840936305699, 43.103503229299399], [-88.6464173694267, 42.998168834394903], [-88.607961955413998, 42.968073292993601], [-88.516003356687904, 42.936305777070103], [-88.4390925286624, 43.003184757961797]])
         s = session.query(Spot).filter(Spot.spot_height==102.34).one()
-        eq_(s.spot_location.coords(session), [-88.905573420381998, 43.004856732484001])
+        eq_(s.spot_location.coords(session), [-88.905573420382197, 43.0048567324841])
         l = session.query(Lake).filter(Lake.lake_name==u"Lake Deep").one()
-        eq_(l.lake_geom.coords(session), [[[-88.912261146497002, 43.038296178343998], [-88.922292993631004, 43.039968152866003], [-88.932324840763997, 43.028264331210003], [-88.920621019107998, 43.018232484076002], [-88.910589171973996, 43.016560509553997], [-88.900557324841003, 43.023248407643003], [-88.907245222930001, 43.028264331210003], [-88.912261146497002, 43.038296178343998]]])
+        eq_(l.lake_geom.coords(session), [[[-88.912261146496803, 43.038296178343998], [-88.922292993630606, 43.039968152866301], [-88.932324840764295, 43.028264331210202], [-88.920621019108296, 43.0182324840764], [-88.910589171974493, 43.016560509554203], [-88.900557324840804, 43.023248407643301], [-88.907245222929902, 43.028264331210202], [-88.912261146496803, 43.038296178343998]]])
 
     def test_persistent(self):
         eq_(b2a_hex(session.scalar(self.r.road_geom.wkb)).upper(), '010200000005000000D7DB0998302B56C0876F04983F8D45404250F5E65E2956C068CE11FFC37F4540C8ED42D9E82656C0EFC45ED3E97B45407366F132062156C036C921DED877454078A18C171A1C56C053A5AF5B68804540')
@@ -167,29 +167,32 @@ class TestGeometry(TestCase):
         env =  WKBSpatialElement(session.scalar(func.AsBinary(self.r.road_geom.envelope)))
         eq_(env.geom_type(session), 'Polygon')
         eq_(session.scalar(functions.wkt(functions.envelope('POINT(-88.5945861592357 42.9480095987261)'))), 
-            'POLYGON((-88.594586159236 42.948009598726,-88.594586159236 42.948009598726,-88.594586159236 42.948009598726,-88.594586159236 42.948009598726,-88.594586159236 42.948009598726))')
+            'POLYGON((-88.5945861592357 42.9480095987261,-88.5945861592357 42.9480095987261,-88.5945861592357 42.9480095987261,-88.5945861592357 42.9480095987261,-88.5945861592357 42.9480095987261))')
         
     def test_x(self):
+        import math
         l = session.query(Lake).get(1)
         r = session.query(Road).get(1)
         s = session.query(Spot).get(1)
         ok_( not session.scalar(l.lake_geom.x))
         ok_( not session.scalar(r.road_geom.x))
-        eq_(session.scalar(s.spot_location.x), -88.594586159236002)
+        print session.scalar(s.spot_location.x)
+        eq_(math.ceil(session.scalar(s.spot_location.x)), -88.0)
         s = session.query(Spot).filter(and_(Spot.spot_location.x < 0, Spot.spot_location.y > 42)).all()
         ok_(s is not None)
-        eq_(session.scalar(functions.x('POINT(-88.3655256496815 43.1402866687898)')), -88.365525649681999)
+        eq_(math.ceil(session.scalar(functions.x('POINT(-88.3655256496815 43.1402866687898)'))), -88.0)
 
     def test_y(self):
+        import math
         l = session.query(Lake).get(1)
         r = session.query(Road).get(1)
         s = session.query(Spot).get(1)
         ok_(not session.scalar(l.lake_geom.y))
         ok_(not session.scalar(r.road_geom.y))
-        eq_(session.scalar(s.spot_location.y), 42.948009598726003)
+        eq_(math.floor(session.scalar(s.spot_location.y)), 42.0)
         s = session.query(Spot).filter(and_(Spot.spot_location.y < 0, Spot.spot_location.y > 42)).all()
         ok_(s is not None)
-        eq_(session.scalar(functions.y('POINT(-88.3655256496815 43.1402866687898)')), 43.140286668789997)
+        eq_(math.floor(session.scalar(functions.y('POINT(-88.3655256496815 43.1402866687898)'))), 43.0)
 
     def test_start_point(self):
         l = session.query(Lake).get(1)

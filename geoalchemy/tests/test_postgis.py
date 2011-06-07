@@ -4,7 +4,7 @@ from sqlalchemy import (create_engine, MetaData, Column, Integer, String,
 from sqlalchemy.orm import sessionmaker, mapper
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import and_
-from sqlalchemy.exceptions import IntegrityError
+from sqlalchemy.exc import IntegrityError
 
 from geoalchemy import (Geometry, GeometryCollection, GeometryColumn,
         GeometryDDL, WKTSpatialElement, DBSpatialElement, GeometryExtensionColumn)

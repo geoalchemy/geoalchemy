@@ -11,7 +11,7 @@ from geoalchemy import (GeometryColumn, Point, Polygon, LineString,
 from geoalchemy.functions import functions
 from nose.tools import ok_, eq_, raises, assert_almost_equal
 from sqlalchemy import and_
-from sqlalchemy.exceptions import OperationalError
+from sqlalchemy.exc import OperationalError
 
 from geoalchemy.mysql import MySQLComparator, mysql_functions
 

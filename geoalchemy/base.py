@@ -145,12 +145,13 @@ class GeometryBase(TypeEngine):
     
     name = 'GEOMETRY'
     
-    def __init__(self, dimension=2, srid=4326, spatial_index=True, **kwargs):
+    def __init__(self, dimension=2, srid=4326, spatial_index=True, diminfo=None, **kwargs):
         self.dimension = dimension
         self.srid = srid
         self.spatial_index = spatial_index
+        self.diminfo = diminfo
         self.kwargs = kwargs
-        super(GeometryBase, self).__init__(**kwargs)
+        super(GeometryBase, self).__init__()
     
     def bind_processor(self, dialect):
         def process(value):

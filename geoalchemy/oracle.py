@@ -528,13 +528,13 @@ class OracleSpatialDialect(SpatialDialect):
     def process_result(self, value, type):
         value = self.process_wkb(value)
         wkb_element = WKBSpatialElement(value, type.srid, type.name)    
-        
-        if type.kwargs.has_key("diminfo"):
+
+        if type.diminfo:
             # also set the DIMINFO data so that in can be used in function calls, see DimInfoFunction()
-            if not type.kwargs.has_key("diminfo_sql"):
+            if not hasattr(type, 'diminfo_sql'):
                 # cache the SQLAlchemy text literal
-                type.kwargs["diminfo_sql"] = text(type.kwargs["diminfo"])
-            wkb_element.DIMINFO = type.kwargs["diminfo_sql"]
+                type.diminfo_sql = text(type.diminfo)
+            wkb_element.DIMINFO = type.diminfo_sql
         
         return OraclePersistentSpatialElement(wkb_element)
 
@@ -573,7 +573,7 @@ class OracleSpatialDialect(SpatialDialect):
         bind.execute("DELETE FROM USER_SDO_GEOM_METADATA WHERE table_name = '%s' AND column_name = '%s'" %
                             (table.name.upper(), column.name.upper()))
         
-        if column.type.spatial_index and column.type.kwargs.has_key("diminfo"):
+        if column.type.spatial_index and column.type.diminfo:
             bind.execute("DROP INDEX %s_%s_sidx" % (table.name, column.name))
           
     def handle_ddl_after_create(self, bind, table, column):    
@@ -584,12 +584,12 @@ class OracleSpatialDialect(SpatialDialect):
             bind.execute("ALTER TABLE %s MODIFY %s NOT NULL" % (table.name, column.name))
         
 
-        if not column.type.kwargs.has_key("diminfo"):
+        if not column.type.diminfo:
             warnings.warn("No DIMINFO given for '%s.%s', no entry in USER_SDO_GEOM_METADATA will be made "\
                     "and no spatial index will be created." % (table.name, column.name), 
                     exc.SAWarning, stacklevel=3)
         else:
-            diminfo = column.type.kwargs["diminfo"]
+            diminfo = column.type.diminfo
         
             bind.execute("INSERT INTO USER_SDO_GEOM_METADATA (table_name, column_name, diminfo, srid) " +
                             "VALUES ('%s', '%s', %s, %s)" % 

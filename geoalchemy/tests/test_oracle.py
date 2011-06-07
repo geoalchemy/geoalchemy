@@ -3,7 +3,7 @@ from sqlalchemy import (create_engine, MetaData, Column, Integer, String,
         Numeric, func, Table, and_, not_)
 from sqlalchemy.orm import sessionmaker, mapper, aliased
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.exceptions import IntegrityError
+from sqlalchemy.exc import IntegrityError
 from geoalchemy.geometry import LineString, Point, Polygon
 from sqlalchemy.schema import Sequence
 from sqlalchemy.sql.expression import text, select
@@ -24,7 +24,7 @@ os.environ['LD_LIBRARY'] = '/usr/lib/oracle/xe/app/oracle/product/10.2.0/server/
 import cx_Oracle
 
 #engine = create_engine('oracle://gis:gis@localhost:1521/gis', echo=True)
-engine = create_engine('oracle://system:system@172.16.53.128:1521/gis', echo=True)
+engine = create_engine('oracle://system:system@172.16.53.128:1521/gis', echo=False)
 
 metadata = MetaData(engine)
 session = sessionmaker(bind=engine)()
@@ -85,6 +85,7 @@ GeometryDDL(Road.__table__)
 GeometryDDL(Lake.__table__)
 GeometryDDL(spots_table)
 GeometryDDL(Shape.__table__)
+
 
 class TestGeometry(TestCase):
     """Tests for Oracle

@@ -145,11 +145,10 @@ class GeometryBase(TypeEngine):
     
     name = 'GEOMETRY'
     
-    def __init__(self, dimension=2, srid=4326, spatial_index=True, diminfo=None, **kwargs):
+    def __init__(self, dimension=2, srid=4326, spatial_index=True, **kwargs):
         self.dimension = dimension
         self.srid = srid
         self.spatial_index = spatial_index
-        self.diminfo = diminfo
         self.kwargs = kwargs
         super(GeometryBase, self).__init__()
     
@@ -178,6 +177,11 @@ class GeometryBase(TypeEngine):
         """Required for the Cast() operator when used for the compilation
         of DBSpatialElement"""
         return self.name
+
+    def adapt(self, cls, **kwargs):
+        return cls(dimension=self.dimension, srid=self.srid,
+                   spatial_index=self.spatial_index,
+                   **self.kwargs)
 
 # ORM integration
 

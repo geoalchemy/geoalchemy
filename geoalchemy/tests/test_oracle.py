@@ -24,7 +24,7 @@ os.environ['LD_LIBRARY'] = '/usr/lib/oracle/xe/app/oracle/product/10.2.0/server/
 import cx_Oracle
 
 #engine = create_engine('oracle://gis:gis@localhost:1521/gis', echo=True)
-engine = create_engine('oracle://system:system@172.16.53.128:1521/gis', echo=False)
+engine = create_engine('oracle://system:system@172.16.53.129:1521/gis', echo=False)
 
 metadata = MetaData(engine)
 session = sessionmaker(bind=engine)()

@@ -35,7 +35,7 @@ Community
 
 * Mailing list: http://groups.google.com/group/geoalchemy
 * Code repository: http://bitbucket.org/geoalchemy/geoalchemy/
-* Issue tracker: http://bitbucket.org/geoalchemy/geoalchemy/
+* Issue tracket: http://bitbucket.org/geoalchemy/geoalchemy/
 
 Package Contents
 ----------------

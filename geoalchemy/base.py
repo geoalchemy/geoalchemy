@@ -150,7 +150,7 @@ class GeometryBase(TypeEngine):
         self.srid = srid
         self.spatial_index = spatial_index
         self.kwargs = kwargs
-        super(GeometryBase, self).__init__(**kwargs)
+        super(GeometryBase, self).__init__()
     
     def bind_processor(self, dialect):
         def process(value):
@@ -177,6 +177,11 @@ class GeometryBase(TypeEngine):
         """Required for the Cast() operator when used for the compilation
         of DBSpatialElement"""
         return self.name
+
+    def adapt(self, cls, **kwargs):
+        return cls(dimension=self.dimension, srid=self.srid,
+                   spatial_index=self.spatial_index,
+                   **self.kwargs)
 
 # ORM integration
 

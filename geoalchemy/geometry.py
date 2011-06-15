@@ -19,7 +19,6 @@ class Geometry(GeometryBase):
     """
     
     def result_processor(self, dialect, coltype=None):
-        
         def process(value):
             if value is not None:
                 return DialectManager.get_spatial_dialect(dialect).process_result(value, self)
@@ -54,7 +53,6 @@ class MultiPolygon(Geometry):
 class GeometryCollection(Geometry):
     name = 'GEOMETRYCOLLECTION'
 
-
 class GeometryDDL(object):
     """A DDL extension which integrates SQLAlchemy table create/drop 
     methods with AddGeometryColumn/DropGeometryColumn functions of
@@ -69,10 +67,28 @@ class GeometryDDL(object):
         sometable.create()
     
     """
+
+    try:
+        from sqlalchemy import event as _event
+    except ImportError:
+        # SQLAlchemy 0.6
+        use_event = False
+        columns_attribute = '_columns'
+    else:
+        # SQLALchemy 0.7
+        use_event = True
+        columns_attribute = 'columns'
     
     def __init__(self, table):
-        for event in ('before-create', 'after-create', 'before-drop', 'after-drop'):
-            table.ddl_listeners[event].append(self)
+        if self.use_event:
+            self._event.listen(table, 'before_create', self.before_create)
+            self._event.listen(table, 'before_drop', self.before_drop)
+            self._event.listen(table, 'after_create', self.after_create)
+            self._event.listen(table, 'after_drop', self.after_drop)
+        else:
+            for e in ('before-create', 'after-create',
+                      'before-drop', 'after-drop'):
+                table.ddl_listeners[e].append(self)
         self._stack = []
         
     def __call__(self, event, table, bind):
@@ -85,21 +101,34 @@ class GeometryDDL(object):
             regular_cols = [c for c in table.c if not isinstance(c.type, Geometry)]
             gis_cols = set(table.c).difference(regular_cols)
             self._stack.append(table.c)
-            table._columns = expression.ColumnCollection(*regular_cols)
+            setattr(table, self.columns_attribute,
+                    expression.ColumnCollection(*regular_cols))
             
             if event == 'before-drop':
                 for c in gis_cols:
                     spatial_dialect.handle_ddl_before_drop(bind, table, c)
                 
         elif event == 'after-create':
-            table._columns = self._stack.pop()
+            setattr(table, self.columns_attribute, self._stack.pop())
             
             for c in table.c:
                 if isinstance(c.type, Geometry):
                     spatial_dialect.handle_ddl_after_create(bind, table, c)
 
         elif event == 'after-drop':
-            table._columns = self._stack.pop()
+            setattr(table, self.columns_attribute, self._stack.pop())
+
+    def before_create(self, target, connection, **kw):
+        self('before-create', target, connection)
+
+    def before_drop(self, target, connection, **kw):
+        self('before-drop', target, connection)
+
+    def after_create(self, target, connection, **kw):
+        self('after-create', target, connection)
+
+    def after_drop(self, target, connection, **kw):
+        self('after-drop', target, connection)
 
 
 class SpatialAttribute(AttributeExtension):

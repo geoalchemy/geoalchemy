@@ -4,7 +4,7 @@ from sqlalchemy import (create_engine, MetaData, Column, Integer, String,
 from sqlalchemy.orm import sessionmaker, mapper
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import and_
-from sqlalchemy.exceptions import IntegrityError
+from sqlalchemy.exc import IntegrityError
 
 from geoalchemy import (Geometry, GeometryCollection, GeometryColumn,
         GeometryDDL, WKTSpatialElement, DBSpatialElement, GeometryExtensionColumn)
@@ -148,17 +148,17 @@ class TestGeometry(TestCase):
         eq_(session.scalar(functions.wkt(func.GeomFromWKB(centroid_geom.wkb, 4326))), u'POINT(-88.5769371859941 42.9915634871979)')
 
     def test_svg(self):
-        eq_(session.scalar(self.r.road_geom.svg), 'M -88.674840936305699 -43.103503229299399 -88.6464173694267 -42.998168834394903 -88.607961955413998 -42.968073292993601 -88.516003356687904 -42.936305777070103 -88.4390925286624 -43.003184757961797')
-        ok_(self.r is session.query(Road).filter(Road.road_geom.svg == 'M -88.674840936305699 -43.103503229299399 -88.6464173694267 -42.998168834394903 -88.607961955413998 -42.968073292993601 -88.516003356687904 -42.936305777070103 -88.4390925286624 -43.003184757961797').first())
+        eq_(session.scalar(self.r.road_geom.svg), u'M -88.674840936305699 -43.103503229299399 L -88.6464173694267 -42.998168834394903 -88.607961955413998 -42.968073292993601 -88.516003356687904 -42.936305777070103 -88.4390925286624 -43.003184757961797')
+        ok_(self.r is session.query(Road).filter(Road.road_geom.svg == u'M -88.674840936305699 -43.103503229299399 L -88.6464173694267 -42.998168834394903 -88.607961955413998 -42.968073292993601 -88.516003356687904 -42.936305777070103 -88.4390925286624 -43.003184757961797').first())
         eq_(session.scalar(pg_functions.svg('POINT(-88.9055734203822 43.0048567324841)')), u'cx="-88.905573420382197" cy="-43.0048567324841"')
         ok_(session.query(Spot).filter(Spot.spot_location.svg == 'cx="-88.905573420382197" cy="-43.0048567324841"').first())
 
     def test_gml(self):
-        eq_(session.scalar(self.r.road_geom.gml), '<gml:LineString srsName="EPSG:4326"><gml:coordinates>-88.6748409363057,43.1035032292994 -88.6464173694267,42.9981688343949 -88.607961955414,42.9680732929936 -88.5160033566879,42.9363057770701 -88.4390925286624,43.0031847579618</gml:coordinates></gml:LineString>')
+        eq_(session.scalar(self.r.road_geom.gml), '<gml:LineString srsName="EPSG:4326"><gml:coordinates>-88.674840936305699,43.103503229299399 -88.6464173694267,42.998168834394903 -88.607961955413998,42.968073292993601 -88.516003356687904,42.936305777070103 -88.4390925286624,43.003184757961797</gml:coordinates></gml:LineString>')
 
     def test_kml(self):
         s = session.query(Spot).filter(Spot.spot_height==420.40).one()
-        eq_(session.scalar(s.spot_location.kml), u'<Point><coordinates>-88.5945861592357,42.9480095987261</coordinates></Point>')
+        eq_(session.scalar(s.spot_location.kml), u'<Point><coordinates>-88.594586159235703,42.948009598726102</coordinates></Point>')
 
     def test_geojson(self):
         s = session.query(Spot).filter(Spot.spot_height==420.40).one()
@@ -308,7 +308,7 @@ class TestGeometry(TestCase):
     def test_envelope(self):
         r = session.query(Road).filter(Road.road_name=='Graeme Ave').one()
         eq_(session.scalar(functions.wkt(r.road_geom.envelope)), 
-            u'POLYGON((-88.6096343994141 42.6988830566406,-88.6096343994141 43.1871032714844,-88.5477676391602 43.1871032714844,-88.5477676391602 42.6988830566406,-88.6096343994141 42.6988830566406))')
+            u'POLYGON((-88.6096339299363 42.6988853949045,-88.6096339299363 43.187101955414,-88.5477708726115 43.187101955414,-88.5477708726115 42.6988853949045,-88.6096339299363 42.6988853949045))')
         eq_(session.scalar(functions.geometry_type(self.r.road_geom.envelope)), 'ST_Polygon')
         ok_(session.query(Spot).filter(Spot.spot_location.envelope == WKTSpatialElement('POINT(-88.5945861592357 42.9480095987261)')).first() is not None)
         eq_(session.scalar(functions.wkt(functions.envelope('POINT(-88.5945861592357 42.9480095987261)'))), 

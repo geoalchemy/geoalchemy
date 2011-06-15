@@ -4,7 +4,7 @@ from sqlalchemy import (create_engine, MetaData, Column, Integer, String,
         Numeric, func, Table)
 from sqlalchemy.orm import sessionmaker, mapper
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.exceptions import IntegrityError
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.sql.expression import Select, select
 
 from pysqlite2 import dbapi2 as sqlite
@@ -23,7 +23,7 @@ connection = engine.raw_connection().connection
 connection.enable_load_extension(True)
 metadata = MetaData(engine)
 session = sessionmaker(bind=engine)()
-session.execute("select load_extension('/usr/local/lib/libspatialite.so')")
+session.execute("select load_extension('/usr/lib/libspatialite.so')")
 session.execute("SELECT InitSpatialMetaData()")
 connection.enable_load_extension(False)
 session.commit()
@@ -74,7 +74,6 @@ class TestGeometry(TestCase):
     """
 
     def setUp(self):
-
         metadata.drop_all()
         session.execute("DROP VIEW geom_cols_ref_sys")
         session.execute("DROP TABLE geometry_columns")
@@ -146,7 +145,7 @@ class TestGeometry(TestCase):
         ok_(isinstance(spot.spot_location, PersistentSpatialElement))
 
     def test_svg(self):
-        eq_(session.scalar(self.r.road_geom.svg), 'M -88.674841 -43.103503 -88.646417 -42.998169 -88.607962 -42.968073 -88.516003 -42.936306 -88.439093 -43.003185 ')
+        eq_(session.scalar(self.r.road_geom.svg), 'M -88.674841 -43.103503 L -88.646417 -42.998169 -88.607962 -42.968073 -88.516003 -42.936306 -88.439093 -43.003185 ')
 
     def test_fgf(self):
         eq_(b2a_hex(session.scalar(self.r.road_geom.fgf(1))), '020000000100000005000000d7db0998302b56c0876f04983f8d454000000000000000004250f5e65e2956c068ce11ffc37f45400000000000000000c8ed42d9e82656c0efc45ed3e97b454000000000000000007366f132062156c036c921ded8774540000000000000000078a18c171a1c56c053a5af5b688045400000000000000000')

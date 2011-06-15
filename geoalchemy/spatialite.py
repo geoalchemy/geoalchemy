@@ -1,4 +1,5 @@
 from sqlalchemy import select, func
+from sqlalchemy.sql import and_, text, column, table
 
 from geoalchemy.base import SpatialComparator, PersistentSpatialElement,\
     WKBSpatialElement

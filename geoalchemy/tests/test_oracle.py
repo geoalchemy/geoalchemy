@@ -3,7 +3,7 @@ from sqlalchemy import (create_engine, MetaData, Column, Integer, String,
         Numeric, func, Table, and_, not_)
 from sqlalchemy.orm import sessionmaker, mapper, aliased
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.exceptions import IntegrityError
+from sqlalchemy.exc import IntegrityError
 from geoalchemy.geometry import LineString, Point, Polygon
 from sqlalchemy.schema import Sequence
 from sqlalchemy.sql.expression import text, select
@@ -24,7 +24,7 @@ os.environ['LD_LIBRARY'] = '/usr/lib/oracle/xe/app/oracle/product/10.2.0/server/
 import cx_Oracle
 
 #engine = create_engine('oracle://gis:gis@localhost:1521/gis', echo=True)
-engine = create_engine('oracle://system:system@172.16.103.136:1521/gis', echo=True)
+engine = create_engine('oracle://system:system@172.16.53.129:1521/gis', echo=False)
 
 metadata = MetaData(engine)
 session = sessionmaker(bind=engine)()
@@ -85,6 +85,7 @@ GeometryDDL(Road.__table__)
 GeometryDDL(Lake.__table__)
 GeometryDDL(spots_table)
 GeometryDDL(Shape.__table__)
+
 
 class TestGeometry(TestCase):
     """Tests for Oracle
@@ -312,8 +313,8 @@ class TestGeometry(TestCase):
         spot = Spot(spot_height=102.34, spot_location=geom)
         session.add(spot)
         session.commit();
-        assert_almost_equal(session.scalar(spot.spot_location.x), 0)
-        assert_almost_equal(session.scalar(spot.spot_location.y), 0)
+        assert_almost_equal(float(session.scalar(spot.spot_location.x)), 0)
+        assert_almost_equal(float(session.scalar(spot.spot_location.y)), 0)
         session.delete(spot)
         session.commit()
         
@@ -325,38 +326,39 @@ class TestGeometry(TestCase):
 
     def test_length(self):
         r = session.query(Road).filter(Road.road_name=='Graeme Ave').one()                                      
-        assert_almost_equal(session.scalar(r.road_geom.length), 54711.459044609008)
+        assert_almost_equal(float(session.scalar(r.road_geom.length)), 54711.459044609008)
         ok_(session.query(Road).filter(Road.road_geom.length > 0).first() is not None) 
-        assert_almost_equal(session.scalar(functions.length('LINESTRING(77.29 29.07,77.42 29.26,77.27 29.31,77.29 29.07)', diminfo_)), 66830.9630972249)
+        assert_almost_equal(float(session.scalar(functions.length('LINESTRING(77.29 29.07,77.42 29.26,77.27 29.31,77.29 29.07)', diminfo_))),
+                            66830.9630972249)
 
     def test_area(self):
         l = session.query(Lake).filter(Lake.lake_name=='Lake White').one()
-        assert_almost_equal(session.scalar(l.lake_geom.area(tolerance, auto_diminfo=False)), 104854567.261647)
-        assert_almost_equal(session.scalar(l.lake_geom.area(
-                                                OracleSpatialDialect.get_diminfo_select(Lake.lake_geom), 
-                                                auto_diminfo=False)), 104854567.261647)
-        assert_almost_equal(session.scalar(l.lake_geom.area(
-                                                OracleSpatialDialect.get_diminfo_select(Lake.__table__.c.lake_geom), 
-                                                auto_diminfo=False)), 104854567.261647)
+        assert_almost_equal(float(session.scalar(l.lake_geom.area(tolerance, auto_diminfo=False))), 104854567.261647)
+        assert_almost_equal(float(session.scalar(l.lake_geom.area(
+                                                 OracleSpatialDialect.get_diminfo_select(Lake.lake_geom), 
+                                                 auto_diminfo=False))), 104854567.261647)
+        assert_almost_equal(float(session.scalar(l.lake_geom.area(
+                                                 OracleSpatialDialect.get_diminfo_select(Lake.__table__.c.lake_geom), 
+                                                 auto_diminfo=False))), 104854567.261647)
         ok_(session.query(Lake).filter(Lake.lake_geom.area > 0).first() is not None)
-        assert_almost_equal(session.scalar(functions.area(WKTSpatialElement('POLYGON((743238 2967416,743238 2967450,743265 2967450,743265.625 2967416,743238 2967416))',2249), diminfo_)), 
+        assert_almost_equal(float(session.scalar(functions.area(WKTSpatialElement('POLYGON((743238 2967416,743238 2967450,743265 2967450,743265.625 2967416,743238 2967416))',2249), diminfo_))), 
                             86.272430609366495)
 
     def test_x(self):
         s = session.query(Spot).get(1)
-        assert_almost_equal(session.scalar(s.spot_location.x), -88.594586159235689)
+        assert_almost_equal(float(session.scalar(s.spot_location.x)), -88.594586159235689)
         s = session.query(Spot).filter(and_(Spot.spot_location.x < 0, Spot.spot_location.y > 42)).all()
         ok_(s is not None)
-        assert_almost_equal(session.scalar(functions.x(WKTSpatialElement('POINT(-88.3655256496815 43.1402866687898)', geometry_type=Point.name))), 
-                -88.3655256496815)
+        assert_almost_equal(float(session.scalar(functions.x(WKTSpatialElement('POINT(-88.3655256496815 43.1402866687898)', geometry_type=Point.name)))), 
+                            -88.3655256496815)
 
     def test_y(self):
         s = session.query(Spot).get(1)
-        assert_almost_equal(session.scalar(s.spot_location.y), 42.9480095987261)
+        assert_almost_equal(float(session.scalar(s.spot_location.y)), 42.9480095987261)
         s = session.query(Spot).filter(and_(Spot.spot_location.y < 0, Spot.spot_location.y > 42)).all()
         ok_(s is not None)
-        assert_almost_equal(session.scalar(functions.y(WKTSpatialElement('POINT(-88.3655256496815 43.1402866687898)', geometry_type=Point.name))), 
-            43.1402866687898)
+        assert_almost_equal(float(session.scalar(functions.y(WKTSpatialElement('POINT(-88.3655256496815 43.1402866687898)', geometry_type=Point.name)))), 
+                            43.1402866687898)
 
     def test_centroid(self):
         r = session.query(Road).filter(Road.road_name=='Graeme Ave').one()
@@ -377,13 +379,13 @@ class TestGeometry(TestCase):
        
     def test_buffer(self):
         r = session.query(Road).filter(Road.road_name=='Graeme Ave').one()
-        assert_almost_equal(session.scalar(functions.area(r.road_geom.buffer(10.0), diminfo_)), 1094509.76889366)
+        assert_almost_equal(float(session.scalar(functions.area(r.road_geom.buffer(10.0), diminfo_))), 1094509.76889366)
         ok_(session.query(Spot).filter(functions.within(
                                                 'POINT(-88.5945861592357 42.9480095987261)', 
                                                 Spot.spot_location.buffer(10))).first() is not None)
-        assert_almost_equal(session.scalar(functions.area(functions.buffer(
+        assert_almost_equal(float(session.scalar(functions.area(functions.buffer(
                                         'POINT(-88.5945861592357 42.9480095987261)', diminfo_, 10, 
-                                        'unit=km arc_tolerance=0.05'), diminfo_)), 
+                                        'unit=km arc_tolerance=0.05'), diminfo_))), 
                             312144711.50297302)
         
     def test_convex_hull(self):
@@ -426,8 +428,8 @@ class TestGeometry(TestCase):
     def test_transform(self):
         spot = session.query(Spot).get(1)
         # note that we have to cast to 'ST_POINT', because 'functions.x' only works for Points in Oracle
-        assert_almost_equal(session.scalar(functions.x(func.ST_POINT(spot.spot_location.transform(2249)))), -3890517.61088792)
-        assert_almost_equal(session.scalar(functions.y(func.ST_POINT(spot.spot_location.transform(2249)))), 3627658.6749871401)
+        assert_almost_equal(float(session.scalar(functions.x(func.ST_POINT(spot.spot_location.transform(2249))))), -3890517.61088792)
+        assert_almost_equal(float(session.scalar(functions.y(func.ST_POINT(spot.spot_location.transform(2249))))), 3627658.6749871401)
         ok_(session.query(Spot).filter(functions.wkt(Spot.spot_location.transform(2249)) == 'POINT (-3890517.61088792 3627658.67498714)').first() is not None)
         eq_(session.scalar(functions.wkt(functions.transform(WKTSpatialElement('POLYGON((743238 2967416,743238 2967450,743265 2967450,743265.625 2967416,743238 2967416))', 2249), 4326))), 
             u'POLYGON ((-71.1776848522252 42.3902896503503, -71.1776843766327 42.390382946861, -71.1775844305466 42.3903826668518, -71.1775825927231 42.3902893638588, -71.1776848522252 42.3902896503503))')
@@ -449,7 +451,7 @@ class TestGeometry(TestCase):
         r1 = session.query(Road).filter(Road.road_name=='Jeff Rd').one()
         r2 = session.query(Road).filter(Road.road_name=='Geordie Rd').one()
         r3 = session.query(Road).filter(Road.road_name=='Peter Rd').one()
-        assert_almost_equal(session.scalar(r1.road_geom.distance(r2.road_geom)), 29371.776054049602)
+        assert_almost_equal(float(session.scalar(r1.road_geom.distance(r2.road_geom))), 29371.776054049602)
         eq_(session.scalar(r1.road_geom.distance(r3.road_geom)), 0.0)
         ok_(session.query(Spot).filter(Spot.spot_location.distance(
                                                             WKTSpatialElement('POINT(-88.5945861592357 42.9480095987261)'), 

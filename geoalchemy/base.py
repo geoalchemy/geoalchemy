@@ -1,7 +1,7 @@
 from sqlalchemy.orm.properties import ColumnProperty
 from sqlalchemy.sql import expression
 from sqlalchemy.sql.expression import ColumnClause, literal
-from sqlalchemy.types import TypeEngine
+from sqlalchemy.types import UserDefinedType
 from sqlalchemy.ext.compiler import compiles
 
 from utils import from_wkt
@@ -135,22 +135,21 @@ class PersistentSpatialElement(SpatialElement):
         else:
             return None
 
-class GeometryBase(TypeEngine):
+class GeometryBase(UserDefinedType):
     """Base Geometry column type for all spatial databases.
-    
-    Converts bind/result values to/from a generic Persistent value.
-    This is used as a base class and overridden into dialect specific
-    Persistent values.
     """
-    
+
     name = 'GEOMETRY'
-    
+
     def __init__(self, dimension=2, srid=4326, spatial_index=True, **kwargs):
         self.dimension = dimension
         self.srid = srid
         self.spatial_index = spatial_index
         self.kwargs = kwargs
         super(GeometryBase, self).__init__()
+
+    def get_col_spec(self):
+        return self.name
     
     def bind_processor(self, dialect):
         def process(value):
@@ -172,11 +171,6 @@ class GeometryBase(TypeEngine):
             else:
                 return value
         return process
-    
-    def _compiler_dispatch(self, *args):
-        """Required for the Cast() operator when used for the compilation
-        of DBSpatialElement"""
-        return self.name
 
     def adapt(self, cls, **kwargs):
         return cls(dimension=self.dimension, srid=self.srid,

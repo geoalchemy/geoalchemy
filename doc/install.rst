@@ -22,5 +22,5 @@ Package Index <http://pypi.python.org/pypi>`_ aka `Cheeseshop`:
 You are now ready to use GeoAlchemy.
 
 
-Alternatively GeoAlchemy can be installed from `source <http://bitbucket.org/sanjiv/geoalchemy/>`_.
-
+Alternatively GeoAlchemy can be installed from `source
+<https://github.com/geoalchemy/geoalchemy>`_.

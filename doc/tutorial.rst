@@ -219,12 +219,12 @@ geometry column, a transformation is added automatically.
     session.add(spot3)
     session.commit()
 
-Scripts for creating sample gis objects as shown above are available
-in the `examples directory
-<http://bitbucket.org/sanjiv/geoalchemy/src/tip/examples/>`_. You could run those scripts to create the
-database tables and the gis objects. Running them with -i option to
-the interpreter will drop you at the interactive interpreter
-prompt. You can then follow the rest of the tutorial on the
+Scripts for creating sample gis objects as shown above are available in the
+`examples directory
+<https://github.com/geoalchemy/geoalchemy/tree/master/examples>`_. You could
+run those scripts to create the database tables and the gis objects. Running
+them with -i option to the interpreter will drop you at the interactive
+interpreter prompt. You can then follow the rest of the tutorial on the
 interpreter.
 
 .. code-block:: python

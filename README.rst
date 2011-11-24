@@ -23,7 +23,7 @@ Supported Spatial Databases
 ---------------------------
 At present `PostGIS <http://postgis.refractions.net/>`_, `Spatialite
 <http://www.gaia-gis.it/spatialite/>`_, `MySQL <http://www.mysql.com/>`_,
-`Oracle <http://www.oracle.com/technology/software/products/database/index.html>`_,
+`Oracle <http://www.oracle.com/technology/software/products/database/index.html>`_
 and `MS SQL Server 2008 <http://www.microsoft.com/sqlserver/2008/en/us/spatial-data.aspx?pf=true>`_
 are supported.
 
@@ -31,7 +31,7 @@ Support
 -------
 GeoAlchemy is at an early stage of development. Its mailing list is available on
 `Google Groups <http://groups.google.com/group/geoalchemy>`_. The source code can be 
-found on `BitBucket <http://bitbucket.org/geoalchemy/geoalchemy/>`_. Also, feel free to email 
+found on `GitHub <http://github.com/geoalchemy/geoalchemy>`_. Also, feel free to email 
 the author directly to send bugreports, feature requests, patches, etc.
 
 
@@ -79,12 +79,12 @@ Contributors
 
 The contributors to this project (in alphabetical order are):
 
-    Eric Lemoine
-    Frank Broniewski
-    Mark Hall
-    Michael Bayer
-    Mike Gilligan
-    Sanjiv Singh
-    Stefano Costa
-    Tobias Sauerwein
+* Eric Lemoine
+* Frank Broniewski
+* Mark Hall
+* Michael Bayer
+* Mike Gilligan
+* Sanjiv Singh
+* Stefano Costa
+* Tobias Sauerwein
 

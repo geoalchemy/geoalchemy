@@ -138,6 +138,13 @@ class PersistentSpatialElement(SpatialElement):
             return self.desc.desc
         else:
             return None
+    
+    @property    
+    def geom_wkt(self):
+        if self.desc is not None and isinstance(self.desc, WKTSpatialElement):
+            return self.desc.desc
+        else:
+            return None
 
 class GeometryBase(UserDefinedType):
     """Base Geometry column type for all spatial databases.

@@ -119,6 +119,14 @@ class TestGeometry(TestCase):
         eq_(session.scalar(functions.geometry_type(r.road_geom)), 'ST_LineString')
         ok_(session.query(Road).filter(Road.road_geom.geometry_type == 'ST_LineString').first())
 
+    def test_geom_type(self):
+        r = session.query(Road).get(1)
+        l = session.query(Lake).get(1)
+        s = session.query(Spot).get(1)
+        eq_(r.road_geom.geom_type(session), 'LineString')
+        eq_(l.lake_geom.geom_type(session), 'Polygon')
+        eq_(s.spot_location.geom_type(session), 'Point')
+
     def test_wkt(self):
         l = session.query(Lake).get(1)
         assert session.scalar(self.r.road_geom.wkt) == 'LINESTRING(-88.6748409363057 43.1035032292994,-88.6464173694267 42.9981688343949,-88.607961955414 42.9680732929936,-88.5160033566879 42.9363057770701,-88.4390925286624 43.0031847579618)'

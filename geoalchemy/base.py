@@ -13,6 +13,8 @@ class SpatialElement(object):
     """Represents a geometry value."""
 
     def __str__(self):
+        if isinstance(self.desc, SpatialElement):
+            return self.desc.desc
         return self.desc
 
     def __repr__(self):
@@ -30,6 +32,8 @@ class SpatialElement(object):
         if isinstance(self, WKTSpatialElement):
             # for WKTSpatialElement we don't need to make a new query
             return self.desc 
+        elif isinstance(self.desc, WKTSpatialElement):
+            return self.desc.desc
         else:
             return session.scalar(self.wkt)       
 

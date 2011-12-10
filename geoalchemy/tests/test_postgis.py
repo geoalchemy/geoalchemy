@@ -32,7 +32,7 @@ class Lake(Base):
 
     lake_id = Column(Integer, primary_key=True)
     lake_name = Column(String)
-    lake_geom = GeometryColumn(Geometry(2), comparator=PGComparator)
+    lake_geom = GeometryColumn(Geometry(2), comparator=PGComparator, wkt_internal=True)
 
 spots_table = Table('spots', metadata,
                     Column('spot_id', Integer, primary_key=True),
@@ -123,6 +123,7 @@ class TestGeometry(TestCase):
         l = session.query(Lake).get(1)
         assert session.scalar(self.r.road_geom.wkt) == 'LINESTRING(-88.6748409363057 43.1035032292994,-88.6464173694267 42.9981688343949,-88.607961955414 42.9680732929936,-88.5160033566879 42.9363057770701,-88.4390925286624 43.0031847579618)'
         eq_(session.scalar(l.lake_geom.wkt),'POLYGON((-88.7968950764331 43.2305732929936,-88.7935511273885 43.1553344394904,-88.716640299363 43.1570064140127,-88.7250001719745 43.2339172420382,-88.7968950764331 43.2305732929936))')
+        eq_(session.scalar(l.lake_geom.wkt), l.lake_geom.geom_wkt)
         ok_(not session.query(Spot).filter(Spot.spot_location.wkt == 'POINT(0,0)').first())
         ok_(session.query(Spot).get(1) is 
             session.query(Spot).filter(Spot.spot_location == 'POINT(-88.5945861592357 42.9480095987261)').first())

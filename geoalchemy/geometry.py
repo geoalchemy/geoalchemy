@@ -151,6 +151,9 @@ class SpatialAttribute(AttributeExtension):
 class GeometryExtensionColumn(Column):
     pass
         
+class GeometryWKTExtensionColumn(Column):
+    pass
+
 @compiles(GeometryExtensionColumn)
 def compile_column(element, compiler, **kw):
     if isinstance(element.table, (Table, Alias)):
@@ -159,6 +162,13 @@ def compile_column(element, compiler, **kw):
         
     return compiler.visit_column(element) 
      
+@compiles(GeometryWKTExtensionColumn)
+def compile_column(element, compiler, **kw):
+    if isinstance(element.table, (Table, Alias)):
+        if kw.has_key("within_columns_clause") and kw["within_columns_clause"] == True:
+            return compiler.process(functions.wkt(element))
+        
+    return compiler.visit_column(element) 
             
 def GeometryColumn(*args, **kw):
     """Define a declarative column property with GIS behavior.
@@ -177,13 +187,21 @@ def GeometryColumn(*args, **kw):
     else:
         comparator = SpatialComparator
     
-    if isinstance(args[0], GeometryExtensionColumn):
+    if kw.has_key("wkt_internal"):
+        wkt_internal = kw.pop("wkt_internal")
+    else:
+        wkt_internal = False
+
+    if isinstance(args[0], GeometryExtensionColumn) or isinstance(args[0], GeometryWKTExtensionColumn):
         # if used for non-declarative, use the column of the table definition
         column = args[0]
         args = args[1:]
     else:
         # if used for declarative, create a new column
-        column = GeometryExtensionColumn(*args, **kw) 
+        if wkt_internal:
+            column = GeometryWKTExtensionColumn(*args, **kw) 
+        else:
+            column = GeometryExtensionColumn(*args, **kw) 
     
     return column_property(
         column, 

@@ -248,6 +248,11 @@ class TestGeometry(TestCase):
         r3 = session.query(Road).filter(Road.road_geom == r1.road_geom).one()
         ok_(r1 is r2 is r3)
 
+    def test_ne(self):
+        r1 = session.query(Road).filter(Road.road_name=='Graeme Ave').one()
+        r2 = session.query(Road).filter(Road.road_geom == 'LINESTRING(-88.5477708726115 42.6988853949045,-88.6096339299363 42.9697452675159,-88.6029460318471 43.0884554585987,-88.5912422101911 43.187101955414)').one()
+        ok_(r2 not in session.query(Road).filter(Road.road_geom != r2.road_geom).all())
+
     def test_length(self):
         r = session.query(Road).filter(Road.road_name=='Graeme Ave').one()
         assert_almost_equal(session.scalar(r.road_geom.length), 0.496071476676014)

@@ -250,5 +250,7 @@ class SpatialComparator(ColumnProperty.ColumnComparator):
         
     # override the __eq__() operator (allows to use '==' on geometries)
     def __eq__(self, other): 
+        if other is None:
+            return self.op("IS")(None)
         return functions.equals(self, other)
     

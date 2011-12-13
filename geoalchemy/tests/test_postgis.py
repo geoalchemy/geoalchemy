@@ -514,3 +514,11 @@ class TestGeometry(TestCase):
         road_null = Road(road_name='Jeff Rd', road_geom=None)
         session.add(road_null)
         session.commit();
+
+    def test_null(self):
+        spot_null = Spot(spot_height=420.40, spot_location=None)
+        session.add(spot_null)
+        session.commit();
+        spot_null = session.query(Spot).filter(Spot.spot_location == None).one()
+        eq_(spot_null.spot_location, None)
+        ok_(session.query(Spot).filter(Spot.spot_location != None).first() is not None)

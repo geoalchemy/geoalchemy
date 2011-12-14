@@ -1,5 +1,5 @@
 from sqlalchemy.orm.properties import ColumnProperty
-from sqlalchemy.sql import expression
+from sqlalchemy.sql import expression, not_
 from sqlalchemy.sql.expression import ColumnClause, literal
 from sqlalchemy.types import UserDefinedType
 from sqlalchemy.ext.compiler import compiles
@@ -250,5 +250,11 @@ class SpatialComparator(ColumnProperty.ColumnComparator):
         
     # override the __eq__() operator (allows to use '==' on geometries)
     def __eq__(self, other): 
+        if other is None:
+            return self.op("IS")(None)
         return functions.equals(self, other)
     
+    def __ne__(self, other):
+        if other is None:
+            return self.op("IS NOT")(None)
+        return not_(functions.equals(self, other))

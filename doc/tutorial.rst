@@ -339,3 +339,20 @@ more complex queries can be made.
 	>>> session.scalar(pg_functions.gml(functions.transform(point, 2249)))
 	'<gml:Point srsName="EPSG:2249"><gml:coordinates>-2369733.76351267,1553066.7062767</gml:coordinates></gml:Point>'
 	
+Spatial queries with python comparison operators
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: python
+
+    >>> s = session.query(Spot).first()
+    >>>
+    >>> session.query(Spot).filter(Spot.geom == s.geom).count()
+    1L
+    >>> session.query(Spot).filter(Spot.geom != s.geom).count()
+    2L
+    >>> session.query(Spot).filter(Spot.geom == None).count()
+    0L
+    >>> session.query(Spot).filter(Spot.geom != None).count()
+    3L
+
+The *equal* (*==*) and *not equal* (*!=*) python operators construct queries with *ST_Equals()* and *NOT ST_Equals()* PostGIS (or dialect equivalent) functions respectively. In addition, utilising the operators in comparison with *None* will be replaced with *IS NULL* and *IS NOT NULL* respectively.

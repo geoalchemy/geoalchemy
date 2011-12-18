@@ -1,3 +1,5 @@
+import warnings
+
 from sqlalchemy import Column, Table, exc
 from sqlalchemy.orm import column_property
 from sqlalchemy.orm.interfaces import AttributeExtension
@@ -165,12 +167,15 @@ def compile_column(element, compiler, **kw):
      
 @compiles(GeometryWKTExtensionColumn)
 def compile_column(element, compiler, **kw):
-    if not isinstance(compiler.dialect, PGDialect):
-        raise exc.CompileError("WKT Internal GeometryColumn type not "
-            "compatible with %s dialect" % compiler.dialect.name)
     if isinstance(element.table, (Table, Alias)):
         if kw.has_key("within_columns_clause") and kw["within_columns_clause"] == True:
-            return compiler.process(functions.wkt(element))
+            if not isinstance(compiler.dialect, PGDialect):
+                warnings.warn("WKT Internal GeometryColumn type not "
+                    "compatible with %s dialect. Defaulting back to WKB"
+                    % compiler.dialect.name, exc.SAWarning)
+                return compiler.process(functions.wkb(element))
+            else:
+                return compiler.process(functions.wkt(element))
         
     return compiler.visit_column(element) 
             

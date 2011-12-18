@@ -256,8 +256,8 @@ Functions to obtain geometry value in different formats
     >>> binascii.hexlify(session.scalar(s.geom.wkb))
     '01010000007b14ae47e15a54c03333333333d34240'
     
-Note that for all commands above a new query had to be made to the database. Internally
-GeoAlchemy uses Well-Known-Binary (WKB) to fetch the geometry, that belongs to an object of a mapped class. 
+Note that for all commands above a new query had to be made to the database. By default 
+GeoAlchemy uses Well-Known-Binary (WKB) internally to fetch the geometry, that belongs to an object of a mapped class. 
 All the time an object is queried, the geometry for this object is loaded in WKB.
 
 You can also access this internal WKB geometry directly and use it for example to create a
@@ -269,6 +269,11 @@ the database.
     >>> binascii.hexlify(s.geom.geom_wkb)
 	'01010000007b14ae47e15a54c03333333333d34240'
 
+Alternatively, passing the argument *wkt_internal=True* in the *GeometryColumn* 
+definition will cause GeoAlchemy to use Well-Known-Text (WKT) internally.
+This allows the use of *coords*, *geom_type* and *geom_wkt* commands (examples in section below) 
+without additional queries to the database.
+(This feature currently only works with the PostGIS dialect)
 
 Functions to obtain the geometry type, coordinates, etc
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -286,6 +291,8 @@ Functions to obtain the geometry type, coordinates, etc
     37.649999999999999
     >>> s.geom.coords(session)
     [-81.420000000000002, 37.649999999999999]
+    >>> s.geom.geom_type(session)
+    Point
 
 Spatial operations that return new geometries
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

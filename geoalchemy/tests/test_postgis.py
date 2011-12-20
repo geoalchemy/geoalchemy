@@ -32,7 +32,7 @@ class Lake(Base):
 
     lake_id = Column(Integer, primary_key=True)
     lake_name = Column(String)
-    lake_geom = GeometryColumn(Geometry(2), comparator=PGComparator, wkt_internal=True)
+    lake_geom = GeometryColumn(Geometry(2, wkt_internal=True), comparator=PGComparator)
 
 spots_table = Table('spots', metadata,
                     Column('spot_id', Integer, primary_key=True),

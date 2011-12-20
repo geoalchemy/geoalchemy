@@ -269,7 +269,7 @@ the database.
     >>> binascii.hexlify(s.geom.geom_wkb)
 	'01010000007b14ae47e15a54c03333333333d34240'
 
-Alternatively, passing the argument *wkt_internal=True* in the *GeometryColumn* 
+Alternatively, passing the argument *wkt_internal=True* in the *Geometry* 
 definition will cause GeoAlchemy to use Well-Known-Text (WKT) internally.
 This allows the use of *coords*, *geom_type* and *geom_wkt* commands (examples in section below) 
 without additional queries to the database.

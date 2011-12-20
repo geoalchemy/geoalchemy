@@ -154,30 +154,20 @@ class SpatialAttribute(AttributeExtension):
 class GeometryExtensionColumn(Column):
     pass
         
-class GeometryWKTExtensionColumn(Column):
-    pass
-
 @compiles(GeometryExtensionColumn)
 def compile_column(element, compiler, **kw):
     if isinstance(element.table, (Table, Alias)):
         if kw.has_key("within_columns_clause") and kw["within_columns_clause"] == True:
+            if element.type.wkt_internal:
+                if isinstance(compiler.dialect, PGDialect):
+                    return compiler.process(functions.wkt(element))
+                warnings.warn("WKT Internal GeometryColumn type not "
+                    "compatible with %s dialect. Defaulting back to WKB"
+                    % compiler.dialect.name, exc.SAWarning)
             return compiler.process(functions.wkb(element))
         
     return compiler.visit_column(element) 
      
-@compiles(GeometryWKTExtensionColumn)
-def compile_column(element, compiler, **kw):
-    if isinstance(element.table, (Table, Alias)):
-        if kw.has_key("within_columns_clause") and kw["within_columns_clause"] == True:
-            if not isinstance(compiler.dialect, PGDialect):
-                warnings.warn("WKT Internal GeometryColumn type not "
-                    "compatible with %s dialect. Defaulting back to WKB"
-                    % compiler.dialect.name, exc.SAWarning)
-                return compiler.process(functions.wkb(element))
-            else:
-                return compiler.process(functions.wkt(element))
-        
-    return compiler.visit_column(element) 
             
 def GeometryColumn(*args, **kw):
     """Define a declarative column property with GIS behavior.
@@ -196,21 +186,13 @@ def GeometryColumn(*args, **kw):
     else:
         comparator = SpatialComparator
     
-    if kw.has_key("wkt_internal"):
-        wkt_internal = kw.pop("wkt_internal")
-    else:
-        wkt_internal = False
-
-    if isinstance(args[0], GeometryExtensionColumn) or isinstance(args[0], GeometryWKTExtensionColumn):
+    if isinstance(args[0], GeometryExtensionColumn):
         # if used for non-declarative, use the column of the table definition
         column = args[0]
         args = args[1:]
     else:
         # if used for declarative, create a new column
-        if wkt_internal:
-            column = GeometryWKTExtensionColumn(*args, **kw) 
-        else:
-            column = GeometryExtensionColumn(*args, **kw) 
+        column = GeometryExtensionColumn(*args, **kw) 
     
     return column_property(
         column, 

@@ -152,10 +152,12 @@ class GeometryBase(UserDefinedType):
 
     name = 'GEOMETRY'
 
-    def __init__(self, dimension=2, srid=4326, spatial_index=True, **kwargs):
+    def __init__(self, dimension=2, srid=4326, spatial_index=True,
+                 wkt_internal=False, **kwargs):
         self.dimension = dimension
         self.srid = srid
         self.spatial_index = spatial_index
+        self.wkt_internal = wkt_internal
         self.kwargs = kwargs
         super(GeometryBase, self).__init__()
 
@@ -186,7 +188,7 @@ class GeometryBase(UserDefinedType):
     def adapt(self, cls, **kwargs):
         return cls(dimension=self.dimension, srid=self.srid,
                    spatial_index=self.spatial_index,
-                   **self.kwargs)
+                   wkt_internal=self.wkt_internal, **self.kwargs)
 
 # ORM integration
 

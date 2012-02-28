@@ -371,7 +371,19 @@ class functions:
            don't support it correctly (PostGIS 1.3), or provide multiple
            implementations (Oracle)."""
         pass
-
+    
+    class union(ReturnsGeometryFunction):
+        """union(geometry set)"""
+        pass
+    
+    class collect(ReturnsGeometryFunction):
+        """collect(geometry set)"""
+        pass
+    
+    class extent(ReturnsGeometryFunction):
+        """extent(geometry set)"""
+        pass
+    
 @compiles(functions._within_distance)
 def __compile__within_distance(element, compiler, **kw):
     from geoalchemy.dialect import DialectManager 

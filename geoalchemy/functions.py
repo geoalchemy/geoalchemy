@@ -372,16 +372,16 @@ class functions:
            implementations (Oracle)."""
         pass
     
-    class union(ReturnsGeometryFunction):
-        """union(geometry set)"""
+    class aggregate_union(ReturnsGeometryFunction):
+        """aggregate_union(geometry set)"""
+        pass
+            
+    class aggregate_collect(ReturnsGeometryFunction):
+        """aggregate_collect(geometry set)"""
         pass
     
-    class collect(ReturnsGeometryFunction):
-        """collect(geometry set)"""
-        pass
-    
-    class extent(ReturnsGeometryFunction):
-        """extent(geometry set)"""
+    class aggregate_extent(BaseFunction):
+        """aggregate_extent(geometry set)"""
         pass
     
 @compiles(functions._within_distance)

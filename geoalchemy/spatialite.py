@@ -73,7 +73,7 @@ class SQLiteSpatialDialect(SpatialDialect):
     __functions = { 
                    functions.within_distance : None,
                    functions.length : 'GLength',
-                   functions.union : 'GUnion',
+                   functions.aggregate_union : 'GUnion',
                    sqlite_functions.svg : 'AsSVG',
                    sqlite_functions.fgf : 'AsFGF',
                    mysql_functions.mbr_equal : 'MBREqual',

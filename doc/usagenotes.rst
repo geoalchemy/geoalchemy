@@ -318,25 +318,6 @@ are created by default. To create a spatial index the bounding box must be speci
        road_name = Column(String(255))
        road_geom = GeometryColumn(Geometry(2, bounding_box='(xmin=-180, ymin=-90, xmax=180, ymax=90)'), nullable=False)
 
-Inserting NULL geometries
-~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Due to a bug in the underlying libraries there is currently no support for inserting NULL geometries that have a `None`
-geometry. The following code will not work:
-
-.. code-block:: python
-
-    session.add(Road(road_name=u'Destroyed road', road_geom=None))
-
-To insert NULL you must use :data:`geoalchemy.mssql.MS_SPATIAL_NULL` to explicitly specify the NULL geometry.
-
-.. code-block:: python
-
-    session.add(Road(road_name=u'Destroyed road', road_geom=MS_SPATIAL_NULL))
-
-This is an issue with pyODBC and can be tracked via `<http://code.google.com/p/pyodbc/issues/detail?id=103>`_.
-
-
 Notes on non-declarative mapping
 --------------------------------
 

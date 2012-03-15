@@ -462,9 +462,7 @@ class OracleSpatialDialect(SpatialDialect):
                    functions.covers : None, # use oracle_functions.sdo_covers 
                    functions.covered_by : None, # use oracle_functions.sdo_coveredby
                    functions.intersection : DimInfoFunction(func.SDO_GEOM.SDO_INTERSECTION),
-                   functions.aggregate_union : None, # SDO_AGGR_UNION ?
-                   functions.aggregate_collect : None,
-                   functions.aggregate_extent : None,
+                   # aggregate_union => SDO_AGGR_UNION ?
                    
                    oracle_functions.gtype : 'Get_GType',
                    oracle_functions.dims : 'Get_Dims',

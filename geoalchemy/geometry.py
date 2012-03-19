@@ -1,9 +1,12 @@
-from sqlalchemy import Column, Table
+import warnings
+
+from sqlalchemy import Column, Table, exc
 from sqlalchemy.orm import column_property
 from sqlalchemy.orm.interfaces import AttributeExtension
 from sqlalchemy.sql.expression import Alias
 from sqlalchemy.sql import expression
 from sqlalchemy.ext.compiler import compiles
+from sqlalchemy.dialects.postgresql.base import PGDialect
 
 from geoalchemy.base import GeometryBase, _to_gis, SpatialComparator
 from geoalchemy.dialect import DialectManager
@@ -155,6 +158,12 @@ class GeometryExtensionColumn(Column):
 def compile_column(element, compiler, **kw):
     if isinstance(element.table, (Table, Alias)):
         if kw.has_key("within_columns_clause") and kw["within_columns_clause"] == True:
+            if element.type.wkt_internal:
+                if isinstance(compiler.dialect, PGDialect):
+                    return compiler.process(functions.wkt(element))
+                warnings.warn("WKT Internal GeometryColumn type not "
+                    "compatible with %s dialect. Defaulting back to WKB"
+                    % compiler.dialect.name, exc.SAWarning)
             return compiler.process(functions.wkb(element))
         
     return compiler.visit_column(element) 

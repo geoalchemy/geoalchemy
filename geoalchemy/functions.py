@@ -372,16 +372,25 @@ class functions:
            implementations (Oracle)."""
         pass
     
-    class aggregate_union(ReturnsGeometryFunction):
-        """aggregate_union(geometry set)"""
+    class union(ReturnsGeometryFunction):
+        """union(geometry set)i
+        
+        Actually supported only by PostGIS
+        """
         pass
             
-    class aggregate_collect(ReturnsGeometryFunction):
-        """aggregate_collect(geometry set)"""
+    class collect(ReturnsGeometryFunction):
+        """collect(geometry set)
+        
+        Actually supported only by PostGIS
+        """
         pass
     
-    class aggregate_extent(BaseFunction):
-        """aggregate_extent(geometry set)"""
+    class extent(BaseFunction):
+        """extent(geometry set)
+        
+        Actually supported only by PostGIS
+        """
         pass
     
 @compiles(functions._within_distance)

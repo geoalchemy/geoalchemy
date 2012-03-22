@@ -57,9 +57,9 @@ class SpatialDialect(object):
                    functions.covers : 'Covers',
                    functions.covered_by : 'CoveredBy',
                    functions.intersection : 'Intersections',
-                   functions.aggregate_union : None,
-                   functions.aggregate_collect : None,
-                   functions.aggregate_extent : None,
+                   functions.union : None,
+                   functions.collect : None,
+                   functions.extent : None,
                    functions._within_distance: lambda compiler, geom1, geom2, dist:
                                                    func.DWithin(geom1, geom2, dist)
                   }

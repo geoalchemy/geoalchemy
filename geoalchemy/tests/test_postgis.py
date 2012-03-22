@@ -499,13 +499,13 @@ class TestGeometry(TestCase):
         ok_(session.query(Lake).filter(Lake.lake_geom.intersection(r.road_geom).wkt == 'LINESTRING(-88.1430673666454 42.6255500261493,-88.1140839697546 42.6230657349872)').first() is not None)
 
     def test_extent(self):
-        l = session.query(functions.aggregate_extent(Lake.lake_geom)). \
+        l = session.query(functions.extent(Lake.lake_geom)). \
                 filter(Lake.lake_geom != None).one()
-        r = session.query(functions.aggregate_extent(Road.road_geom)). \
+        r = session.query(functions.extent(Road.road_geom)). \
                 filter(Road.road_geom != None).one()
-        s = session.query(functions.aggregate_extent(Spot.spot_location)). \
+        s = session.query(functions.extent(Spot.spot_location)). \
                 filter(Spot.spot_location != None).one()
-        sh = session.query(functions.aggregate_extent(Shape.shape_geom)). \
+        sh = session.query(functions.extent(Shape.shape_geom)). \
                 filter(Shape.shape_geom != None).one()
         
         eq_(l[0], "BOX(-89.1329617834395 42.565127388535,-88.0846337579618 43.243949044586)")
@@ -514,15 +514,15 @@ class TestGeometry(TestCase):
         eq_(sh[0], "BOX(-88.7968950764331 42.5584395350319,-88.0110670509554 43.2339172420382)")
 
     def test_union(self):
-        l = session.query(functions.geometry_type(functions.aggregate_union(Lake.lake_geom))). \
+        l = session.query(functions.geometry_type(functions.union(Lake.lake_geom))). \
                 filter(Lake.lake_geom != None).one()
-        r = session.query(functions.geometry_type(functions.aggregate_union(Road.road_geom))). \
+        r = session.query(functions.geometry_type(functions.union(Road.road_geom))). \
                 filter(Road.road_geom != None).one()
-        s = session.query(functions.geometry_type(functions.aggregate_union(Spot.spot_location))). \
+        s = session.query(functions.geometry_type(functions.union(Spot.spot_location))). \
                 filter(Spot.spot_location != None).one()
-        sh = session.query(functions.geometry_type(functions.aggregate_union(Shape.shape_geom))). \
+        sh = session.query(functions.geometry_type(functions.union(Shape.shape_geom))). \
                 filter(Shape.shape_geom != None).one()
-        la = session.query(functions.area(functions.aggregate_union(Lake.lake_geom))). \
+        la = session.query(functions.area(functions.union(Lake.lake_geom))). \
                 filter(Lake.lake_geom != None).one()
         
         eq_(l[0], "ST_MultiPolygon")
@@ -532,15 +532,15 @@ class TestGeometry(TestCase):
         eq_(float(la[0]), 0.121935268962943)
 
     def test_collect(self):
-        l = session.query(functions.geometry_type(functions.aggregate_collect(Lake.lake_geom))). \
+        l = session.query(functions.geometry_type(functions.collect(Lake.lake_geom))). \
                 filter(Lake.lake_geom != None).one()
-        r = session.query(functions.geometry_type(functions.aggregate_collect(Road.road_geom))). \
+        r = session.query(functions.geometry_type(functions.collect(Road.road_geom))). \
                 filter(Road.road_geom != None).one()
-        s = session.query(functions.geometry_type(functions.aggregate_collect(Spot.spot_location))). \
+        s = session.query(functions.geometry_type(functions.collect(Spot.spot_location))). \
                 filter(Spot.spot_location != None).one()
-        sh = session.query(functions.geometry_type(functions.aggregate_collect(Shape.shape_geom))). \
+        sh = session.query(functions.geometry_type(functions.collect(Shape.shape_geom))). \
                 filter(Shape.shape_geom != None).one()
-        la = session.query(functions.area(functions.aggregate_collect(Lake.lake_geom))). \
+        la = session.query(functions.area(functions.collect(Lake.lake_geom))). \
                 filter(Lake.lake_geom != None).one()
 
         eq_(l[0], "ST_MultiPolygon")

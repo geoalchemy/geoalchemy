@@ -339,3 +339,59 @@ more complex queries can be made.
 	>>> session.scalar(pg_functions.gml(functions.transform(point, 2249)))
 	'<gml:Point srsName="EPSG:2249"><gml:coordinates>-2369733.76351267,1553066.7062767</gml:coordinates></gml:Point>'
 	
+
+Performing Aggregation Queries
+------------------------------
+
+With GeoAlchemy we also have aggregation function like extent, union and collect.
+An example to illustrate that, this script:
+
+.. code-block:: python
+
+    from sqlalchemy import create_engine, MetaData, Column, Integer
+    from sqlalchemy.orm import sessionmaker
+    from sqlalchemy.ext.declarative import declarative_base
+    from geoalchemy import  GeometryColumn, Polygon, GeometryDDL
+    from geoalchemy.functions import functions
+    from geoalchemy.postgis import pg_functions
+
+    engine = create_engine('postgresql://gis:gis@localhost/gis', echo=True)
+    metadata = MetaData(engine)
+    session = sessionmaker(bind=engine)()
+    Base = declarative_base(metadata=metadata)
+
+    class Overlap(Base):
+        __tablename__ = 'overlap'
+        id = Column(Integer, primary_key=True)
+        geom = GeometryColumn(Polygon(2))
+    
+    session.add_all([
+            Overlap(geom='POLYGON((0 0,0 50,50 50,50 0,0 0))'),
+            Overlap(geom='POLYGON((20 20,20 80,80 80,80 20,20 20))'),
+    ])
+    
+    print "Extent:"
+    print session.query(functions.extent(Overlap.geom)). \
+            filter(Overlap.geom != None).one()
+
+    print "Union:"
+    print session.query(functions.union(Overlap.geom)). \
+            filter(Overlap.geom != None).one()
+
+    print "Collect:"
+    print session.query(functions.collect(Overlap.geom)). \
+            filter(Overlap.geom != None).one()
+
+Return::
+
+    Extent:
+    ('BOX(0 0,80 80)',)
+    Union:
+    (u'POLYGON((0 0,0 50,20 50,20 80,80 80,80 20,50 20,50 0,0 0))',)
+    Collect:
+    (u'MULTIPOLYGON(((0 0,0 50,50 50,50 0,0 0)),((20 20,20 80,80 80,80 20,20 20)))',)
+
+.. note::
+
+   In this example the filter is needed because of a limitation of GeoAlchemy that 
+   don't add the FROM part in the SQL query.

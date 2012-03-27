@@ -305,6 +305,24 @@ Spatial operations that return new geometries
     >>> session.scalar(cv_geom.wkt)
     'POLYGON((-81.2 37.89,-81.03 38.04,-80.3 38.2,-81.2 37.89))'
 
+GeoAlchemy also provides aggregate functions, namely ``union``, ``collect``,
+and ``extent``. Note that the latter is a bit different, because it does not
+return a geometry but a ``BOX`` string. See the examples below:
+
+.. code-block:: python
+
+    >>> e = session.query(functions.extent(Lake.lake_geom)).filter(Lake.lake_geom != None).scalar()
+    'BOX(-89.1329617834395 42.565127388535,-88.0846337579618 43.243949044586)'
+    >>> u = session.query(functions.geometry_type(functions.union(Lake.lake_geom))).filter(Lake.lake_geom != None).scalar()
+    'ST_MultiPolygon'
+    >>> c = session.query(functions.geometry_type(functions.collect(Lake.lake_geom))).filter(Lake.lake_geom != None).scalar()
+    'ST_MultiPolygon'
+
+.. note::
+
+   In this example the filter is needed because of a limitation in GeoAlchemy.
+   Without the filter no the SQL query doesn't include a ``FROM`` clause.
+
 Spatial relations for filtering features
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -340,58 +358,3 @@ more complex queries can be made.
 	'<gml:Point srsName="EPSG:2249"><gml:coordinates>-2369733.76351267,1553066.7062767</gml:coordinates></gml:Point>'
 	
 
-Performing Aggregation Queries
-------------------------------
-
-With GeoAlchemy we also have aggregation function like extent, union and collect.
-An example to illustrate that, this script:
-
-.. code-block:: python
-
-    from sqlalchemy import create_engine, MetaData, Column, Integer
-    from sqlalchemy.orm import sessionmaker
-    from sqlalchemy.ext.declarative import declarative_base
-    from geoalchemy import  GeometryColumn, Polygon, GeometryDDL
-    from geoalchemy.functions import functions
-    from geoalchemy.postgis import pg_functions
-
-    engine = create_engine('postgresql://gis:gis@localhost/gis', echo=True)
-    metadata = MetaData(engine)
-    session = sessionmaker(bind=engine)()
-    Base = declarative_base(metadata=metadata)
-
-    class Overlap(Base):
-        __tablename__ = 'overlap'
-        id = Column(Integer, primary_key=True)
-        geom = GeometryColumn(Polygon(2))
-    
-    session.add_all([
-            Overlap(geom='POLYGON((0 0,0 50,50 50,50 0,0 0))'),
-            Overlap(geom='POLYGON((20 20,20 80,80 80,80 20,20 20))'),
-    ])
-    
-    print "Extent:"
-    print session.query(functions.extent(Overlap.geom)). \
-            filter(Overlap.geom != None).one()
-
-    print "Union:"
-    print session.query(functions.union(Overlap.geom)). \
-            filter(Overlap.geom != None).one()
-
-    print "Collect:"
-    print session.query(functions.collect(Overlap.geom)). \
-            filter(Overlap.geom != None).one()
-
-Return::
-
-    Extent:
-    ('BOX(0 0,80 80)',)
-    Union:
-    (u'POLYGON((0 0,0 50,20 50,20 80,80 80,80 20,50 20,50 0,0 0))',)
-    Collect:
-    (u'MULTIPOLYGON(((0 0,0 50,50 50,50 0,0 0)),((20 20,20 80,80 80,80 20,20 20)))',)
-
-.. note::
-
-   In this example the filter is needed because of a limitation of GeoAlchemy that 
-   don't add the FROM part in the SQL query.

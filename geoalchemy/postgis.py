@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from sqlalchemy import select, func, and_
 from geoalchemy.base import SpatialComparator, PersistentSpatialElement, \
-    WKBSpatialElement
+    WKBSpatialElement, WKTSpatialElement
 from geoalchemy.dialect import SpatialDialect 
 from geoalchemy.functions import functions, BaseFunction
 
@@ -118,6 +118,8 @@ class PGSpatialDialect(SpatialDialect):
         return PGSpatialDialect.__functions
     
     def process_result(self, value, type):
+        if type.wkt_internal:
+            return PGPersistentSpatialElement(WKTSpatialElement(value, type.srid))
         return PGPersistentSpatialElement(WKBSpatialElement(value, type.srid))
     
     def handle_ddl_before_drop(self, bind, table, column):

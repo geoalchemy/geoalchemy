@@ -13,6 +13,8 @@ class SpatialElement(object):
     """Represents a geometry value."""
 
     def __str__(self):
+        if isinstance(self.desc, SpatialElement):
+            return self.desc.desc
         return self.desc
 
     def __repr__(self):
@@ -30,6 +32,8 @@ class SpatialElement(object):
         if isinstance(self, WKTSpatialElement):
             # for WKTSpatialElement we don't need to make a new query
             return self.desc 
+        elif isinstance(self.desc, WKTSpatialElement):
+            return self.desc.desc
         else:
             return session.scalar(self.wkt)       
 
@@ -134,6 +138,13 @@ class PersistentSpatialElement(SpatialElement):
             return self.desc.desc
         else:
             return None
+    
+    @property    
+    def geom_wkt(self):
+        if self.desc is not None and isinstance(self.desc, WKTSpatialElement):
+            return self.desc.desc
+        else:
+            return None
 
 class GeometryBase(UserDefinedType):
     """Base Geometry column type for all spatial databases.
@@ -141,10 +152,12 @@ class GeometryBase(UserDefinedType):
 
     name = 'GEOMETRY'
 
-    def __init__(self, dimension=2, srid=4326, spatial_index=True, **kwargs):
+    def __init__(self, dimension=2, srid=4326, spatial_index=True,
+                 wkt_internal=False, **kwargs):
         self.dimension = dimension
         self.srid = srid
         self.spatial_index = spatial_index
+        self.wkt_internal = wkt_internal
         self.kwargs = kwargs
         super(GeometryBase, self).__init__()
 
@@ -175,7 +188,7 @@ class GeometryBase(UserDefinedType):
     def adapt(self, cls, **kwargs):
         return cls(dimension=self.dimension, srid=self.srid,
                    spatial_index=self.spatial_index,
-                   **self.kwargs)
+                   wkt_internal=self.wkt_internal, **self.kwargs)
 
 # ORM integration
 

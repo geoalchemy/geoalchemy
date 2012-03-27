@@ -256,8 +256,8 @@ Functions to obtain geometry value in different formats
     >>> binascii.hexlify(session.scalar(s.geom.wkb))
     '01010000007b14ae47e15a54c03333333333d34240'
     
-Note that for all commands above a new query had to be made to the database. Internally
-GeoAlchemy uses Well-Known-Binary (WKB) to fetch the geometry, that belongs to an object of a mapped class. 
+Note that for all commands above a new query had to be made to the database. By default 
+GeoAlchemy uses Well-Known-Binary (WKB) internally to fetch the geometry, that belongs to an object of a mapped class. 
 All the time an object is queried, the geometry for this object is loaded in WKB.
 
 You can also access this internal WKB geometry directly and use it for example to create a
@@ -269,6 +269,11 @@ the database.
     >>> binascii.hexlify(s.geom.geom_wkb)
 	'01010000007b14ae47e15a54c03333333333d34240'
 
+Alternatively, passing the argument *wkt_internal=True* in the *Geometry* 
+definition will cause GeoAlchemy to use Well-Known-Text (WKT) internally.
+This allows the use of *coords*, *geom_type* and *geom_wkt* commands (examples in section below) 
+without additional queries to the database.
+(This feature currently only works with the PostGIS dialect)
 
 Functions to obtain the geometry type, coordinates, etc
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -286,6 +291,8 @@ Functions to obtain the geometry type, coordinates, etc
     37.649999999999999
     >>> s.geom.coords(session)
     [-81.420000000000002, 37.649999999999999]
+    >>> s.geom.geom_type(session)
+    Point
 
 Spatial operations that return new geometries
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -357,4 +364,20 @@ more complex queries can be made.
 	>>> session.scalar(pg_functions.gml(functions.transform(point, 2249)))
 	'<gml:Point srsName="EPSG:2249"><gml:coordinates>-2369733.76351267,1553066.7062767</gml:coordinates></gml:Point>'
 	
+Spatial queries with python comparison operators
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+.. code-block:: python
+
+    >>> s = session.query(Spot).first()
+    >>>
+    >>> session.query(Spot).filter(Spot.geom == s.geom).count()
+    1L
+    >>> session.query(Spot).filter(Spot.geom != s.geom).count()
+    2L
+    >>> session.query(Spot).filter(Spot.geom == None).count()
+    0L
+    >>> session.query(Spot).filter(Spot.geom != None).count()
+    3L
+
+The *equal* (*==*) and *not equal* (*!=*) python operators construct queries with *ST_Equals()* and *NOT ST_Equals()* PostGIS (or dialect equivalent) functions respectively. In addition, utilising the operators in comparison with *None* will be replaced with *IS NULL* and *IS NOT NULL* respectively.

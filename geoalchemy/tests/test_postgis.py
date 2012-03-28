@@ -15,7 +15,7 @@ from nose.tools import eq_, ok_, raises, assert_almost_equal
 
 
 
-engine = create_engine('postgresql://gis:gis@localhost/gis', echo=True)
+engine = create_engine('postgresql://gis:gis@localhost/gis')
 metadata = MetaData(engine)
 session = sessionmaker(bind=engine)()
 Base = declarative_base(metadata=metadata)
@@ -32,7 +32,7 @@ class Lake(Base):
 
     lake_id = Column(Integer, primary_key=True)
     lake_name = Column(String)
-    lake_geom = GeometryColumn(Geometry(2), comparator=PGComparator)
+    lake_geom = GeometryColumn(Geometry(2, wkt_internal=True), comparator=PGComparator)
 
 spots_table = Table('spots', metadata,
                     Column('spot_id', Integer, primary_key=True),
@@ -119,10 +119,19 @@ class TestGeometry(TestCase):
         eq_(session.scalar(functions.geometry_type(r.road_geom)), 'ST_LineString')
         ok_(session.query(Road).filter(Road.road_geom.geometry_type == 'ST_LineString').first())
 
+    def test_geom_type(self):
+        r = session.query(Road).get(1)
+        l = session.query(Lake).get(1)
+        s = session.query(Spot).get(1)
+        eq_(r.road_geom.geom_type(session), 'LineString')
+        eq_(l.lake_geom.geom_type(session), 'Polygon')
+        eq_(s.spot_location.geom_type(session), 'Point')
+
     def test_wkt(self):
         l = session.query(Lake).get(1)
         assert session.scalar(self.r.road_geom.wkt) == 'LINESTRING(-88.6748409363057 43.1035032292994,-88.6464173694267 42.9981688343949,-88.607961955414 42.9680732929936,-88.5160033566879 42.9363057770701,-88.4390925286624 43.0031847579618)'
         eq_(session.scalar(l.lake_geom.wkt),'POLYGON((-88.7968950764331 43.2305732929936,-88.7935511273885 43.1553344394904,-88.716640299363 43.1570064140127,-88.7250001719745 43.2339172420382,-88.7968950764331 43.2305732929936))')
+        eq_(session.scalar(l.lake_geom.wkt), l.lake_geom.geom_wkt)
         ok_(not session.query(Spot).filter(Spot.spot_location.wkt == 'POINT(0,0)').first())
         ok_(session.query(Spot).get(1) is 
             session.query(Spot).filter(Spot.spot_location == 'POINT(-88.5945861592357 42.9480095987261)').first())
@@ -500,54 +509,54 @@ class TestGeometry(TestCase):
 
     def test_extent(self):
         l = session.query(functions.extent(Lake.lake_geom)). \
-                filter(Lake.lake_geom != None).one()
+                filter(Lake.lake_geom != None).scalar()
         r = session.query(functions.extent(Road.road_geom)). \
-                filter(Road.road_geom != None).one()
+                filter(Road.road_geom != None).scalar()
         s = session.query(functions.extent(Spot.spot_location)). \
-                filter(Spot.spot_location != None).one()
+                filter(Spot.spot_location != None).scalar()
         sh = session.query(functions.extent(Shape.shape_geom)). \
-                filter(Shape.shape_geom != None).one()
+                filter(Shape.shape_geom != None).scalar()
         
-        eq_(l[0], "BOX(-89.1329617834395 42.565127388535,-88.0846337579618 43.243949044586)")
-        eq_(r[0], "BOX(-89.2449842484076 42.5082802993631,-88.0110670509554 43.3175159681529)")
-        eq_(s[0], "BOX(-89.201512910828 42.6269904904459,-88.3304141847134 43.1051752038217)")
-        eq_(sh[0], "BOX(-88.7968950764331 42.5584395350319,-88.0110670509554 43.2339172420382)")
+        eq_(l, "BOX(-89.1329617834395 42.565127388535,-88.0846337579618 43.243949044586)")
+        eq_(r, "BOX(-89.2449842484076 42.5082802993631,-88.0110670509554 43.3175159681529)")
+        eq_(s, "BOX(-89.201512910828 42.6269904904459,-88.3304141847134 43.1051752038217)")
+        eq_(sh, "BOX(-88.7968950764331 42.5584395350319,-88.0110670509554 43.2339172420382)")
 
     def test_union(self):
         l = session.query(functions.geometry_type(functions.union(Lake.lake_geom))). \
-                filter(Lake.lake_geom != None).one()
+                filter(Lake.lake_geom != None).scalar()
         r = session.query(functions.geometry_type(functions.union(Road.road_geom))). \
-                filter(Road.road_geom != None).one()
+                filter(Road.road_geom != None).scalar()
         s = session.query(functions.geometry_type(functions.union(Spot.spot_location))). \
-                filter(Spot.spot_location != None).one()
+                filter(Spot.spot_location != None).scalar()
         sh = session.query(functions.geometry_type(functions.union(Shape.shape_geom))). \
-                filter(Shape.shape_geom != None).one()
-        la = session.query(functions.area(functions.union(Lake.lake_geom))). \
-                filter(Lake.lake_geom != None).one()
+                filter(Shape.shape_geom != None).scalar()
+        la = session.query(functions.union(Lake.lake_geom).wkt). \
+                filter(Lake.lake_geom != None).scalar()
         
-        eq_(l[0], "ST_MultiPolygon")
-        eq_(r[0], "ST_MultiLineString")
-        eq_(s[0], "ST_MultiPoint")
-        eq_(sh[0], "ST_GeometryCollection")
-        eq_(float(la[0]), 0.121935268962943)
+        eq_(l, "ST_MultiPolygon")
+        eq_(r, "ST_MultiLineString")
+        eq_(s, "ST_MultiPoint")
+        eq_(sh, "ST_GeometryCollection")
+        eq_(la, 'MULTIPOLYGON(((-88.1147292993631 42.7540605095542,-88.1548566878981 42.7824840764331,-88.1799363057325 42.7707802547771,-88.188296178344 42.7323248407643,-88.1832802547771 42.6955414012739,-88.1565286624204 42.6771496815287,-88.1448248407643 42.6336783439491,-88.131449044586 42.5718152866242,-88.1013535031847 42.565127388535,-88.1080414012739 42.5868630573248,-88.1164012738854 42.6119426751592,-88.1080414012739 42.6520700636943,-88.0980095541401 42.6838375796178,-88.0846337579618 42.7139331210191,-88.1013535031847 42.7423566878981,-88.1147292993631 42.7540605095542)),((-88.7878611897291 43.1554581337873,-88.7734872611465 43.0867834394905,-88.7517515923567 43.0299363057325,-88.7433917197452 42.9730891719745,-88.7517515923567 42.9145700636943,-88.7734872611465 42.8710987261147,-88.8102707006369 42.8343152866242,-88.8687898089172 42.815923566879,-88.9072452229299 42.8142515923567,-88.9440286624204 42.8292993630573,-88.9774681528663 42.8644108280255,-89.0042197452229 42.8961783439491,-89.0209394904459 42.9179140127389,-89.0343152866242 42.953025477707,-89.0694267515924 42.9898089171975,-89.112898089172 43.0132165605096,-89.1312898089172 43.0466560509554,-89.1329617834395 43.0884554140127,-89.1078821656051 43.1135350318471,-89.0694267515924 43.1335987261147,-89.0510350318471 43.1335987261147,-89.0393312101911 43.1386146496815,-89.0376592356688 43.1369426751592,-89.0292993630573 43.1519904458599,-89.0376592356688 43.175398089172,-89.0543789808917 43.203821656051,-89.0660828025478 43.2238853503185,-89.0710987261147 43.243949044586,-89.0410031847134 43.2389331210191,-89.0042197452229 43.2138535031847,-88.947372611465 43.1937898089172,-88.8738057324841 43.1620222929936,-88.7937087643429 43.1588812709654,-88.7968950764331 43.2305732929936,-88.7250001719745 43.2339172420382,-88.716640299363 43.1570064140127,-88.7878611897291 43.1554581337873)))')
 
     def test_collect(self):
         l = session.query(functions.geometry_type(functions.collect(Lake.lake_geom))). \
-                filter(Lake.lake_geom != None).one()
+                filter(Lake.lake_geom != None).scalar()
         r = session.query(functions.geometry_type(functions.collect(Road.road_geom))). \
-                filter(Road.road_geom != None).one()
+                filter(Road.road_geom != None).scalar()
         s = session.query(functions.geometry_type(functions.collect(Spot.spot_location))). \
-                filter(Spot.spot_location != None).one()
+                filter(Spot.spot_location != None).scalar()
         sh = session.query(functions.geometry_type(functions.collect(Shape.shape_geom))). \
-                filter(Shape.shape_geom != None).one()
-        la = session.query(functions.area(functions.collect(Lake.lake_geom))). \
-                filter(Lake.lake_geom != None).one()
+                filter(Shape.shape_geom != None).scalar()
+        la = session.query(functions.collect(Lake.lake_geom).wkt). \
+                filter(Lake.lake_geom != None).scalar()
 
-        eq_(l[0], "ST_MultiPolygon")
-        eq_(r[0], "ST_MultiLineString")
-        eq_(s[0], "ST_MultiPoint")
-        eq_(sh[0], "ST_GeometryCollection")
-        eq_(float(la[0]), 0.122381342373046)
+        eq_(l, "ST_MultiPolygon")
+        eq_(r, "ST_MultiLineString")
+        eq_(s, "ST_MultiPoint")
+        eq_(sh, "ST_GeometryCollection")
+        eq_(la, "MULTIPOLYGON(((-88.7968950764331 43.2305732929936,-88.7935511273885 43.1553344394904,-88.716640299363 43.1570064140127,-88.7250001719745 43.2339172420382,-88.7968950764331 43.2305732929936)),((-88.1147292993631 42.7540605095542,-88.1548566878981 42.7824840764331,-88.1799363057325 42.7707802547771,-88.188296178344 42.7323248407643,-88.1832802547771 42.6955414012739,-88.1565286624204 42.6771496815287,-88.1448248407643 42.6336783439491,-88.131449044586 42.5718152866242,-88.1013535031847 42.565127388535,-88.1080414012739 42.5868630573248,-88.1164012738854 42.6119426751592,-88.1080414012739 42.6520700636943,-88.0980095541401 42.6838375796178,-88.0846337579618 42.7139331210191,-88.1013535031847 42.7423566878981,-88.1147292993631 42.7540605095542)),((-89.0694267515924 43.1335987261147,-89.1078821656051 43.1135350318471,-89.1329617834395 43.0884554140127,-89.1312898089172 43.0466560509554,-89.112898089172 43.0132165605096,-89.0694267515924 42.9898089171975,-89.0343152866242 42.953025477707,-89.0209394904459 42.9179140127389,-89.0042197452229 42.8961783439491,-88.9774681528663 42.8644108280255,-88.9440286624204 42.8292993630573,-88.9072452229299 42.8142515923567,-88.8687898089172 42.815923566879,-88.8687898089172 42.815923566879,-88.8102707006369 42.8343152866242,-88.7734872611465 42.8710987261147,-88.7517515923567 42.9145700636943,-88.7433917197452 42.9730891719745,-88.7517515923567 43.0299363057325,-88.7734872611465 43.0867834394905,-88.7885352038217 43.158678388535,-88.8738057324841 43.1620222929936,-88.947372611465 43.1937898089172,-89.0042197452229 43.2138535031847,-89.0410031847134 43.2389331210191,-89.0710987261147 43.243949044586,-89.0660828025478 43.2238853503185,-89.0543789808917 43.203821656051,-89.0376592356688 43.175398089172,-89.0292993630573 43.1519904458599,-89.0376592356688 43.1369426751592,-89.0393312101911 43.1386146496815,-89.0393312101911 43.1386146496815,-89.0510350318471 43.1335987261147,-89.0694267515924 43.1335987261147)),((-88.9122611464968 43.038296178344,-88.9222929936306 43.0399681528663,-88.9323248407643 43.0282643312102,-88.9206210191083 43.0182324840764,-88.9105891719745 43.0165605095542,-88.9005573248408 43.0232484076433,-88.9072452229299 43.0282643312102,-88.9122611464968 43.038296178344)))")
 
     def test_within_distance(self):
         ok_(session.scalar(functions._within_distance('POINT(-88.9139332929936 42.5082802993631)', 'POINT(-88.9139332929936 35.5082802993631)', 10)))

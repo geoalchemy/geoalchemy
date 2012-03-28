@@ -373,23 +373,32 @@ class functions:
         pass
     
     class union(ReturnsGeometryFunction):
-        """union(geometry set)i
-        
-        Actually supported only by PostGIS
+        """Union(geometry set)
+
+        Union is an aggregte function. It is typically used
+        in ``SELECT`` clauses.
+
+        *Only supported in PostgreSQL/PostGIS currently.*
         """
         pass
             
     class collect(ReturnsGeometryFunction):
-        """collect(geometry set)
+        """Collect(geometry set)
         
-        Actually supported only by PostGIS
+        Collect is an aggregate function. It is typically used
+        in ``SELECT`` clauses.
+
+        *Only supported in PostgreSQL/PostGIS currently.*
         """
         pass
     
     class extent(BaseFunction):
-        """extent(geometry set)
+        """Extent(geometry set)
         
-        Actually supported only by PostGIS
+        Extent is an aggregate function. It is typically used
+        in ``SELECT`` clauses.
+
+        *Only supported in PostgreSQL/PostGIS currently.*
         """
         pass
     

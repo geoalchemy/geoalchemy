@@ -256,8 +256,8 @@ Functions to obtain geometry value in different formats
     >>> binascii.hexlify(session.scalar(s.geom.wkb))
     '01010000007b14ae47e15a54c03333333333d34240'
     
-Note that for all commands above a new query had to be made to the database. Internally
-GeoAlchemy uses Well-Known-Binary (WKB) to fetch the geometry, that belongs to an object of a mapped class. 
+Note that for all commands above a new query had to be made to the database. By default 
+GeoAlchemy uses Well-Known-Binary (WKB) internally to fetch the geometry, that belongs to an object of a mapped class. 
 All the time an object is queried, the geometry for this object is loaded in WKB.
 
 You can also access this internal WKB geometry directly and use it for example to create a
@@ -269,6 +269,11 @@ the database.
     >>> binascii.hexlify(s.geom.geom_wkb)
 	'01010000007b14ae47e15a54c03333333333d34240'
 
+Alternatively, passing the argument *wkt_internal=True* in the *Geometry* 
+definition will cause GeoAlchemy to use Well-Known-Text (WKT) internally.
+This allows the use of *coords*, *geom_type* and *geom_wkt* commands (examples in section below) 
+without additional queries to the database.
+(This feature currently only works with the PostGIS dialect)
 
 Functions to obtain the geometry type, coordinates, etc
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -286,6 +291,8 @@ Functions to obtain the geometry type, coordinates, etc
     37.649999999999999
     >>> s.geom.coords(session)
     [-81.420000000000002, 37.649999999999999]
+    >>> s.geom.geom_type(session)
+    Point
 
 Spatial operations that return new geometries
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -304,6 +311,24 @@ Spatial operations that return new geometries
     >>> cv_geom = DBSpatialElement(session.scalar(r.geom.convex_hull))
     >>> session.scalar(cv_geom.wkt)
     'POLYGON((-81.2 37.89,-81.03 38.04,-80.3 38.2,-81.2 37.89))'
+
+GeoAlchemy also provides aggregate functions, namely ``union``, ``collect``,
+and ``extent``. Note that the latter is a bit different, because it does not
+return a geometry but a ``BOX`` string. See the examples below:
+
+.. code-block:: python
+
+    >>> e = session.query(functions.extent(Lake.lake_geom)).filter(Lake.lake_geom != None).scalar()
+    'BOX(-89.1329617834395 42.565127388535,-88.0846337579618 43.243949044586)'
+    >>> u = session.query(functions.geometry_type(functions.union(Lake.lake_geom))).filter(Lake.lake_geom != None).scalar()
+    'ST_MultiPolygon'
+    >>> c = session.query(functions.geometry_type(functions.collect(Lake.lake_geom))).filter(Lake.lake_geom != None).scalar()
+    'ST_MultiPolygon'
+
+.. note::
+
+   In this example the filter is needed because of a limitation in GeoAlchemy.
+   Without the filter no the SQL query doesn't include a ``FROM`` clause.
 
 Spatial relations for filtering features
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -339,59 +364,20 @@ more complex queries can be made.
 	>>> session.scalar(pg_functions.gml(functions.transform(point, 2249)))
 	'<gml:Point srsName="EPSG:2249"><gml:coordinates>-2369733.76351267,1553066.7062767</gml:coordinates></gml:Point>'
 	
-
-Performing Aggregation Queries
-------------------------------
-
-With GeoAlchemy we also have aggregation function like extent, union and collect.
-An example to illustrate that, this script:
+Spatial queries with python comparison operators
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. code-block:: python
 
-    from sqlalchemy import create_engine, MetaData, Column, Integer
-    from sqlalchemy.orm import sessionmaker
-    from sqlalchemy.ext.declarative import declarative_base
-    from geoalchemy import  GeometryColumn, Polygon, GeometryDDL
-    from geoalchemy.functions import functions
-    from geoalchemy.postgis import pg_functions
+    >>> s = session.query(Spot).first()
+    >>>
+    >>> session.query(Spot).filter(Spot.geom == s.geom).count()
+    1L
+    >>> session.query(Spot).filter(Spot.geom != s.geom).count()
+    2L
+    >>> session.query(Spot).filter(Spot.geom == None).count()
+    0L
+    >>> session.query(Spot).filter(Spot.geom != None).count()
+    3L
 
-    engine = create_engine('postgresql://gis:gis@localhost/gis', echo=True)
-    metadata = MetaData(engine)
-    session = sessionmaker(bind=engine)()
-    Base = declarative_base(metadata=metadata)
-
-    class Overlap(Base):
-        __tablename__ = 'overlap'
-        id = Column(Integer, primary_key=True)
-        geom = GeometryColumn(Polygon(2))
-    
-    session.add_all([
-            Overlap(geom='POLYGON((0 0,0 50,50 50,50 0,0 0))'),
-            Overlap(geom='POLYGON((20 20,20 80,80 80,80 20,20 20))'),
-    ])
-    
-    print "Extent:"
-    print session.query(functions.extent(Overlap.geom)). \
-            filter(Overlap.geom != None).one()
-
-    print "Union:"
-    print session.query(functions.union(Overlap.geom)). \
-            filter(Overlap.geom != None).one()
-
-    print "Collect:"
-    print session.query(functions.collect(Overlap.geom)). \
-            filter(Overlap.geom != None).one()
-
-Return::
-
-    Extent:
-    ('BOX(0 0,80 80)',)
-    Union:
-    (u'POLYGON((0 0,0 50,20 50,20 80,80 80,80 20,50 20,50 0,0 0))',)
-    Collect:
-    (u'MULTIPOLYGON(((0 0,0 50,50 50,50 0,0 0)),((20 20,20 80,80 80,80 20,20 20)))',)
-
-.. note::
-
-   In this example the filter is needed because of a limitation of GeoAlchemy that 
-   don't add the FROM part in the SQL query.
+The *equal* (*==*) and *not equal* (*!=*) python operators construct queries with *ST_Equals()* and *NOT ST_Equals()* PostGIS (or dialect equivalent) functions respectively. In addition, utilising the operators in comparison with *None* will be replaced with *IS NULL* and *IS NOT NULL* respectively.

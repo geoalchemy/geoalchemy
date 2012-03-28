@@ -1,6 +1,14 @@
 GeoAlchemy Change Log
 =====================
 
+0.7
+---
+
+* subclass UserDefinedType instead of TypeEngine for GeometryBase (@elemoine)
+* No longer use "GIST_GEOMETRY_OPS" for PostGIS spatial index creation (#6, @kwirk)
+* Better handling of == and != operators for geometries, PostGIS-only (#7, @kwirk)
+* New wkt_internal option to Geometry constructor, PostGIS-only (#9, @kwirk)
+
 0.6
 ---
 

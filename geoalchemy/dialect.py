@@ -93,21 +93,17 @@ class SpatialDialect(object):
     
     def is_member_function(self, function_class):   
         """Returns True if the passed-in function should be called as member 
-        function, e.g.::
-        
-            Point.the_geom.dims is compiled as:
-            points.the_geom.Get_Dims()
-            
+        function. E.g. ``Point.the_geom.dims`` is compiled as
+        ``points.the_geom.Get_Dims()``.
+
         """
         return False
     
     def is_property(self, function_class):   
         """Returns True if the passed-in function should be called as property, 
-        e.g.::
-        
-            Point.the_geom.x is compiled as (for MS Server):
-            points.the_geom.x
-            
+        E.g. ``Point.the_geom.x`` is compiled as (for MS Server)
+        ``points.the_geom.x``.
+
         """
         return False
     

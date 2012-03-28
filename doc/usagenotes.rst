@@ -321,8 +321,11 @@ are created by default. To create a spatial index the bounding box must be speci
 Inserting NULL geometries
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Due to a bug in the underlying libraries there is currently no support for inserting NULL geometries that have a `None`
-geometry. The following code will not work:
+Version 2.1.7 and lower of `pyodbc <http://code.google.com/p/pyodbc/>`_ have
+a `bug <http://code.google.com/p/pyodbc/issues/detail?id=103>`_ preventing to
+insert NULL geometries using ``None``.
+
+The following code will not work:
 
 .. code-block:: python
 
@@ -334,8 +337,7 @@ To insert NULL you must use :data:`geoalchemy.mssql.MS_SPATIAL_NULL` to explicit
 
     session.add(Road(road_name=u'Destroyed road', road_geom=MS_SPATIAL_NULL))
 
-This is an issue with pyODBC and can be tracked via `<http://code.google.com/p/pyodbc/issues/detail?id=103>`_.
-
+The bug is fixed un pyodbc 2.1.8.
 
 Notes on non-declarative mapping
 --------------------------------

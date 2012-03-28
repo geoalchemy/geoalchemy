@@ -1,12 +1,18 @@
-To release a new version of GeoAlchemy:
+Release
+=======
 
-Create a tag:
+Steps for releasing a new version of GeoAlchemy.
 
-$ hg tag <x.y.z>
-$ hg push
+Check that version number is correct in ``setup.py`` and ``doc/conf.py``. If
+not set it to the correct value, then commit to master, and push to GitHub.
 
-Upload new version to pypi:
+Verify that the tests pass.
 
-$ python setup.py release
+Create Git tag::
 
-(see the "release" alias in setup.cfg)
+    $ git tag -a x.y -m 'version x.y'
+    $ git push upstream x.y
+
+Upload to PyPI:
+
+    $ python setup.py release

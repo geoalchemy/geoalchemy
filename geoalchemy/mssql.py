@@ -242,6 +242,8 @@ class MSSpatialDialect(SpatialDialect):
                    functions.covered_by : None,
                    functions.intersection : None,
                    functions.is_valid : BooleanFunction(func.STIsValid, 1),
+                   # Not tested
+                   # functions.aggregate_union : 'STUnion', 
                    ms_functions.gml : 'AsGml',
                    ms_functions.text_zm : 'AsTextZM',
                    ms_functions.buffer_with_tolerance : 'BufferWithTolerance',

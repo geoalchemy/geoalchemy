@@ -1,8 +1,11 @@
-from sqlalchemy import *
-from sqlalchemy.orm import *
+from sqlalchemy import create_engine, MetaData, Column, Integer, String, Numeric
+from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 
-from geoalchemy import *
+from geoalchemy import GeometryColumn, LineString, Polygon, Point, \
+        GeometryCollection, GeometryDDL, WKTSpatialElement
+from geoalchemy.functions import functions
+from geoalchemy.postgis import pg_functions
 
 engine = create_engine('postgresql://gis:gis@localhost/gis', echo=True)
 metadata = MetaData(engine)
@@ -37,6 +40,12 @@ class Shape(Base):
     shape_name = Column(String)
     shape_geom = GeometryColumn(GeometryCollection(2))
 
+class Overlap(Base):
+    __tablename__ = 'overlap'
+
+    id = Column(Integer, primary_key=True)
+    geom = GeometryColumn(Polygon(2))
+
 # enable the DDL extension, which allows CREATE/DROP operations
 # to work correctly.  This is not needed if working with externally
 # defined tables.    
@@ -44,6 +53,7 @@ GeometryDDL(Road.__table__)
 GeometryDDL(Lake.__table__)
 GeometryDDL(Spot.__table__)
 GeometryDDL(Shape.__table__)
+GeometryDDL(Overlap.__table__)
 
 metadata.drop_all()
 metadata.create_all()
@@ -67,6 +77,8 @@ session.add_all([
             Shape(shape_name='My Shapes', shape_geom='GEOMETRYCOLLECTION(POINT(-88.3304141847134 42.6269904904459),LINESTRING(-88.2652071783439 42.5584395350319,-88.1598727834395 42.6269904904459,-88.1013536751592 42.621974566879,-88.0244428471338 42.6437102356688,-88.0110670509554 42.6771497261147),POLYGON((-88.7968950764331 43.2305732929936,-88.7935511273885 43.1553344394904,-88.716640299363 43.1570064140127,-88.7250001719745 43.2339172420382,-88.7968950764331 43.2305732929936)))'),
             Shape(shape_name='Jogging Track', shape_geom='GEOMETRYCOLLECTION(LINESTRING(-88.2652071783439 42.5584395350319,-88.1598727834395 42.6269904904459,-88.1013536751592 42.621974566879,-88.0244428471338 42.6437102356688,-88.0110670509554 42.6771497261147))'),
             Shape(shape_name='Play Ground', shape_geom='GEOMETRYCOLLECTION(POLYGON((-88.7968950764331 43.2305732929936,-88.7935511273885 43.1553344394904,-88.716640299363 43.1570064140127,-88.7250001719745 43.2339172420382,-88.7968950764331 43.2305732929936)))'),
+            Overlap(geom='POLYGON((0 0,0 50,50 50,50 0,0 0))'),
+            Overlap(geom='POLYGON((20 20,20 80,80 80,80 20,20 20))'),
 ])
 
 # or use an explicit WKTSpatialElement (similar to saying func.GeomFromText())
@@ -74,3 +86,7 @@ r = Road(road_name='Dave Cres', road_geom=WKTSpatialElement('LINESTRING(-88.6748
 session.add(r)
 session.commit()
 
+
+print session.query(functions.extent(Overlap.geom)).filter(Overlap.geom != None).one() 
+print session.query(pg_functions.wkt(functions.union(Overlap.geom))).filter(Overlap.geom != None).one()
+print session.query(pg_functions.wkt(functions.collect(Overlap.geom))).filter(Overlap.geom != None).one()

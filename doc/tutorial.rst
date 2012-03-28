@@ -312,6 +312,24 @@ Spatial operations that return new geometries
     >>> session.scalar(cv_geom.wkt)
     'POLYGON((-81.2 37.89,-81.03 38.04,-80.3 38.2,-81.2 37.89))'
 
+GeoAlchemy also provides aggregate functions, namely ``union``, ``collect``,
+and ``extent``. Note that the latter is a bit different, because it does not
+return a geometry but a ``BOX`` string. See the examples below:
+
+.. code-block:: python
+
+    >>> e = session.query(functions.extent(Lake.lake_geom)).filter(Lake.lake_geom != None).scalar()
+    'BOX(-89.1329617834395 42.565127388535,-88.0846337579618 43.243949044586)'
+    >>> u = session.query(functions.geometry_type(functions.union(Lake.lake_geom))).filter(Lake.lake_geom != None).scalar()
+    'ST_MultiPolygon'
+    >>> c = session.query(functions.geometry_type(functions.collect(Lake.lake_geom))).filter(Lake.lake_geom != None).scalar()
+    'ST_MultiPolygon'
+
+.. note::
+
+   In this example the filter is needed because of a limitation in GeoAlchemy.
+   Without the filter no the SQL query doesn't include a ``FROM`` clause.
+
 Spatial relations for filtering features
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

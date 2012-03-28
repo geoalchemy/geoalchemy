@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from sqlalchemy import select, func, and_
-from geoalchemy.base import SpatialComparator, PersistentSpatialElement,\
+from geoalchemy.base import SpatialComparator, PersistentSpatialElement, \
     WKBSpatialElement, WKTSpatialElement
 from geoalchemy.dialect import SpatialDialect 
 from geoalchemy.functions import functions, BaseFunction
@@ -103,6 +103,9 @@ class PGSpatialDialect(SpatialDialect):
                    functions.covers : 'ST_Covers',
                    functions.covered_by : 'ST_CoveredBy',
                    functions.intersection : 'ST_Intersection',
+                   functions.union : 'ST_Union',
+                   functions.collect : 'ST_Collect',
+                   functions.extent : 'ST_Extent',
                    pg_functions.svg : 'ST_AsSVG',
                    pg_functions.kml : 'ST_AsKML',
                    pg_functions.gml : 'ST_AsGML',

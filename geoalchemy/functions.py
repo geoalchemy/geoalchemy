@@ -371,7 +371,37 @@ class functions:
            don't support it correctly (PostGIS 1.3), or provide multiple
            implementations (Oracle)."""
         pass
+    
+    class union(ReturnsGeometryFunction):
+        """Union(geometry set)
 
+        Union is an aggregte function. It is typically used
+        in ``SELECT`` clauses.
+
+        *Only supported in PostgreSQL/PostGIS currently.*
+        """
+        pass
+            
+    class collect(ReturnsGeometryFunction):
+        """Collect(geometry set)
+        
+        Collect is an aggregate function. It is typically used
+        in ``SELECT`` clauses.
+
+        *Only supported in PostgreSQL/PostGIS currently.*
+        """
+        pass
+    
+    class extent(BaseFunction):
+        """Extent(geometry set)
+        
+        Extent is an aggregate function. It is typically used
+        in ``SELECT`` clauses.
+
+        *Only supported in PostgreSQL/PostGIS currently.*
+        """
+        pass
+    
 @compiles(functions._within_distance)
 def __compile__within_distance(element, compiler, **kw):
     from geoalchemy.dialect import DialectManager 

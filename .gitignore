@@ -1,2 +1,3 @@
 *.pyc
 /GeoAlchemy.egg-info
+/doc/_build

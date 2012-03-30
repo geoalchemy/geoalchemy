@@ -1,0 +1,3 @@
+include README.rst
+include RELEASE.txt
+include CHANGES.txt

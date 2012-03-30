@@ -1,6 +1,11 @@
 GeoAlchemy Change Log
 =====================
 
+0.7.1
+-----
+
+* add MANIFEST.in file to include README.rst in source packages. fixes build errors.
+
 0.7
 ---
 

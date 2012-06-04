@@ -44,7 +44,7 @@ def _get_function(element, compiler, params, within_column_clause):
     for kls in element.__class__.__mro__:
         try:
             function_data = database_dialect.get_function(kls)
-        except:
+        except KeyError:
             continue
     if function_data is None:
         raise Exception("Unsupported function for this dialect")
@@ -415,7 +415,7 @@ def __compile__within_distance(element, compiler, **kw):
     for kls in element.__class__.__mro__:
         try:
             function = database_dialect.get_function(kls)
-        except:
+        except KeyError:
             continue
     if function is None:
         raise Exception("Unsupported function for this dialect")

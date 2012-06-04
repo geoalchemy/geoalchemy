@@ -1,9 +1,9 @@
 from unittest import TestCase
 from sqlalchemy import (create_engine, MetaData, Column, Integer, String,
         Numeric, func, Table)
-from sqlalchemy.orm import sessionmaker, mapper
+from sqlalchemy.orm import sessionmaker, mapper, relationship
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import and_
+from sqlalchemy import and_, ForeignKey
 from sqlalchemy.exc import IntegrityError
 
 from geoalchemy import (Geometry, GeometryCollection, GeometryColumn,
@@ -27,12 +27,15 @@ class Road(Base):
     road_name = Column(String)
     road_geom = GeometryColumn(Geometry(2), comparator=PGComparator, nullable=False)
 
+    lakes = relationship('Lake', backref="road")
+
 class Lake(Base):
     __tablename__ = 'lakes'
 
     lake_id = Column(Integer, primary_key=True)
     lake_name = Column(String)
     lake_geom = GeometryColumn(Geometry(2, wkt_internal=True), comparator=PGComparator)
+    road_id = Column(Integer, ForeignKey('ROADS.road_id'))
 
 spots_table = Table('spots', metadata,
                     Column('spot_id', Integer, primary_key=True),
@@ -587,3 +590,10 @@ class TestGeometry(TestCase):
         spot_null = session.query(Spot).filter(Spot.spot_location == None).one()
         eq_(spot_null.spot_location, None)
         ok_(session.query(Spot).filter(Spot.spot_location != None).first() is not None)
+
+    def test_issue17(self):
+        r1 = session.query(Road).filter(Road.road_name=='Jeff Rd').one()
+        lakes_within_distance = session.query(Lake).filter(
+            Lake.road.has(functions._within_distance(Road.road_geom,r1.road_geom, 0.20))).all()
+        lakes_within_distance = session.query(Lake).filter(
+            Lake.road.has(functions.within_distance(Road.road_geom,r1.road_geom, 0.20))).all()

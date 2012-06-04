@@ -41,7 +41,13 @@ def _get_function(element, compiler, params, within_column_clause):
     """
     from geoalchemy.dialect import DialectManager 
     database_dialect = DialectManager.get_spatial_dialect(compiler.dialect)
-    function_data = database_dialect.get_function(element.__class__)
+    for kls in element.__class__.__mro__:
+        try:
+            function_data = database_dialect.get_function(kls)
+        except KeyError:
+            continue
+    if function_data is None:
+        raise Exception("Unsupported function for this dialect")
     
     if isinstance(function_data, list):
         """if we have a list of function names, create cascaded Function objects
@@ -406,7 +412,13 @@ class functions:
 def __compile__within_distance(element, compiler, **kw):
     from geoalchemy.dialect import DialectManager 
     database_dialect = DialectManager.get_spatial_dialect(compiler.dialect)
-    function = database_dialect.get_function(element.__class__)
+    for kls in element.__class__.__mro__:
+        try:
+            function = database_dialect.get_function(kls)
+        except KeyError:
+            continue
+    if function is None:
+        raise Exception("Unsupported function for this dialect")
     arguments = list(element.arguments)
     return compiler.process(
         function(compiler,

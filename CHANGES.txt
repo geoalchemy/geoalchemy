@@ -1,6 +1,11 @@
 GeoAlchemy Change Log
 =====================
 
+0.7.2
+-----
+
+* make BaseFunction work within SQLAlchemy "has" calls. (#17, #18, @tonio)
+
 0.7.1
 -----
 

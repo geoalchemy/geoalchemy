@@ -67,11 +67,14 @@ class PGSpatialDialect(SpatialDialect):
     """Implementation of SpatialDialect for PostGIS."""
     
     __functions = {
+                   WKTSpatialElement: 'ST_GeomFromText',
+                   WKBSpatialElement: 'ST_GeomFromWKB',
                    functions.wkt: 'ST_AsText',
                    functions.wkb: 'ST_AsBinary',
                    functions.dimension : 'ST_Dimension',
                    functions.srid : 'ST_SRID',
                    functions.geometry_type : 'ST_GeometryType',
+                   functions.is_valid : 'ST_IsValid',
                    functions.is_empty : 'ST_IsEmpty',
                    functions.is_simple : 'ST_IsSimple',
                    functions.is_closed : 'ST_IsClosed',

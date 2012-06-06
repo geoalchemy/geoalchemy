@@ -5,6 +5,9 @@ GeoAlchemy Change Log
 -----
 
 * make BaseFunction work within SQLAlchemy "has" calls. (#17, #18, @tonio)
+* PostGIS: use the "ST_" versions of the GeomFromWKB, GeomFromText, and
+  isValid functions. This changes breaks compatibility with PostGIS < 1.4
+  but is a step towards PostGIS 2.0. (#19, #20, @Phacops)
 
 0.7.1
 -----

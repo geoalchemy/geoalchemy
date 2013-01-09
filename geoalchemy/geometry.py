@@ -166,7 +166,7 @@ def compile_column(element, compiler, **kw):
                     % compiler.dialect.name, exc.SAWarning)
             return compiler.process(functions.wkb(element))
         
-    return compiler.visit_column(element) 
+    return compiler.visit_column(element, **kw)
      
             
 def GeometryColumn(*args, **kw):

@@ -121,7 +121,6 @@ class PGSpatialDialect(SpatialDialect):
         return PGSpatialDialect.__functions
     
     def process_result(self, value, type):
-        value = str(value) 
         if type.wkt_internal:
             return PGPersistentSpatialElement(WKTSpatialElement(value, type.srid))
         return PGPersistentSpatialElement(WKBSpatialElement(value, type.srid))

@@ -36,7 +36,7 @@ def from_wkt (geom):
     elif geom.startswith("POLYGON"):
         geomtype = "Polygon"
     else:
-        geomtype = geom[:geom.index["("]]
+        geomtype = geom[:geom.index("(")]
         raise Exception("Unsupported geometry type %s" % geomtype)
 
     return {"type": geomtype, "coordinates": coords}

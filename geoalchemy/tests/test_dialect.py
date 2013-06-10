@@ -17,6 +17,7 @@ from geoalchemy.functions import parse_clause
 from geoalchemy.base import WKTSpatialElement
 from geoalchemy.mssql import MSSpatialDialect
 
+
 class TestDialectManager(TestCase):
 
     def test_get_spatial_dialect(self):

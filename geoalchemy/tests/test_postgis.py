@@ -152,12 +152,12 @@ class TestGeometry(TestCase):
 
     def test_wkb(self):
         print session.scalar(functions.wkt(self.r.road_geom.wkb))
-        eq_(session.scalar(functions.wkt(func.GeomFromWKB(self.r.road_geom.wkb, 4326))),
+        eq_(session.scalar(functions.wkt(func.ST_GeomFromWKB(self.r.road_geom.wkb, 4326))),
             u'LINESTRING(-88.6748409363057 43.1035032292994,-88.6464173694267 42.9981688343949,-88.607961955414 42.9680732929936,-88.5160033566879 42.9363057770701,-88.4390925286624 43.0031847579618)')
         eq_(session.scalar(self.r.road_geom.wkb), self.r.road_geom.geom_wkb)
         ok_(not session.query(Spot).filter(Spot.spot_location.wkb == '101').first())
         centroid_geom = DBSpatialElement(session.scalar(self.r.road_geom.centroid))
-        eq_(session.scalar(functions.wkt(func.GeomFromWKB(centroid_geom.wkb, 4326))), u'POINT(-88.5769371859941 42.9915634871979)')
+        eq_(session.scalar(functions.wkt(func.ST_GeomFromWKB(centroid_geom.wkb, 4326))), u'POINT(-88.5769371859941 42.9915634871979)')
 
     def test_svg(self):
         eq_(session.scalar(self.r.road_geom.svg), u'M -88.674840936305699 -43.103503229299399 L -88.6464173694267 -42.998168834394903 -88.607961955413998 -42.968073292993601 -88.516003356687904 -42.936305777070103 -88.4390925286624 -43.003184757961797')
@@ -244,7 +244,7 @@ class TestGeometry(TestCase):
                            , u'POINT(77.29 29.07)')
 
     def test_persistent(self):
-        eq_(session.scalar(functions.wkt(func.GeomFromWKB(self.r.road_geom.wkb, 4326))),
+        eq_(session.scalar(functions.wkt(func.ST_GeomFromWKB(self.r.road_geom.wkb, 4326))),
             u'LINESTRING(-88.6748409363057 43.1035032292994,-88.6464173694267 42.9981688343949,-88.607961955414 42.9680732929936,-88.5160033566879 42.9363057770701,-88.4390925286624 43.0031847579618)')
 
         geom = WKTSpatialElement('POINT(30250865.9714116 -610981.481754275)', 2249)

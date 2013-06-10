@@ -151,7 +151,6 @@ class TestGeometry(TestCase):
         eq_(s.spot_location.coords(session), [-88.905573420382197, 43.0048567324841])
 
     def test_wkb(self):
-        print session.scalar(functions.wkt(self.r.road_geom.wkb))
         eq_(session.scalar(functions.wkt(func.ST_GeomFromWKB(self.r.road_geom.wkb, 4326))),
             u'LINESTRING(-88.6748409363057 43.1035032292994,-88.6464173694267 42.9981688343949,-88.607961955414 42.9680732929936,-88.5160033566879 42.9363057770701,-88.4390925286624 43.0031847579618)')
         eq_(session.scalar(self.r.road_geom.wkb), self.r.road_geom.geom_wkb)

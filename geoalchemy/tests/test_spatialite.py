@@ -525,3 +525,10 @@ class TestGeometry(TestCase):
         ok_('FROM spots AS spots_1' in query_wkt, 'Table alias is used in from clause')
 
 
+if __name__ == '__main__':
+    import sys
+    import nose
+
+    sys.argv.append(__name__)
+    result = nose.run()
+    sys.exit(int(not result))

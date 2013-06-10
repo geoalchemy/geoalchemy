@@ -768,3 +768,12 @@ class TestGeometry(TestCase):
 #        road_null = Road(road_name='Jeff Rd', road_geom=None)
         session.add(road_null)
         session.commit();
+
+
+if __name__ == '__main__':
+    import sys
+    import nose
+
+    sys.argv.append(__name__)
+    result = nose.run()
+    sys.exit(int(not result))

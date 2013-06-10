@@ -597,3 +597,12 @@ class TestGeometry(TestCase):
             Lake.road.has(functions._within_distance(Road.road_geom,r1.road_geom, 0.20))).all()
         lakes_within_distance = session.query(Lake).filter(
             Lake.road.has(functions.within_distance(Road.road_geom,r1.road_geom, 0.20))).all()
+
+
+if __name__ == '__main__':
+    import sys
+    import nose
+
+    sys.argv.append(__name__)
+    result = nose.run()
+    sys.exit(int(not result))

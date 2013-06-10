@@ -552,3 +552,11 @@ class TestGeometry(TestCase):
         eq_(session.query(Spot.spot_location.text_zm.label('to_string')).filter(Spot.spot_height==420.40).first().to_string, u'POINT (-88.5945861592357 42.9480095987261)')
         ok_(session.query(Lake.lake_geom.to_string.label('to_string')).filter(Lake.lake_name==u'Vanished lake').first().to_string is None)
 
+
+if __name__ == '__main__':
+    import sys
+    import nose
+
+    sys.argv.append(__name__)
+    result = nose.run()
+    sys.exit(int(not result))

@@ -33,7 +33,7 @@ class Lake(Base):
     lake_id = Column(Integer, primary_key=True)
     lake_name = Column(Unicode(40))
     lake_geom = GeometryColumn(Polygon(2, srid=4326), comparator=MySQLComparator)
-    
+
 spots_table = Table('spots', metadata,
                     Column('spot_id', Integer, primary_key=True),
                     Column('spot_height', Numeric(precision=10, scale=2)),
@@ -45,14 +45,14 @@ class Spot(object):
         self.spot_height = spot_height
         self.spot_location = spot_location
 
-        
+
 mapper(Spot, spots_table, properties={
-            'spot_location': GeometryColumn(spots_table.c.spot_location, 
-                                            comparator=MySQLComparator)}) 
+            'spot_location': GeometryColumn(spots_table.c.spot_location,
+                                            comparator=MySQLComparator)})
 
 # enable the DDL extension, which allows CREATE/DROP operations
 # to work correctly.  This is not needed if working with externally
-# defined tables.    
+# defined tables.
 GeometryDDL(Road.__table__)
 GeometryDDL(Lake.__table__)
 GeometryDDL(spots_table)
@@ -98,7 +98,7 @@ class TestGeometry(TestCase):
         eq_(session.scalar(self.r.road_geom.wkt), 'LINESTRING(-88.6748409363057 43.1035032292994,-88.6464173694267 42.9981688343949,-88.607961955414 42.9680732929936,-88.5160033566879 42.9363057770701,-88.4390925286624 43.0031847579618)')
         eq_(session.scalar(l.lake_geom.wkt),'POLYGON((-88.7968950764331 43.2305732929936,-88.7935511273885 43.1553344394904,-88.716640299363 43.1570064140127,-88.7250001719745 43.2339172420382,-88.7968950764331 43.2305732929936))')
         ok_(not session.query(Spot).filter(Spot.spot_location.wkt == 'POINT(0,0)').first())
-        ok_(session.query(Spot).get(1) is 
+        ok_(session.query(Spot).get(1) is
             session.query(Spot).filter(Spot.spot_location == 'POINT(-88.5945861592357 42.9480095987261)').first())
         envelope_geom = DBSpatialElement(session.scalar(self.r.road_geom.envelope))
         eq_(session.scalar(envelope_geom.wkt), 'POLYGON((-88.6748409363057 42.9363057770701,-88.4390925286624 42.9363057770701,-88.4390925286624 43.1035032292994,-88.6748409363057 43.1035032292994,-88.6748409363057 42.9363057770701))')
@@ -109,7 +109,7 @@ class TestGeometry(TestCase):
         eq_(session.scalar(self.r.road_geom.wkb), self.r.road_geom.geom_wkb)
         envelope_geom = DBSpatialElement(session.scalar(self.r.road_geom.envelope))
         eq_(b2a_hex(session.scalar(envelope_geom.wkb)).upper(), '01030000000100000005000000D7DB0998302B56C036C921DED877454078A18C171A1C56C036C921DED877454078A18C171A1C56C0876F04983F8D4540D7DB0998302B56C0876F04983F8D4540D7DB0998302B56C036C921DED8774540')
-        
+
     def test_coords(self):
         eq_(self.r.road_geom.coords(session), [[-88.674840936305699, 43.103503229299399], [-88.6464173694267, 42.998168834394903], [-88.607961955413998, 42.968073292993601], [-88.516003356687904, 42.936305777070103], [-88.4390925286624, 43.003184757961797]])
         s = session.query(Spot).filter(Spot.spot_height==102.34).one()
@@ -144,7 +144,7 @@ class TestGeometry(TestCase):
         eq_(session.scalar(s.spot_location.geometry_type), 'POINT')
         eq_(session.scalar(functions.geometry_type(r.road_geom)), 'LINESTRING')
         ok_(session.query(Road).filter(Road.road_geom.geometry_type == 'LINESTRING').first())
-        
+
     @raises(NotImplementedError)
     def test_is_valid(self):
         session.scalar(self.r.road_geom.is_valid)
@@ -166,9 +166,9 @@ class TestGeometry(TestCase):
         eq_(b2a_hex(session.scalar(self.r.road_geom.envelope)), 'e610000001030000000100000005000000d7db0998302b56c036c921ded877454078a18c171a1c56c036c921ded877454078a18c171a1c56c0876f04983f8d4540d7db0998302b56c0876f04983f8d4540d7db0998302b56c036c921ded8774540')
         env =  WKBSpatialElement(session.scalar(func.AsBinary(self.r.road_geom.envelope)))
         eq_(env.geom_type(session), 'Polygon')
-        eq_(session.scalar(functions.wkt(functions.envelope('POINT(-88.5945861592357 42.9480095987261)'))), 
+        eq_(session.scalar(functions.wkt(functions.envelope('POINT(-88.5945861592357 42.9480095987261)'))),
             'POLYGON((-88.5945861592357 42.9480095987261,-88.5945861592357 42.9480095987261,-88.5945861592357 42.9480095987261,-88.5945861592357 42.9480095987261,-88.5945861592357 42.9480095987261))')
-        
+
     def test_x(self):
         import math
         l = session.query(Lake).get(1)
@@ -209,7 +209,7 @@ class TestGeometry(TestCase):
         ok_(not session.scalar(l.lake_geom.end_point))
         eq_(b2a_hex(session.scalar(r.road_geom.end_point)), 'e61000000101000000ccceb1c5641756c02c42dfe9f4914540')
         ok_(not session.scalar(s.spot_location.end_point))
-    
+
     @raises(NotImplementedError)
     def test_transform(self):
         spot = session.query(Spot).get(1)
@@ -309,7 +309,7 @@ class TestGeometry(TestCase):
     def test_crosses(self):
         l = session.query(Lake).filter(Lake.lake_name==u'Lake White').one()
         session.query(Road).filter(Road.road_geom.crosses(l.lake_geom)).all()
-        
+
     def test_within(self):
         l = session.query(Lake).filter(Lake.lake_name==u'Lake Blue').one()
         p1 = session.query(Spot).filter(Spot.spot_height==102.34).one()
@@ -426,16 +426,16 @@ class TestGeometry(TestCase):
         ok_(l1 not in containing_lakes)
 
     def test_within_distance(self):
-        ok_(session.scalar(functions._within_distance('POINT(-88.9139332929936 42.5082802993631)', 
+        ok_(session.scalar(functions._within_distance('POINT(-88.9139332929936 42.5082802993631)',
                                                       'POINT(-88.9139332929936 35.5082802993631)', 10)))
         ok_(session.scalar(functions._within_distance('Point(0 0)', 'Point(0 0)', 0)))
-        ok_(session.scalar(functions._within_distance('Point(0 0)', 
+        ok_(session.scalar(functions._within_distance('Point(0 0)',
                                                       'Polygon((-5 -5, 5 -5, 5 5, -5 5, -5 -5))', 0)))
-        ok_(session.scalar(functions._within_distance('Point(5 5)', 
+        ok_(session.scalar(functions._within_distance('Point(5 5)',
                                                       'Polygon((-5 -5, 5 -5, 5 5, -5 5, -5 -5))', 0)))
-        ok_(session.scalar(functions._within_distance('Point(6 5)', 
+        ok_(session.scalar(functions._within_distance('Point(6 5)',
                                                       'Polygon((-5 -5, 5 -5, 5 5, -5 5, -5 -5))', 1)))
-        ok_(session.scalar(functions._within_distance('Polygon((0 0, 1 0, 1 8, 0 8, 0 0))', 
+        ok_(session.scalar(functions._within_distance('Polygon((0 0, 1 0, 1 8, 0 8, 0 0))',
                                                       'Polygon((-5 -5, 5 -5, 5 5, -5 5, -5 -5))', 0)))
 
     @raises(OperationalError)
@@ -444,3 +444,11 @@ class TestGeometry(TestCase):
         session.add(road_null)
         session.commit();
 
+
+if __name__ == '__main__':
+    import sys
+    import nose
+
+    sys.argv.append(__name__)
+    result = nose.run()
+    sys.exit(int(not result))

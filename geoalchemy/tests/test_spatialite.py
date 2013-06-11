@@ -9,7 +9,7 @@ from sqlalchemy.sql.expression import Select, select
 
 from pysqlite2 import dbapi2 as sqlite
 from geoalchemy import (GeometryColumn, Point, Polygon,
-		LineString, GeometryDDL, WKTSpatialElement, WKBSpatialElement, 
+		LineString, GeometryDDL, WKTSpatialElement, WKBSpatialElement,
         DBSpatialElement, GeometryExtensionColumn)
 from geoalchemy.functions import functions
 from nose.tools import ok_, eq_, assert_almost_equal, raises
@@ -54,21 +54,21 @@ class Spot(object):
         self.spot_height = spot_height
         self.spot_location = spot_location
 
-        
+
 mapper(Spot, spots_table, properties={
-            'spot_location': GeometryColumn(spots_table.c.spot_location, 
-                                            comparator=SQLiteComparator)}) 
+            'spot_location': GeometryColumn(spots_table.c.spot_location,
+                                            comparator=SQLiteComparator)})
 
 # enable the DDL extension, which allows CREATE/DROP operations
 # to work correctly.  This is not needed if working with externally
-# defined tables.    
+# defined tables.
 GeometryDDL(Road.__table__)
 GeometryDDL(Lake.__table__)
 GeometryDDL(spots_table)
 
 class TestGeometry(TestCase):
     """Tests for Spatialite
-    
+
     Note that WKT is used for comparisons, because Spatialite may return
     differing WKB values on different systems.
     """
@@ -118,20 +118,20 @@ class TestGeometry(TestCase):
         centroid_geom = DBSpatialElement(session.scalar(self.r.road_geom.centroid))
         eq_(session.scalar(centroid_geom.wkt), u'POINT(-88.576937 42.991563)')
         ok_(not session.query(Spot).filter(Spot.spot_location.wkt == 'POINT(0,0)').first())
-        ok_(session.query(Spot).get(1) is 
+        ok_(session.query(Spot).get(1) is
             session.query(Spot).filter(Spot.spot_location == 'POINT(-88.5945861592357 42.9480095987261)').first())
         eq_(session.scalar(WKTSpatialElement('POINT(-88.5769371859941 42.9915634871979)').wkt), u'POINT(-88.576937 42.991563)')
 
     def test_wkb(self):
-        eq_(session.scalar(functions.wkt(func.GeomFromWKB(self.r.road_geom.wkb, 4326))), 
+        eq_(session.scalar(functions.wkt(func.GeomFromWKB(self.r.road_geom.wkb, 4326))),
             u'LINESTRING(-88.674841 43.103503, -88.646417 42.998169, -88.607962 42.968073, -88.516003 42.936306, -88.439093 43.003185)')
         eq_(session.scalar(self.r.road_geom.wkb), self.r.road_geom.geom_wkb)
         centroid_geom = DBSpatialElement(session.scalar(self.r.road_geom.centroid))
-        eq_(session.scalar(functions.wkt(func.GeomFromWKB(centroid_geom.wkb, 4326))), 
+        eq_(session.scalar(functions.wkt(func.GeomFromWKB(centroid_geom.wkb, 4326))),
             u'POINT(-88.576937 42.991563)')
 
     def test_persistent(self):
-        eq_(session.scalar(functions.wkt(func.GeomFromWKB(self.r.road_geom.wkb, 4326))), 
+        eq_(session.scalar(functions.wkt(func.GeomFromWKB(self.r.road_geom.wkb, 4326))),
             u'LINESTRING(-88.674841 43.103503, -88.646417 42.998169, -88.607962 42.968073, -88.516003 42.936306, -88.439093 43.003185)')
 
         geom = WKTSpatialElement('POINT(30250865.9714116 -610981.481754275)', 2249)
@@ -140,7 +140,7 @@ class TestGeometry(TestCase):
         session.commit();
         assert_almost_equal(session.scalar(spot.spot_location.x), 0)
         assert_almost_equal(session.scalar(spot.spot_location.y), 0)
-        
+
         spot.spot_location = PersistentSpatialElement(None)
         ok_(isinstance(spot.spot_location, PersistentSpatialElement))
 
@@ -187,11 +187,11 @@ class TestGeometry(TestCase):
         eq_(session.scalar(functions.wkt(self.r.road_geom.boundary)), u'MULTIPOINT(-88.674841 43.103503, -88.439093 43.003185)')
 
     def test_envelope(self):
-        eq_(session.scalar(functions.wkt(self.r.road_geom.envelope)), 
+        eq_(session.scalar(functions.wkt(self.r.road_geom.envelope)),
             u'POLYGON((-88.674841 42.936306, -88.439093 42.936306, -88.439093 43.103503, -88.674841 43.103503, -88.674841 42.936306))')
         env =  WKBSpatialElement(session.scalar(func.AsBinary(self.r.road_geom.envelope)))
         eq_(env.geom_type(session), 'Polygon')
-        
+
     def test_x(self):
         l = session.query(Lake).get(1)
         r = session.query(Road).get(1)
@@ -222,22 +222,22 @@ class TestGeometry(TestCase):
         l = session.query(Lake).get(1)
         r = session.query(Road).get(1)
         s = session.query(Spot).get(1)
-        ok_(not session.scalar(l.lake_geom.end_point)) 
+        ok_(not session.scalar(l.lake_geom.end_point))
         assert_almost_equal(session.scalar(func.X(r.road_geom.end_point)), -88.3655256496815)
         assert_almost_equal(session.scalar(func.Y(r.road_geom.end_point)), 43.1402866687898)
         #eq_(b2a_hex(session.scalar(r.road_geom.end_point)), '0001ffffffffccceb1c5641756c02c42dfe9f4914540ccceb1c5641756c02c42dfe9f49145407c01000000ccceb1c5641756c02c42dfe9f4914540fe')
         ok_(not session.scalar(s.spot_location.end_point))
-        
+
     def test_transform(self):
         spot = session.query(Spot).get(1)
-        eq_(session.scalar(functions.wkt(spot.spot_location.transform(2249))), 
+        eq_(session.scalar(functions.wkt(spot.spot_location.transform(2249))),
             u'POINT(-3890517.610956 3627658.674651)')
         ok_(session.query(Spot).filter(sqlite_functions.mbr_contains(
                                                 functions.buffer(Spot.spot_location.transform(2249), 10),
                                                 WKTSpatialElement('POINT(-3890517.610956 3627658.674651)', 2249))).first() is not None)
-        eq_(session.scalar(functions.wkt(functions.transform(WKTSpatialElement('POLYGON((743238 2967416,743238 2967450,743265 2967450,743265.625 2967416,743238 2967416))', 2249), 4326))), 
+        eq_(session.scalar(functions.wkt(functions.transform(WKTSpatialElement('POLYGON((743238 2967416,743238 2967450,743265 2967450,743265.625 2967416,743238 2967416))', 2249), 4326))),
             u'POLYGON((-71.177685 42.39029, -71.177684 42.390383, -71.177584 42.390383, -71.177583 42.390289, -71.177685 42.39029))')
-        
+
     def test_length(self):
         l = session.query(Lake).get(1)
         r = session.query(Road).get(1)
@@ -271,7 +271,7 @@ class TestGeometry(TestCase):
         ok_(not session.scalar(s.spot_location.num_points))
 
     def test_point_n(self):
-        l = session.query(Lake).get(1)  
+        l = session.query(Lake).get(1)
         r = session.query(Road).get(1)
         s = session.query(Spot).get(1)
         ok_(not session.scalar(l.lake_geom.point_n(1)))
@@ -469,17 +469,17 @@ class TestGeometry(TestCase):
         ok_(l1 not in containing_lakes)
 
     def test_within_distance(self):
-        ok_(session.scalar(functions._within_distance('POINT(-88.9139332929936 42.5082802993631)', 
+        ok_(session.scalar(functions._within_distance('POINT(-88.9139332929936 42.5082802993631)',
                                                       'POINT(-88.9139332929936 35.5082802993631)', 10)))
         ok_(session.scalar(functions._within_distance('Point(0 0)', 'Point(0 0)', 0)))
-        ok_(session.scalar(functions._within_distance('Point(0 0)', 
+        ok_(session.scalar(functions._within_distance('Point(0 0)',
                                                       'Polygon((-5 -5, 5 -5, 5 5, -5 5, -5 -5))', 0)))
-        ok_(session.scalar(functions._within_distance('Point(5 5)', 
+        ok_(session.scalar(functions._within_distance('Point(5 5)',
                                                       'Polygon((-5 -5, 5 -5, 5 5, -5 5, -5 -5))', 0)))
-        ok_(session.scalar(functions._within_distance('Point(6 5)', 
+        ok_(session.scalar(functions._within_distance('Point(6 5)',
                                                       'Polygon((-5 -5, 5 -5, 5 5, -5 5, -5 -5))', 1)))
-        ok_(session.scalar(functions._within_distance('Polygon((0 0, 1 0, 1 8, 0 8, 0 0))', 
-                                                      'Polygon((-5 -5, 5 -5, 5 5, -5 5, -5 -5))', 0)))  
+        ok_(session.scalar(functions._within_distance('Polygon((0 0, 1 0, 1 8, 0 8, 0 0))',
+                                                      'Polygon((-5 -5, 5 -5, 5 5, -5 5, -5 -5))', 0)))
 
     @raises(IntegrityError)
     def test_constraint_nullable(self):
@@ -490,38 +490,45 @@ class TestGeometry(TestCase):
         road_null = Road(road_name='Jeff Rd', road_geom=None)
         session.add(road_null)
         session.commit();
-        
+
     def test_query_column_name(self):
         # test for bug: http://groups.google.com/group/geoalchemy/browse_thread/thread/6b731dd1673784f9
         from sqlalchemy.orm.query import Query
         query = Query(Road.road_geom).filter(Road.road_geom == '..').__str__()
         ok_('AsBinary(roads.road_geom)' in query, 'table name is part of the column expression (select clause)')
         ok_('WHERE Equals(roads.road_geom' in query, 'table name is part of the column expression (where clause)')
-        
+
         query_wkb = Select([Road.road_geom]).where(Road.road_geom == 'POINT(0 0)').__str__()
         ok_('SELECT AsBinary(roads.road_geom)' in query_wkb, 'AsBinary is added')
         ok_('WHERE Equals(roads.road_geom' in query_wkb, 'AsBinary is not added in where clause')
-        
+
         # test for RAW attribute
         query_wkb = Select([Road.road_geom.RAW]).__str__()
         ok_('SELECT roads.road_geom' in query_wkb, 'AsBinary is not added')
-        
+
         ok_(session.query(Road.road_geom.RAW).first())
-        
+
         query_srid = Query(func.SRID(Road.road_geom.RAW))
         ok_('SRID(roads.road_geom)' in query_srid.__str__(), 'AsBinary is not added')
         ok_(session.scalar(query_srid))
-        
-        eq_(session.scalar(Select([func.SRID(Spot.spot_location)]).where(Spot.spot_id == 1)), 
+
+        eq_(session.scalar(Select([func.SRID(Spot.spot_location)]).where(Spot.spot_id == 1)),
                 None,
                 'AsBinary is added and the SRID is not returned')
-        eq_(str(session.scalar(Select([func.SRID(Spot.spot_location.RAW)]).where(Spot.spot_id == 1))), 
+        eq_(str(session.scalar(Select([func.SRID(Spot.spot_location.RAW)]).where(Spot.spot_id == 1))),
                 '4326',
                 'AsBinary is not added and the SRID is returned')
-        
+
         spot_alias = aliased(Spot)
         query_wkt = Select([func.wkt(spot_alias.spot_location.RAW)]).__str__()
         ok_('SELECT wkt(spots_1.spot_location' in query_wkt, 'Table alias is used in select clause')
         ok_('FROM spots AS spots_1' in query_wkt, 'Table alias is used in from clause')
-        
-        
+
+
+if __name__ == '__main__':
+    import sys
+    import nose
+
+    sys.argv.append(__name__)
+    result = nose.run()
+    sys.exit(int(not result))

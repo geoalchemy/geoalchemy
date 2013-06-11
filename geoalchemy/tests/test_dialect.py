@@ -17,6 +17,7 @@ from geoalchemy.functions import parse_clause
 from geoalchemy.base import WKTSpatialElement
 from geoalchemy.mssql import MSSpatialDialect
 
+
 class TestDialectManager(TestCase):
 
     def test_get_spatial_dialect(self):
@@ -28,14 +29,23 @@ class TestDialectManager(TestCase):
         ok_(isinstance(DialectManager.get_spatial_dialect(MSDialect()), MSSpatialDialect))
         spatial_dialect2 = DialectManager.get_spatial_dialect(PGDialect_psycopg2())
         ok_(spatial_dialect is spatial_dialect2, "only one instance per dialect should be created")
-    
+
     @raises(NotImplementedError)
     def test_get_spatial_dialect_unknown_dialect(self):
         DialectManager.get_spatial_dialect(FBDialect())
-        
+
     def test_parse_clause(self):
         ok_(isinstance(parse_clause('POINT(0 0)', None), WKTSpatialElement))
         ok_(isinstance(parse_clause('POINT (0 0)', None), WKTSpatialElement))
         ok_(isinstance(parse_clause('GEOMETRYCOLLECTION(POINT(4 6),LINESTRING(4 6,7 10))', None), WKTSpatialElement))
         ok_(isinstance(parse_clause('GEOMETRYCOLLECTION (POINT(4 6),LINESTRING(4 6,7 10))', None), WKTSpatialElement))
         ok_(not isinstance(parse_clause('unit=km arc_tolerance=0.05)', None), WKTSpatialElement))
+
+
+if __name__ == '__main__':
+    import sys
+    import nose
+
+    sys.argv.append(__name__)
+    result = nose.run()
+    sys.exit(int(not result))

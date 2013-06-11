@@ -1,0 +1,64 @@
+language: python
+
+python:
+  - "2.7"
+
+services:
+  - postgres
+  - mysql
+
+env:
+  - DB=generic
+  - DB=postgres POSTGIS_VERSION=1.5
+  #- DB=postgres POSTGIS_VERSION=2
+  #- DB=mysql
+
+install:
+  # install GeoAlchemy in editable mode
+  - pip install -e .
+
+  # install nose and rednose for colorful output
+  - pip install nose rednose
+
+  # install individual dependencies
+  - if [[ "$DB" == "postgres" ]]; then pip install psycopg2; fi
+  - if [[ "$DB" == "mysql" ]]; then pip install MySQL-python; fi
+
+  # install PostGIS 2.x
+  - if [[ "$DB" == "postgres" ]] && [[ "$POSTGIS_VERSION" != "1.5" ]]; then sudo apt-add-repository -y ppa:sharpie/for-science; fi
+  - if [[ "$DB" == "postgres" ]] && [[ "$POSTGIS_VERSION" != "1.5" ]]; then sudo apt-add-repository -y ppa:sharpie/postgis-nightly; fi
+  - if [[ "$DB" == "postgres" ]] && [[ "$POSTGIS_VERSION" != "1.5" ]]; then sudo apt-get update; fi
+
+  # install PostGIS
+  - if [[ "$DB" == "postgres" ]]; then sudo apt-get install postgresql-9.1-postgis -q; fi
+
+before_script:
+  # activate verbose and rednose mode
+  - export NOSE_REDNOSE=1
+  - export NOSE_VERBOSE=2
+
+  # create database user "gis"
+  - if [[ "$DB" == "postgres" ]]; then psql -U postgres -c "CREATE ROLE gis PASSWORD 'gis' SUPERUSER CREATEDB CREATEROLE INHERIT LOGIN;"; fi
+  - if [[ "$DB" == "mysql" ]]; then mysql --user=root -e "CREATE USER 'gis'@'localhost' IDENTIFIED BY 'gis';"; fi
+  - if [[ "$DB" == "mysql" ]]; then mysql --user=root -e "GRANT ALL ON *.* TO 'gis'@'localhost';"; fi
+
+  # create database "gis"
+  - if [[ "$DB" == "postgres" ]]; then psql -U postgres -c "CREATE DATABASE gis;"; fi
+  - if [[ "$DB" == "mysql" ]]; then mysql --user=root -e "CREATE DATABASE gis;"; fi
+
+  # add PostGIS extension to "gis" database
+  - if [[ "$DB" == "postgres" ]] && [[ "$POSTGIS_VERSION" == "1.5" ]]; then psql -d gis -U postgres -f /usr/share/postgresql/9.1/contrib/postgis-1.5/postgis.sql; fi
+  - if [[ "$DB" == "postgres" ]] && [[ "$POSTGIS_VERSION" == "1.5" ]]; then psql -d gis -U postgres -f /usr/share/postgresql/9.1/contrib/postgis-1.5/spatial_ref_sys.sql; fi
+  - if [[ "$DB" == "postgres" ]] && [[ "$POSTGIS_VERSION" != "1.5" ]]; then psql -d gis -U postgres -c "CREATE EXTENSION postgis;"; fi
+
+script:
+  # run tests
+  - if [[ "$DB" == "generic" ]]; then python geoalchemy/tests/test_dialect.py; fi
+  - if [[ "$DB" == "generic" ]]; then python geoalchemy/tests/test_type.py; fi
+
+  - if [[ "$DB" == "postgres" ]]; then python geoalchemy/tests/test_postgis.py; fi
+  - if [[ "$DB" == "mysql" ]]; then python geoalchemy/tests/test_mysql.py; fi
+
+notifications:
+  email:
+    on_failure: change

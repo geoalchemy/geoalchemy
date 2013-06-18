@@ -52,6 +52,10 @@ class pg_functions(functions):
         """Expand(g)"""
         pass
 
+    class multi(BaseFunction):
+        """Multi(g)"""
+        pass
+
     @staticmethod
     def _within_distance(compiler, geom1, geom2, distance, *args):
         """ST_DWithin in early versions of PostGIS 1.3 does not work when
@@ -114,6 +118,7 @@ class PGSpatialDialect(SpatialDialect):
                    pg_functions.gml : 'ST_AsGML',
                    pg_functions.geojson : 'ST_AsGeoJSON',
                    pg_functions.expand : 'ST_Expand',
+                   pg_functions.multi : 'ST_Multi',
                    functions._within_distance : pg_functions._within_distance
                   }
     

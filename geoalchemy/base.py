@@ -21,8 +21,12 @@ class SpatialElement(object):
         return "<%s at 0x%x; %r>" % (self.__class__.__name__, id(self), self.desc)
     
     def __getattr__(self, name):
-        return getattr(functions, name)(self)
-#
+        attr = getattr(functions, name)
+        if callable(attr):
+            return attr(self)
+        else:
+            return attr
+
     def __get_wkt(self, session):
         """This method converts the object into a WKT geometry. It takes into
         account that WKTSpatialElement does not have to make a new query

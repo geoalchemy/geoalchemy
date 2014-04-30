@@ -1,5 +1,10 @@
 from sqlalchemy.orm.properties import ColumnProperty
 from sqlalchemy.sql import expression, not_
+try:
+    from sqlalchemy.sql.functions import Function
+except ImportError:
+    # SQLAlchemy<0.9
+    Function = expression.Function
 from sqlalchemy.sql.expression import ColumnClause, literal
 from sqlalchemy.types import UserDefinedType
 from sqlalchemy.ext.compiler import compiles
@@ -45,11 +50,11 @@ class SpatialElement(object):
         wkt = self.__get_wkt(session)
         return from_wkt(wkt)["coordinates"]
 
-class WKTSpatialElement(SpatialElement, expression.Function):
+class WKTSpatialElement(SpatialElement, Function):
     """Represents a Geometry value expressed within application code; i.e. in
     the OGC Well Known Text (WKT) format.
     
-    Extends expression.Function so that in a SQL expression context the value 
+    Extends Function so that in a SQL expression context the value 
     is interpreted as 'GeomFromText(value)' or as the equivalent function in the 
     currently used database.
     
@@ -61,7 +66,7 @@ class WKTSpatialElement(SpatialElement, expression.Function):
         self.srid = srid
         self.geometry_type = geometry_type
         
-        expression.Function.__init__(self, "")
+        Function.__init__(self, "")
 
     @property
     def geom_wkt(self):
@@ -74,11 +79,11 @@ def __compile_wktspatialelement(element, compiler, **kw):
     
     return compiler.process(function)
 
-class WKBSpatialElement(SpatialElement, expression.Function):
+class WKBSpatialElement(SpatialElement, Function):
     """Represents a Geometry value as expressed in the OGC Well
     Known Binary (WKB) format.
     
-    Extends expression.Function so that in a SQL expression context the value 
+    Extends Function so that in a SQL expression context the value 
     is interpreted as 'GeomFromWKB(value)' or as the equivalent function in the 
     currently used database .
     
@@ -90,7 +95,7 @@ class WKBSpatialElement(SpatialElement, expression.Function):
         self.srid = srid
         self.geometry_type = geometry_type
         
-        expression.Function.__init__(self, "")
+        Function.__init__(self, "")
 
 @compiles(WKBSpatialElement)
 def __compile_wkbspatialelement(element, compiler, **kw):
@@ -104,7 +109,7 @@ def __compile_wkbspatialelement(element, compiler, **kw):
     return compiler.process(function)
 
 
-class DBSpatialElement(SpatialElement, expression.Function):
+class DBSpatialElement(SpatialElement, Function):
     """This class can be used to wrap a geometry returned by a 
     spatial database operation.
     
@@ -117,7 +122,7 @@ class DBSpatialElement(SpatialElement, expression.Function):
     
     def __init__(self, desc):
         self.desc = desc
-        expression.Function.__init__(self, "", desc)
+        Function.__init__(self, "", desc)
 
 @compiles(DBSpatialElement)
 def __compile_dbspatialelement(element, compiler, **kw):
@@ -239,7 +244,7 @@ class RawColumn(ColumnClause):
 def __compile_rawcolumn(rawcolumn, compiler, **kw):
     return compiler.visit_column(rawcolumn.column)
 
-class SpatialComparator(ColumnProperty.ColumnComparator):
+class SpatialComparator(ColumnProperty.Comparator):
     """Intercepts standard Column operators on mapped class attributes
         and overrides their behavior.
         

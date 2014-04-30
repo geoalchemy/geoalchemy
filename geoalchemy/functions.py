@@ -1,4 +1,9 @@
-from sqlalchemy.sql.expression import Function, ClauseElement
+from sqlalchemy.sql.expression import ClauseElement
+try:
+    from sqlalchemy.sql.functions import Function
+except ImportError:
+    # SQLAlchemy<0.9
+    from sqlalchemy.sql.expression import Function
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy import literal
 from sqlalchemy.types import NullType, TypeDecorator

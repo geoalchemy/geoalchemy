@@ -104,9 +104,9 @@ class GeometryDDL(object):
             regular_cols = [c for c in table.c if not isinstance(c.type, Geometry)]
             gis_cols = set(table.c).difference(regular_cols)
             self._stack.append(table.c)
-            setattr(table, self.columns_attribute,
-                    expression.ColumnCollection(*regular_cols))
-            
+            column_collection = self._create_column_collection_from_regular_cols(regular_cols)
+            setattr(table, self.columns_attribute, column_collection)
+
             if event == 'before-drop':
                 for c in gis_cols:
                     spatial_dialect.handle_ddl_before_drop(bind, table, c)
@@ -120,6 +120,12 @@ class GeometryDDL(object):
 
         elif event == 'after-drop':
             setattr(table, self.columns_attribute, self._stack.pop())
+
+    def _create_column_collection_from_regular_cols(self, regular_cols):
+        new_column_collection = expression.ColumnCollection()
+        for col in regular_cols:
+            new_column_collection.add(col)
+        return new_column_collection
 
     def before_create(self, target, connection, **kw):
         self('before-create', target, connection)

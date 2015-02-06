@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+import binascii
+
 from sqlalchemy import select, func, and_
 from geoalchemy.base import SpatialComparator, PersistentSpatialElement, \
     WKBSpatialElement, WKTSpatialElement
@@ -68,7 +70,7 @@ class PGSpatialDialect(SpatialDialect):
     
     __functions = {
                    WKTSpatialElement: 'ST_GeomFromText',
-                   WKBSpatialElement: 'ST_GeomFromWKB',
+                   WKBSpatialElement: 'ST_GeomFromText',
                    functions.wkt: 'ST_AsText',
                    functions.wkb: 'ST_AsBinary',
                    functions.dimension : 'ST_Dimension',
@@ -143,3 +145,10 @@ class PGSpatialDialect(SpatialDialect):
             bind.execute("ALTER TABLE \"%s\".\"%s\" ALTER COLUMN \"%s\" SET not null" % 
                             ((table.schema or 'public'), table.name, column.name))
             
+    def bind_wkb_value(self, wkb_element):
+        """This method is called from base.__compile_wkbspatialelement() to insert
+        the value of base.WKBSpatialElement into a query.
+        
+        """
+        return None if wkb_element is None else binascii.hexlify(wkb_element.desc)
+    

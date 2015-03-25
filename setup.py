@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-version = '0.7.3dev'
+version = '0.7.3dev-msp'
 
 setup(name='GeoAlchemy',
       version=version,
@@ -26,7 +26,7 @@ setup(name='GeoAlchemy',
       include_package_data=True,
       zip_safe=False,
       install_requires=[
-          'SQLAlchemy>=0.6.1',
+          'SQLAlchemy>=0.7.3',
       ],
       entry_points="""
       # -*- Entry points: -*-

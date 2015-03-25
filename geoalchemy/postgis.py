@@ -72,7 +72,7 @@ class PGSpatialDialect(SpatialDialect):
                    WKTSpatialElement: 'ST_GeomFromText',
                    WKBSpatialElement: 'ST_GeomFromText',
                    functions.wkt: 'ST_AsText',
-                   functions.wkb: 'ST_AsBinary',
+                   functions.wkb: '',
                    functions.dimension : 'ST_Dimension',
                    functions.srid : 'ST_SRID',
                    functions.geometry_type : 'ST_GeometryType',

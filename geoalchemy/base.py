@@ -3,9 +3,16 @@ from sqlalchemy.sql import expression, not_
 from sqlalchemy.sql.expression import ColumnClause, literal
 from sqlalchemy.types import UserDefinedType
 from sqlalchemy.ext.compiler import compiles
-
-from utils import from_wkt
-from functions import functions, _get_function, BaseFunction
+try:
+    from utils import from_wkt
+    from functions import functions, _get_function, BaseFunction
+except: 
+    from .utils import from_wkt
+    from .functions import functions, _get_function, BaseFunction
+try: 
+    check_exist = basestring
+except:
+    basestring = str 
 
 # Base classes for geoalchemy
 

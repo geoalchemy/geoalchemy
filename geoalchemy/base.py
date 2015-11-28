@@ -84,7 +84,7 @@ class WKBSpatialElement(SpatialElement, expression.Function):
     """
     
     def __init__(self, desc, srid=4326, geometry_type='GEOMETRY'):
-        assert isinstance(desc, (str, buffer))
+        assert isinstance(desc, (str, bytes, memoryview)) # python3: buffer -> memoryview
         self.desc = desc
         self.srid = srid
         self.geometry_type = geometry_type

@@ -3,16 +3,8 @@ from sqlalchemy.sql import expression, not_
 from sqlalchemy.sql.expression import ColumnClause, literal
 from sqlalchemy.types import UserDefinedType
 from sqlalchemy.ext.compiler import compiles
-try:
-    from utils import from_wkt
-    from functions import functions, _get_function, BaseFunction
-except: 
-    from .utils import from_wkt
-    from .functions import functions, _get_function, BaseFunction
-try: 
-    check_exist = basestring
-except:
-    basestring = str 
+from .utils import from_wkt
+from .functions import functions, _get_function, BaseFunction
 
 # Base classes for geoalchemy
 
@@ -63,7 +55,7 @@ class WKTSpatialElement(SpatialElement, expression.Function):
     """
     
     def __init__(self, desc, srid=4326, geometry_type='GEOMETRY'):
-        assert isinstance(desc, basestring)
+        assert isinstance(desc, str)
         self.desc = desc
         self.srid = srid
         self.geometry_type = geometry_type
@@ -92,7 +84,7 @@ class WKBSpatialElement(SpatialElement, expression.Function):
     """
     
     def __init__(self, desc, srid=4326, geometry_type='GEOMETRY'):
-        assert isinstance(desc, (basestring, buffer))
+        assert isinstance(desc, (str, buffer))
         self.desc = desc
         self.srid = srid
         self.geometry_type = geometry_type
@@ -208,7 +200,7 @@ def _to_gis(value, srid_db):
         if isinstance(value.desc, (WKBSpatialElement, WKTSpatialElement)):
             return _check_srid(value.desc, srid_db)
         return _check_srid(value, srid_db)
-    elif isinstance(value, basestring):
+    elif isinstance(value, str):
         return _check_srid(WKTSpatialElement(value), srid_db)
     elif isinstance(value, expression.ClauseElement):
         return value
@@ -246,7 +238,7 @@ class RawColumn(ColumnClause):
 def __compile_rawcolumn(rawcolumn, compiler, **kw):
     return compiler.visit_column(rawcolumn.column)
 
-class SpatialComparator(ColumnProperty.ColumnComparator):
+class SpatialComparator(ColumnProperty.Comparator):
     """Intercepts standard Column operators on mapped class attributes
         and overrides their behavior.
         

@@ -116,23 +116,23 @@ class TestGeometry(TestCase):
     def test_wkt(self):
         eq_(session.scalar(self.r.road_geom.wkt), 'LINESTRING(-88.674841 43.103503, -88.646417 42.998169, -88.607962 42.968073, -88.516003 42.936306, -88.439093 43.003185)')
         centroid_geom = DBSpatialElement(session.scalar(self.r.road_geom.centroid))
-        eq_(session.scalar(centroid_geom.wkt), u'POINT(-88.576937 42.991563)')
+        eq_(session.scalar(centroid_geom.wkt), 'POINT(-88.576937 42.991563)')
         ok_(not session.query(Spot).filter(Spot.spot_location.wkt == 'POINT(0,0)').first())
         ok_(session.query(Spot).get(1) is
             session.query(Spot).filter(Spot.spot_location == 'POINT(-88.5945861592357 42.9480095987261)').first())
-        eq_(session.scalar(WKTSpatialElement('POINT(-88.5769371859941 42.9915634871979)').wkt), u'POINT(-88.576937 42.991563)')
+        eq_(session.scalar(WKTSpatialElement('POINT(-88.5769371859941 42.9915634871979)').wkt), 'POINT(-88.576937 42.991563)')
 
     def test_wkb(self):
         eq_(session.scalar(functions.wkt(func.GeomFromWKB(self.r.road_geom.wkb, 4326))),
-            u'LINESTRING(-88.674841 43.103503, -88.646417 42.998169, -88.607962 42.968073, -88.516003 42.936306, -88.439093 43.003185)')
+            'LINESTRING(-88.674841 43.103503, -88.646417 42.998169, -88.607962 42.968073, -88.516003 42.936306, -88.439093 43.003185)')
         eq_(session.scalar(self.r.road_geom.wkb), self.r.road_geom.geom_wkb)
         centroid_geom = DBSpatialElement(session.scalar(self.r.road_geom.centroid))
         eq_(session.scalar(functions.wkt(func.GeomFromWKB(centroid_geom.wkb, 4326))),
-            u'POINT(-88.576937 42.991563)')
+            'POINT(-88.576937 42.991563)')
 
     def test_persistent(self):
         eq_(session.scalar(functions.wkt(func.GeomFromWKB(self.r.road_geom.wkb, 4326))),
-            u'LINESTRING(-88.674841 43.103503, -88.646417 42.998169, -88.607962 42.968073, -88.516003 42.936306, -88.439093 43.003185)')
+            'LINESTRING(-88.674841 43.103503, -88.646417 42.998169, -88.607962 42.968073, -88.516003 42.936306, -88.439093 43.003185)')
 
         geom = WKTSpatialElement('POINT(30250865.9714116 -610981.481754275)', 2249)
         spot = Spot(spot_height=102.34, spot_location=geom)
@@ -184,11 +184,11 @@ class TestGeometry(TestCase):
         assert session.scalar(self.r.road_geom.is_valid)
 
     def test_boundary(self):
-        eq_(session.scalar(functions.wkt(self.r.road_geom.boundary)), u'MULTIPOINT(-88.674841 43.103503, -88.439093 43.003185)')
+        eq_(session.scalar(functions.wkt(self.r.road_geom.boundary)), 'MULTIPOINT(-88.674841 43.103503, -88.439093 43.003185)')
 
     def test_envelope(self):
         eq_(session.scalar(functions.wkt(self.r.road_geom.envelope)),
-            u'POLYGON((-88.674841 42.936306, -88.439093 42.936306, -88.439093 43.103503, -88.674841 43.103503, -88.674841 42.936306))')
+            'POLYGON((-88.674841 42.936306, -88.439093 42.936306, -88.439093 43.103503, -88.674841 43.103503, -88.674841 42.936306))')
         env =  WKBSpatialElement(session.scalar(func.AsBinary(self.r.road_geom.envelope)))
         eq_(env.geom_type(session), 'Polygon')
 
@@ -231,12 +231,12 @@ class TestGeometry(TestCase):
     def test_transform(self):
         spot = session.query(Spot).get(1)
         eq_(session.scalar(functions.wkt(spot.spot_location.transform(2249))),
-            u'POINT(-3890517.610956 3627658.674651)')
+            'POINT(-3890517.610956 3627658.674651)')
         ok_(session.query(Spot).filter(sqlite_functions.mbr_contains(
                                                 functions.buffer(Spot.spot_location.transform(2249), 10),
                                                 WKTSpatialElement('POINT(-3890517.610956 3627658.674651)', 2249))).first() is not None)
         eq_(session.scalar(functions.wkt(functions.transform(WKTSpatialElement('POLYGON((743238 2967416,743238 2967450,743265 2967450,743265.625 2967416,743238 2967416))', 2249), 4326))),
-            u'POLYGON((-71.177685 42.39029, -71.177684 42.390383, -71.177584 42.390383, -71.177583 42.390289, -71.177685 42.39029))')
+            'POLYGON((-71.177685 42.39029, -71.177684 42.390383, -71.177584 42.390383, -71.177583 42.390289, -71.177685 42.39029))')
 
     def test_length(self):
         l = session.query(Lake).get(1)
@@ -401,9 +401,9 @@ class TestGeometry(TestCase):
     # Test Geometry Relations for Minimum Bounding Rectangles (MBRs)
 
     def test_mbr_equal(self):
-        r1 = session.query(Road).filter(Road.road_name==u'Jeff Rd').one()
-        r2 = session.query(Road).filter(Road.road_name==u'Peter Rd').one()
-        r3 = session.query(Road).filter(Road.road_name==u'Paul St').one()
+        r1 = session.query(Road).filter(Road.road_name=='Jeff Rd').one()
+        r2 = session.query(Road).filter(Road.road_name=='Peter Rd').one()
+        r3 = session.query(Road).filter(Road.road_name=='Paul St').one()
         equal_roads = session.query(Road).filter(Road.road_geom.mbr_equal(r1.road_geom)).all()
         ok_(r1 in equal_roads)
         ok_(r2 in equal_roads)
@@ -412,25 +412,25 @@ class TestGeometry(TestCase):
         eq_(session.scalar(sqlite_functions.mbr_equal('POINT(-88.5945861592357 42.9480095987261)', 'POINT(-88.5945861592357 42.9480095987261)')), True)
 
     def test_mbr_disjoint(self):
-        r1 = session.query(Road).filter(Road.road_name==u'Jeff Rd').one()
-        r2 = session.query(Road).filter(Road.road_name==u'Graeme Ave').one()
-        r3 = session.query(Road).filter(Road.road_name==u'Geordie Rd').one()
+        r1 = session.query(Road).filter(Road.road_name=='Jeff Rd').one()
+        r2 = session.query(Road).filter(Road.road_name=='Graeme Ave').one()
+        r3 = session.query(Road).filter(Road.road_name=='Geordie Rd').one()
         disjoint_roads = session.query(Road).filter(Road.road_geom.mbr_disjoint(r1.road_geom)).all()
         ok_(r2 not in disjoint_roads)
         ok_(r3 in disjoint_roads)
 
     def test_mbr_intersects(self):
-        r1 = session.query(Road).filter(Road.road_name==u'Jeff Rd').one()
-        r2 = session.query(Road).filter(Road.road_name==u'Graeme Ave').one()
-        r3 = session.query(Road).filter(Road.road_name==u'Geordie Rd').one()
+        r1 = session.query(Road).filter(Road.road_name=='Jeff Rd').one()
+        r2 = session.query(Road).filter(Road.road_name=='Graeme Ave').one()
+        r3 = session.query(Road).filter(Road.road_name=='Geordie Rd').one()
         intersecting_roads = session.query(Road).filter(Road.road_geom.mbr_intersects(r1.road_geom)).all()
         ok_(r2 in intersecting_roads)
         ok_(r3 not in intersecting_roads)
 
     def test_mbr_touches(self):
-        l1 = session.query(Lake).filter(Lake.lake_name==u'Lake White').one()
-        l2 = session.query(Lake).filter(Lake.lake_name==u'Lake Blue').one()
-        r = session.query(Road).filter(Road.road_name==u'Geordie Rd').one()
+        l1 = session.query(Lake).filter(Lake.lake_name=='Lake White').one()
+        l2 = session.query(Lake).filter(Lake.lake_name=='Lake Blue').one()
+        r = session.query(Road).filter(Road.road_name=='Geordie Rd').one()
         touching_lakes = session.query(Lake).filter(Lake.lake_geom.mbr_touches(r.road_geom)).all()
         ok_(not session.scalar(l1.lake_geom.mbr_touches(r.road_geom)))
         ok_(not session.scalar(l2.lake_geom.mbr_touches(r.road_geom)))
@@ -438,7 +438,7 @@ class TestGeometry(TestCase):
         ok_(l2 not in touching_lakes)
 
     def test_mbr_within(self):
-        l = session.query(Lake).filter(Lake.lake_name==u'Lake Blue').one()
+        l = session.query(Lake).filter(Lake.lake_name=='Lake Blue').one()
         p1 = session.query(Spot).filter(Spot.spot_height==102.34).one()
         p2 = session.query(Spot).filter(Spot.spot_height==388.62).one()
         spots_within = session.query(Spot).filter(Spot.spot_location.mbr_within(l.lake_geom)).all()
@@ -448,9 +448,9 @@ class TestGeometry(TestCase):
         ok_(p2 not in spots_within)
 
     def test_mbr_overlaps(self):
-        l1 = session.query(Lake).filter(Lake.lake_name==u'Lake White').one()
-        l2 = session.query(Lake).filter(Lake.lake_name==u'Lake Blue').one()
-        l3 = session.query(Lake).filter(Lake.lake_name==u'My Lake').one()
+        l1 = session.query(Lake).filter(Lake.lake_name=='Lake White').one()
+        l2 = session.query(Lake).filter(Lake.lake_name=='Lake Blue').one()
+        l3 = session.query(Lake).filter(Lake.lake_name=='My Lake').one()
         overlapping_lakes = session.query(Lake).filter(Lake.lake_geom.mbr_overlaps(l3.lake_geom)).all()
         ok_(not session.scalar(l1.lake_geom.mbr_overlaps(l3.lake_geom)))
         ok_(session.scalar(l2.lake_geom.mbr_overlaps(l3.lake_geom)))
@@ -458,8 +458,8 @@ class TestGeometry(TestCase):
         ok_(l2 in overlapping_lakes)
 
     def test_mbr_contains(self):
-        l = session.query(Lake).filter(Lake.lake_name==u'Lake Blue').one()
-        l1 = session.query(Lake).filter(Lake.lake_name==u'Lake White').one()
+        l = session.query(Lake).filter(Lake.lake_name=='Lake Blue').one()
+        l1 = session.query(Lake).filter(Lake.lake_name=='Lake White').one()
         p1 = session.query(Spot).filter(Spot.spot_height==102.34).one()
         p2 = session.query(Spot).filter(Spot.spot_height==388.62).one()
         containing_lakes = session.query(Lake).filter(Lake.lake_geom.mbr_contains(p1.spot_location)).all()

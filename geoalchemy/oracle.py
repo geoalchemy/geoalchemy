@@ -93,7 +93,7 @@ def ST_GeometryFunction(function, returns_geometry = False, relation_function = 
                 params.pop(0)
                 return func.ST_GEOMETRY(geom)
             
-            elif isinstance(geom, (WKBSpatialElement, WKTSpatialElement)) and geom.geometry_type <> Geometry.name:
+            elif isinstance(geom, (WKBSpatialElement, WKTSpatialElement)) and not geom.geometry_type == Geometry.name:
                 params.pop(0)
                 return getattr(func, 'ST_%s' % (geom.geometry_type))(geom)
 

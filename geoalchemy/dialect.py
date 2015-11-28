@@ -202,7 +202,7 @@ class DialectManager(object):
         
         """
         possible_spatial_dialects = [spatial_dialect for (dialect_sqlalchemy, spatial_dialect) 
-                                     in DialectManager.__dialects().iteritems() 
+                                     in DialectManager.__dialects().items() 
                                      if isinstance(dialect, dialect_sqlalchemy)]
         
         if possible_spatial_dialects:

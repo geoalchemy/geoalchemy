@@ -108,6 +108,7 @@ class MySQLSpatialDialect(SpatialDialect):
                    functions.convex_hull : None,
                    functions.intersection : None,
                    functions.within_distance : None,
+                   functions.within: 'ST_Within',
                    mysql_functions.mbr_equal : 'MBREqual',
                    mysql_functions.mbr_disjoint : 'MBRDisjoint',
                    mysql_functions.mbr_intersects : 'MBRIntersects',

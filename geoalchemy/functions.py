@@ -27,7 +27,7 @@ def parse_clause(clause, compiler):
         if isinstance(clause, DBSpatialElement):
             return literal(clause.desc, GeometryBase)    
         return clause.desc
-    elif isinstance(clause, basestring) and WKT_REGEX.match(clause):
+    elif isinstance(clause, str) and WKT_REGEX.match(clause):
         return WKTSpatialElement(clause)
     
     # for raw parameters    

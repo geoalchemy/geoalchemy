@@ -1,6 +1,6 @@
 from sqlalchemy import func
 from geoalchemy.base import SpatialComparator, PersistentSpatialElement,\
-    WKBSpatialElement
+    WKBSpatialElement, WKTSpatialElement
 from geoalchemy.dialect import SpatialDialect 
 from geoalchemy.functions import functions, BaseFunction
 
@@ -92,6 +92,8 @@ class MySQLSpatialDialect(SpatialDialect):
     """Implementation of SpatialDialect for MySQL."""
     
     __functions = {
+                   WKTSpatialElement: 'ST_GeomFromText',
+                   functions.wkb: 'ST_AsBinary',
                    functions.length : 'GLength',
                    functions.is_valid : None,
                    functions.is_simple : None,

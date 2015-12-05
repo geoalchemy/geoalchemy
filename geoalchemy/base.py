@@ -264,7 +264,7 @@ class SpatialComparator(ColumnComparator):
         return RawColumn(self.__clause_element__())
     
     def __getattr__(self, name):
-        return getattr(functions, name)(str(self.prop))
+        return getattr(functions, name)(self.prop.columns[0])
         
     # override the __eq__() operator (allows to use '==' on geometries)
     def __eq__(self, other): 

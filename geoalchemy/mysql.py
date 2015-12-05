@@ -12,7 +12,7 @@ class MySQLComparator(SpatialComparator):
         try:
             return SpatialComparator.__getattr__(self, name)
         except AttributeError:
-            return getattr(mysql_functions, name)(str(self.prop))
+            return getattr(mysql_functions, name)(self.prop.columns[0])
 
 
 class MySQLPersistentSpatialElement(PersistentSpatialElement):

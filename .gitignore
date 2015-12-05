@@ -1,5 +1,5 @@
 *.pyc
 /GeoAlchemy.egg-info
 /doc/_build
-build/
-dist/
+/build/
+/dist/

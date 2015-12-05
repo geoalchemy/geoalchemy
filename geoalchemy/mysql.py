@@ -12,7 +12,7 @@ class MySQLComparator(SpatialComparator):
         try:
             return SpatialComparator.__getattr__(self, name)
         except AttributeError:
-            return getattr(mysql_functions, name)(self)
+            return getattr(mysql_functions, name)(str(self.prop))
 
 
 class MySQLPersistentSpatialElement(PersistentSpatialElement):
@@ -59,6 +59,11 @@ class mysql_functions(functions):
     class mbr_contains(BaseFunction):
         """MBRContains(g1, g2)"""
         pass
+
+    class st_within(BaseFunction):
+        """ST_Within(g1, g2)"""
+        pass
+        
 
     @staticmethod
     def _within_distance(compiler, geom1, geom2, distance, *args):
@@ -108,7 +113,6 @@ class MySQLSpatialDialect(SpatialDialect):
                    functions.convex_hull : None,
                    functions.intersection : None,
                    functions.within_distance : None,
-                   functions.within: 'ST_Within',
                    mysql_functions.mbr_equal : 'MBREqual',
                    mysql_functions.mbr_disjoint : 'MBRDisjoint',
                    mysql_functions.mbr_intersects : 'MBRIntersects',
@@ -116,6 +120,7 @@ class MySQLSpatialDialect(SpatialDialect):
                    mysql_functions.mbr_within : 'MBRWithin',
                    mysql_functions.mbr_overlaps : 'MBROverlaps',
                    mysql_functions.mbr_contains : 'MBRContains',
+                   mysql_functions.st_within: 'ST_Within',
                    functions._within_distance : mysql_functions._within_distance
                    }
 

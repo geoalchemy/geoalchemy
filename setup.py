@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-version = '0.8.1dev'
+version = '0.8.2dev'
 
 setup(name='GeoAlchemy',
       version=version,
@@ -27,6 +27,7 @@ setup(name='GeoAlchemy',
       zip_safe=False,
       install_requires=[
           'SQLAlchemy>=1.0.9',
+          'six'
       ],
       entry_points="""
       # -*- Entry points: -*-

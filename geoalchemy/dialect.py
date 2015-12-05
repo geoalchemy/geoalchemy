@@ -7,6 +7,7 @@ from sqlalchemy import func
 from geoalchemy.functions import functions
 from geoalchemy.base import WKTSpatialElement, WKBSpatialElement,\
     DBSpatialElement
+import six 
 
 class SpatialDialect(object):
     """This class bundles all required classes and methods to support 
@@ -202,7 +203,7 @@ class DialectManager(object):
         
         """
         possible_spatial_dialects = [spatial_dialect for (dialect_sqlalchemy, spatial_dialect) 
-                                     in DialectManager.__dialects().items() 
+                                     in six.iteritems(DialectManager.__dialects())
                                      if isinstance(dialect, dialect_sqlalchemy)]
         
         if possible_spatial_dialects:

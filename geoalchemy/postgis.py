@@ -31,6 +31,10 @@ class PGPersistentSpatialElement(PersistentSpatialElement):
 class pg_functions(functions):
     """Functions only supported by PostGIS
     """
+
+    class simplify(ReturnsGeometryFunction):
+        """Simplify(g, tolerance)"""
+        pass
     
     class svg(BaseFunction):
         """AsSVG(g)"""
@@ -109,6 +113,7 @@ class PGSpatialDialect(SpatialDialect):
                    functions.union : 'ST_Union',
                    functions.collect : 'ST_Collect',
                    functions.extent : 'ST_Extent',
+                   pg_functions.simplify: 'ST_Simplify',
                    pg_functions.svg : 'ST_AsSVG',
                    pg_functions.kml : 'ST_AsKML',
                    pg_functions.gml : 'ST_AsGML',

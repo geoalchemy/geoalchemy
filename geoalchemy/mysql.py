@@ -63,6 +63,10 @@ class mysql_functions(functions):
     class st_within(BaseFunction):
         """ST_Within(g1, g2)"""
         pass
+
+    class st_contains(BaseFunction):
+        """ST_Within(g1, g2)"""
+        pass
         
 
     @staticmethod
@@ -121,6 +125,7 @@ class MySQLSpatialDialect(SpatialDialect):
                    mysql_functions.mbr_overlaps : 'MBROverlaps',
                    mysql_functions.mbr_contains : 'MBRContains',
                    mysql_functions.st_within: 'ST_Within',
+                   mysql_functions.st_contains: 'ST_Contains',
                    functions._within_distance : mysql_functions._within_distance
                    }
 

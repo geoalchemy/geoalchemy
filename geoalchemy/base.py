@@ -232,8 +232,8 @@ class RawColumn(ColumnClause):
         self.column = column
         ColumnClause.__init__(self, column.name, column.table)
         
-    def _make_proxy(self, selectable, name=None):
-        return self.column._make_proxy(selectable, name)
+    def _make_proxy(self, selectable, name=None, **kw):
+        return self.column._make_proxy(selectable, name, **kw)
         
 @compiles(RawColumn)
 def __compile_rawcolumn(rawcolumn, compiler, **kw):

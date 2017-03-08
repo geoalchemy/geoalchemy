@@ -197,6 +197,8 @@ def _to_gis(value, srid_db):
 
     if hasattr(value, '__clause_element__'):
         return value.__clause_element__()
+    elif isinstance(value, GEOSGeometry):
+        return value
     elif isinstance(value, SpatialElement):
         if isinstance(value.desc, (WKBSpatialElement, WKTSpatialElement)):
             return _check_srid(value.desc, srid_db)

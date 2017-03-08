@@ -27,6 +27,7 @@ setup(name='GeoAlchemy',
       zip_safe=False,
       install_requires=[
           'SQLAlchemy>=0.7.3',
+          'pygeos'
       ],
       entry_points="""
       # -*- Entry points: -*-

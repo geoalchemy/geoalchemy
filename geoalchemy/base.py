@@ -6,6 +6,7 @@ from sqlalchemy.ext.compiler import compiles
 
 from utils import from_wkt
 from functions import functions, _get_function, BaseFunction
+from geos.geometry import GEOSGeometry
 
 # Base classes for geoalchemy
 

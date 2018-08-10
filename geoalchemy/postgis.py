@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import binascii
 from sqlalchemy import select, func, and_
 from geoalchemy.base import SpatialComparator, PersistentSpatialElement, \
     WKBSpatialElement, WKTSpatialElement
@@ -52,6 +53,14 @@ class pg_functions(functions):
         """Expand(g)"""
         pass
 
+    class simplify(BaseFunction):
+        """st_simplify(g)"""
+        pass
+
+    class estimated_extent(BaseFunction):
+        """Expand(g)"""
+        pass
+
     @staticmethod
     def _within_distance(compiler, geom1, geom2, distance, *args):
         """ST_DWithin in early versions of PostGIS 1.3 does not work when
@@ -70,7 +79,7 @@ class PGSpatialDialect(SpatialDialect):
                    WKTSpatialElement: 'ST_GeomFromText',
                    WKBSpatialElement: 'ST_GeomFromWKB',
                    functions.wkt: 'ST_AsText',
-                   functions.wkb: 'ST_AsBinary',
+                   functions.wkb: '',
                    functions.dimension : 'ST_Dimension',
                    functions.srid : 'ST_SRID',
                    functions.geometry_type : 'ST_GeometryType',
@@ -114,6 +123,8 @@ class PGSpatialDialect(SpatialDialect):
                    pg_functions.gml : 'ST_AsGML',
                    pg_functions.geojson : 'ST_AsGeoJSON',
                    pg_functions.expand : 'ST_Expand',
+                   pg_functions.simplify : 'ST_Simplify',
+                   pg_functions.estimated_extent : 'ST_Estimated_Extent',  # OJO CAMBIA en PG 2
                    functions._within_distance : pg_functions._within_distance
                   }
     
@@ -142,4 +153,8 @@ class PGSpatialDialect(SpatialDialect):
         if not column.nullable:
             bind.execute("ALTER TABLE \"%s\".\"%s\" ALTER COLUMN \"%s\" SET not null" % 
                             ((table.schema or 'public'), table.name, column.name))
-            
+    def bind_wkb_value(self, wkb_element):
+        """This method is called from base.__compile_wkbspatialelement() to insert	
+        the value of base.WKBSpatialElement into a query.	
+        """
+        return None if wkb_element is None else '\\x' + binascii.hexlify(wkb_element.desc)

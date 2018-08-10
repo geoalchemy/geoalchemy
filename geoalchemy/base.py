@@ -6,6 +6,7 @@ from sqlalchemy.ext.compiler import compiles
 
 from utils import from_wkt
 from functions import functions, _get_function, BaseFunction
+from geos.geometry import GEOSGeometry
 
 # Base classes for geoalchemy
 
@@ -197,6 +198,8 @@ def _to_gis(value, srid_db):
 
     if hasattr(value, '__clause_element__'):
         return value.__clause_element__()
+    elif isinstance(value, GEOSGeometry):
+        return value
     elif isinstance(value, SpatialElement):
         if isinstance(value.desc, (WKBSpatialElement, WKTSpatialElement)):
             return _check_srid(value.desc, srid_db)
@@ -232,14 +235,14 @@ class RawColumn(ColumnClause):
         self.column = column
         ColumnClause.__init__(self, column.name, column.table)
         
-    def _make_proxy(self, selectable, name=None):
-        return self.column._make_proxy(selectable, name)
+    def _make_proxy(self, selectable, name=None, **kw):
+        return self.column._make_proxy(selectable, name, **kw)
         
 @compiles(RawColumn)
 def __compile_rawcolumn(rawcolumn, compiler, **kw):
     return compiler.visit_column(rawcolumn.column)
 
-class SpatialComparator(ColumnProperty.ColumnComparator):
+class SpatialComparator(ColumnProperty.Comparator):
     """Intercepts standard Column operators on mapped class attributes
         and overrides their behavior.
         

@@ -2,6 +2,8 @@
 GeoAlchemy
 ==========
 
+**WARNING: This package is deprecated and was replaced by** `GeoAlchemy2 <https://github.com/geoalchemy/geoalchemy2/>`_ **.**
+
 GIS Support for `SQLAlchemy <http://www.sqlalchemy.org/>`_.
 
 Introduction

@@ -157,7 +157,7 @@ class GeometryExtensionColumn(Column):
 @compiles(GeometryExtensionColumn)
 def compile_column(element, compiler, **kw):
     if isinstance(element.table, (Table, Alias)):
-        if kw.has_key("within_columns_clause") and kw["within_columns_clause"] == True:
+        if "within_columns_clause" in kw and kw["within_columns_clause"] == True:
             if element.type.wkt_internal:
                 if isinstance(compiler.dialect, PGDialect):
                     return compiler.process(functions.wkt(element))
@@ -181,7 +181,7 @@ def GeometryColumn(*args, **kw):
     set the properties for a geometry column when defining the mapping.
     
     """
-    if kw.has_key("comparator"):
+    if 'comparator' in kw:
         comparator = kw.pop("comparator")
     else:
         comparator = SpatialComparator

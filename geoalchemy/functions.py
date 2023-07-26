@@ -4,6 +4,7 @@ from sqlalchemy import literal
 from sqlalchemy.types import NullType, TypeDecorator
 import types
 import re
+import six 
 
 WKT_REGEX = re.compile('.*\\(.*\\).*')
 
@@ -14,7 +15,6 @@ def parse_clause(clause, compiler):
         
     """
     from geoalchemy.base import SpatialElement, WKTSpatialElement, WKBSpatialElement, DBSpatialElement, GeometryBase
-    
     if hasattr(clause, '__clause_element__'):
         # for example a column name
         return clause.__clause_element__()
@@ -27,7 +27,7 @@ def parse_clause(clause, compiler):
         if isinstance(clause, DBSpatialElement):
             return literal(clause.desc, GeometryBase)    
         return clause.desc
-    elif isinstance(clause, basestring) and WKT_REGEX.match(clause):
+    elif isinstance(clause, six.string_types) and WKT_REGEX.match(clause):
         return WKTSpatialElement(clause)
     
     # for raw parameters    
@@ -117,7 +117,6 @@ class BaseFunction(Function):
         
         if len(kwargs) > 0:
             self.flags.update(kwargs)
-        
         return self
 
 class ReturnsGeometryFunction(BaseFunction):
@@ -148,7 +147,6 @@ def __compile_base_function(element, compiler, **kw):
     
     from geoalchemy.dialect import DialectManager 
     database_dialect = DialectManager.get_spatial_dialect(compiler.dialect)
-    
     if database_dialect.is_member_function(element.__class__):
         geometry = params.pop(0)
         function_name = database_dialect.get_function(element.__class__)
@@ -184,6 +182,7 @@ def __compile_base_function(element, compiler, **kw):
                         )
         
     else:
+       
         function = _get_function(element, compiler, params, kw.get('within_columns_clause', False))
         return compiler.process(function)
 

@@ -1,10 +1,10 @@
 from setuptools import setup, find_packages
 
-version = '0.7.3dev'
+version = '0.8.2dev'
 
 setup(name='GeoAlchemy',
       version=version,
-      description="Using SQLAlchemy with Spatial Databases",
+      description="Using SQLAlchemy with Spatial Databases.",
       long_description=open('README.rst').read(),
       classifiers=[
           "Development Status :: 3 - Alpha",
@@ -26,7 +26,8 @@ setup(name='GeoAlchemy',
       include_package_data=True,
       zip_safe=False,
       install_requires=[
-          'SQLAlchemy>=0.6.1',
+          'SQLAlchemy>=1.0.9',
+          'six'
       ],
       entry_points="""
       # -*- Entry points: -*-

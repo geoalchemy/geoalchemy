@@ -3,10 +3,17 @@ from sqlalchemy.sql import expression, not_
 from sqlalchemy.sql.expression import ColumnClause, literal
 from sqlalchemy.types import UserDefinedType
 from sqlalchemy.ext.compiler import compiles
+import six 
 
-from utils import from_wkt
-from functions import functions, _get_function, BaseFunction
-
+if six.PY3:
+    from .utils import from_wkt
+    from .functions import functions, _get_function, BaseFunction
+    buffer = memoryview
+    ColumnComparator = ColumnProperty.Comparator
+else:
+    from utils import from_wkt
+    from functions import functions, _get_function, BaseFunction
+    ColumnComparator = ColumnProperty.ColumnComparator
 # Base classes for geoalchemy
 
 class SpatialElement(object):
@@ -56,7 +63,7 @@ class WKTSpatialElement(SpatialElement, expression.Function):
     """
     
     def __init__(self, desc, srid=4326, geometry_type='GEOMETRY'):
-        assert isinstance(desc, basestring)
+        assert isinstance(desc, six.string_types)
         self.desc = desc
         self.srid = srid
         self.geometry_type = geometry_type
@@ -85,7 +92,7 @@ class WKBSpatialElement(SpatialElement, expression.Function):
     """
     
     def __init__(self, desc, srid=4326, geometry_type='GEOMETRY'):
-        assert isinstance(desc, (basestring, buffer))
+        assert isinstance(desc, (six.binary_type, buffer)) # python3: buffer -> memoryview
         self.desc = desc
         self.srid = srid
         self.geometry_type = geometry_type
@@ -96,11 +103,9 @@ class WKBSpatialElement(SpatialElement, expression.Function):
 def __compile_wkbspatialelement(element, compiler, **kw):
     from geoalchemy.dialect import DialectManager 
     database_dialect = DialectManager.get_spatial_dialect(compiler.dialect)
-    
     function = _get_function(element, compiler, (database_dialect.bind_wkb_value(element), 
                                                  element.srid),
                                                  kw.get('within_columns_clause', False))
-    
     return compiler.process(function)
 
 
@@ -201,7 +206,7 @@ def _to_gis(value, srid_db):
         if isinstance(value.desc, (WKBSpatialElement, WKTSpatialElement)):
             return _check_srid(value.desc, srid_db)
         return _check_srid(value, srid_db)
-    elif isinstance(value, basestring):
+    elif isinstance(value, six.string_types):
         return _check_srid(WKTSpatialElement(value), srid_db)
     elif isinstance(value, expression.ClauseElement):
         return value
@@ -239,7 +244,7 @@ class RawColumn(ColumnClause):
 def __compile_rawcolumn(rawcolumn, compiler, **kw):
     return compiler.visit_column(rawcolumn.column)
 
-class SpatialComparator(ColumnProperty.ColumnComparator):
+class SpatialComparator(ColumnComparator):
     """Intercepts standard Column operators on mapped class attributes
         and overrides their behavior.
         
@@ -259,7 +264,7 @@ class SpatialComparator(ColumnProperty.ColumnComparator):
         return RawColumn(self.__clause_element__())
     
     def __getattr__(self, name):
-        return getattr(functions, name)(self)
+        return getattr(functions, name)(self.prop.columns[0])
         
     # override the __eq__() operator (allows to use '==' on geometries)
     def __eq__(self, other): 
